@@ -204,6 +204,32 @@ RSpec.describe('Building') do
       end
     end
 
+    it 'marks table rows without snow with no-snow class in state pages' do
+      state_files = Dir[File.join(build_dir, 'states', '*.html')].reject { |f| f.include?('snow-now') }
+      expect(state_files).not_to be_empty
+
+      # Find a state page to test (exclude snow-now pages)
+      state_file = state_files.first
+      html = File.read(state_file)
+      doc = Nokogiri::HTML(html)
+
+      # Check that table rows exist in the forecast table
+      rows = doc.xpath('//table[.//th[contains(text(), "Resort")]]//tbody//tr')
+
+      # Skip if no forecast table found
+      next if rows.empty?
+
+      # Check that rows either have snow-cell or no-snow class
+      rows.each do |row|
+        has_snow_cell = row.xpath('.//td[@class="snow-cell"]').any?
+        has_no_snow_class = row['class']&.include?('no-snow')
+
+        # Row should either have snow or be marked as no-snow
+        expect(has_snow_cell || has_no_snow_class).to be(true),
+                                                          "Row should have snow-cell or no-snow class: #{row.to_html}"
+      end
+    end
+
     it 'adds snow-cell class to snowfall column in resort pages' do
       resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
       expect(resort_files).not_to be_empty

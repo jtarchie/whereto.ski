@@ -45,7 +45,8 @@ description: 'Weekly forecast of snow for ski areas in <%= h state %>'
       </thead>
       <tbody>
         <% rows.each do |row| %>
-          <tr>
+          <% has_snow = row.drop(1).any? { |cell| snow?(cell) } %>
+          <tr<%= has_snow ? '' : ' class="no-snow"' %>>
             <% row.each_with_index do |cell, index| %>
               <% if index == 0 %>
                 <!-- First column is the resort name/link -->
