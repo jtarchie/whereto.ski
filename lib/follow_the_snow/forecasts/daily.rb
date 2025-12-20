@@ -43,6 +43,32 @@ module FollowTheSnow
         %(<span class="imperial">#{f} °F</span><span class="metric">#{fahrenheit_to_celsius f} °C</span>).html_safe
       end
 
+      def apparent_temp
+        f = __getobj__.apparent_temp.end
+        %(<span class="imperial">#{f} °F</span><span class="metric">#{fahrenheit_to_celsius f} °C</span>).html_safe
+      end
+
+      def uv_index
+        __getobj__.uv_index
+      end
+
+      def sunshine_duration
+        # Convert seconds to hours and minutes for display
+        total_seconds = __getobj__.sunshine_duration
+        hours         = total_seconds / 3600
+        minutes       = (total_seconds % 3600) / 60
+
+        if hours.positive?
+          "#{hours}h #{minutes}m"
+        else
+          "#{minutes}m"
+        end
+      end
+
+      def precipitation_probability
+        "#{__getobj__.precipitation_probability}%"
+      end
+
       def wind_gust
         speed = __getobj__.wind_gust.end
         %(<span class="imperial">#{speed} mph</span><span class="metric">#{mph_to_kph speed} kph</span>).html_safe

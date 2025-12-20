@@ -8,27 +8,35 @@ module FollowTheSnow
     def forecasts
       @forecasts ||= begin
         forecast_response = JSON.parse(
-          HTTP.timeout(10).get("https://api.open-meteo.com/v1/forecast?latitude=#{resort.lat}&longitude=#{resort.lon}&models=best_match&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,snowfall_sum,precipitation_hours,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York")
+          HTTP.timeout(10).get("https://api.open-meteo.com/v1/forecast?latitude=#{resort.lat}&longitude=#{resort.lon}&models=best_match&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,uv_index_max,sunshine_duration&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York")
         )
 
         daily = forecast_response.fetch('daily')
 
         daily.fetch('time').each_with_index.map do |timestamp, index|
-          dt               = Date.parse(timestamp)
-          temp_range       = (daily.fetch('temperature_2m_min')[index].round(2))..(daily['temperature_2m_max'][index].round(2))
-          snow_range       = 0..daily.fetch('snowfall_sum')[index].round(2)
-          wind_gust_range  = 0..daily.fetch('windgusts_10m_max')[index].round(2)
-          wind_speed_range = 0..daily.fetch('windspeed_10m_max')[index].round(2)
+          dt                    = Date.parse(timestamp)
+          temp_range            = (daily.fetch('temperature_2m_min')[index].round(2))..(daily['temperature_2m_max'][index].round(2))
+          apparent_temp_range   = (daily.fetch('apparent_temperature_min')[index].round(2))..(daily['apparent_temperature_max'][index].round(2))
+          snow_range            = 0..daily.fetch('snowfall_sum')[index].round(2)
+          wind_gust_range       = 0..daily.fetch('windgusts_10m_max')[index].round(2)
+          wind_speed_range      = 0..daily.fetch('windspeed_10m_max')[index].round(2)
+          uv_max                = daily.fetch('uv_index_max')[index].round(1)
+          sunshine_secs         = daily.fetch('sunshine_duration')[index].to_i
+          precip_prob           = daily.fetch('precipitation_probability_max')[index].to_i
 
           Forecast.new(
             name: dt.strftime('%a'),
             short: weather_codes(daily.fetch('weathercode')[index]),
             snow: snow_range,
             temp: temp_range,
+            apparent_temp: apparent_temp_range,
             time_of_day: dt,
             wind_direction: wind_direction(daily.fetch('winddirection_10m_dominant')[index]),
             wind_gust: wind_gust_range,
-            wind_speed: wind_speed_range
+            wind_speed: wind_speed_range,
+            uv_index: uv_max,
+            sunshine_duration: sunshine_secs,
+            precipitation_probability: precip_prob
           )
         end
       rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, KeyError => e

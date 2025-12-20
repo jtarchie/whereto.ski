@@ -176,7 +176,7 @@ module FollowTheSnow
       end
 
       def table_for_longterm(resort)
-        headers = ['Date', 'Snowfall', 'Icon', 'Short', 'Temp', 'Wind Speed', 'Wind Gusts']
+        headers = ['Date', 'Snowfall', 'Icon', 'Conditions', 'Temp', 'Feels Like', 'UV Index', 'Sunshine', 'Precip %', 'Wind Speed', 'Wind Gusts']
 
         forecasts = resort.forecasts(
           aggregates: [FollowTheSnow::Forecast::Daily]
@@ -189,6 +189,10 @@ module FollowTheSnow
             f.short_icon,
             f.short,
             f.temp,
+            f.apparent_temp,
+            f.uv_index,
+            f.sunshine_duration,
+            f.precipitation_probability,
             f.wind_speed,
             f.wind_gust
           ]
