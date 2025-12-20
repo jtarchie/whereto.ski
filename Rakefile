@@ -62,8 +62,6 @@ end
 desc 'Build the CSS files'
 task :css do
   sh('npm run build')
-  filepath = File.join(__dir__, 'pages/public/assets/main.css')
-  File.write(filepath, contents)
 end
 
 desc 'Format the codebase'

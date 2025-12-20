@@ -117,7 +117,7 @@ RSpec.describe(FollowTheSnow::ExampleClass) do
     it 'transforms data correctly' do
       instance = described_class.new(param: 'value')
       result = instance.process
-      
+
       expect(result).to be_an(Array)
       expect(result.first).to have_key(:transformed_data)
     end
@@ -164,7 +164,7 @@ module FollowTheSnow
     def fetch_data(params)
       @rate_limiter.wait do
         response = HTTP.get(api_url, params: params.merge(api_key: @api_key))
-        
+
         if response.status.success?
           JSON.parse(response.body.to_s)
         else
@@ -213,10 +213,10 @@ module FollowTheSnow
     def self.from_sqlite(db_path)
       db = SQLite3::Database.new(db_path)
       db.results_as_hash = true
-      
+
       results = db.execute('SELECT * FROM resorts')
       resorts = results.map { |row| new(row) }
-      
+
       db.close
       resorts
     end
@@ -234,19 +234,54 @@ end
 
 The project uses Rake for automation:
 
-- `rake build` - Build the complete site with live data
-- `rake fast` - Build with mock data for development
+- `rake build` - Build the complete site with live data (requires `minify` to be
+  installed)
+- `rake fast` - Build with mock data for development (fastest, recommended for
+  local testing)
 - `rake test` - Run RSpec tests
-- `rake fmt` - Format code with RuboCop and other tools
+- `rake fmt` - Format code with Deno, RuboCop, and erb_lint
 - `rake scrape` - Update resort data from OpenSkiMap
+- `rake css` - Build CSS files (runs `npm run build`)
 
 ### Development Workflow
 
-1. Make code changes in `lib/` or `pages/`
-2. Run `rake fmt` to format code
-3. Run `rake test` to verify tests pass
-4. Use `rake fast` for quick site previews
-5. Use `rake build` for production builds
+1. **Always run `bundle install` first** after cloning or pulling changes
+2. **Always run `npm install`** to install Node.js dependencies (Tailwind CSS,
+   daisyUI)
+3. Make code changes in `lib/` or `pages/`
+4. Run `rake fmt` to format code (runs Deno, RuboCop, erb_lint)
+5. Run `rake test` to verify tests pass (takes ~13 seconds)
+6. Use `rake fast` for quick site previews (uses mock weather data, takes ~60-90
+   seconds)
+7. If you change CSS: run `rake css` or `npm run build` directly
+8. Use `rake build` for production builds (slow, fetches real weather data)
+
+### Required Dependencies
+
+**System Tools (installed via Homebrew on macOS):**
+
+- Ruby 3.4+ (see `.ruby-version`)
+- Node.js (for Tailwind CSS compilation)
+- minify (for production builds only)
+- Deno (for formatting JavaScript/JSON)
+
+**Install system dependencies:**
+
+```bash
+brew bundle  # Installs dependencies from Brewfile
+```
+
+**Ruby Dependencies:**
+
+```bash
+bundle install  # Always run this first
+```
+
+**Node Dependencies:**
+
+```bash
+npm install  # Required for CSS compilation
+```
 
 ### GitHub Actions
 
@@ -273,7 +308,8 @@ an API key for basic usage.
 1. **Layouts**: Use consistent layout patterns across pages
 2. **Partials**: Extract reusable components into partials
 3. **Data Binding**: Pass data explicitly through locals
-4. **Formatting**: Use `erb_lint` for consistent formatting
+4. **Formatting**: Use `erb_lint` for consistent formatting (no config file;
+   uses defaults)
 
 ### Example ERB Pattern
 
@@ -385,15 +421,23 @@ When updating these instructions:
 ## Helpful Commands
 
 ```bash
+# Setup (run these first)
+brew bundle                 # Install system dependencies (Ruby, Node, minify, Deno)
+bundle install              # Install Ruby dependencies
+npm install                 # Install Node.js dependencies for Tailwind CSS
+
 # Development
-bundle install              # Install dependencies
-bundle exec rspec           # Run tests
+bundle exec rspec           # Run tests (~13 seconds)
 bundle exec rubocop -A      # Auto-fix linting issues
-rake fast                   # Quick build for development
-ruby -run -ehttpd docs/ -p8000  # Preview generated site
+rake fmt                    # Format all code (Deno, RuboCop, erb_lint)
+rake fast                   # Quick build for development (~60-90 seconds, uses mock data)
+ruby -run -ehttpd docs/ -p8000  # Preview generated site at http://localhost:8000
+
+# CSS Development
+rake css                    # Build CSS (or use `npm run build` directly)
 
 # Production
-rake build                  # Full production build
+rake build                  # Full production build (slow, fetches real weather data)
 rake scrape                 # Update resort data
 
 # Formatting
