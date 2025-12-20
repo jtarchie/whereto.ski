@@ -27,9 +27,9 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 <section class="mb-8">
   <h2 class="text-3xl font-bold mb-4">Most Snow (Forecast Period)</h2>
   <p class="mb-4">These resorts in <%= h state %> are expecting the most snowfall in the coming days:</p>
-  
+
   <% top_resorts = top_snowy_resorts(state: state, limit: 15) %>
-  
+
   <% if top_resorts.any? %>
     <div class="overflow-x-auto">
       <table class="table w-full">
@@ -76,9 +76,9 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 <section class="mb-8">
   <h2 class="text-3xl font-bold mb-4">Snow Today</h2>
   <p class="mb-4">Resorts in <%= h state %> expecting snow in the immediate forecast:</p>
-  
+
   <% snow_today = resorts_with_snow_today(state: state, limit: 15) %>
-  
+
   <% if snow_today.any? %>
     <div class="overflow-x-auto">
       <table class="table w-full">
@@ -129,7 +129,7 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
       <div class="stat-value text-primary"><%= resorts.count %></div>
       <div class="stat-desc">Tracked ski resorts</div>
     </div>
-    
+
     <div class="stat">
       <div class="stat-title">Resorts w/ Snow</div>
       <div class="stat-value text-secondary">
@@ -137,7 +137,7 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
       </div>
       <div class="stat-desc">In current forecast period</div>
     </div>
-    
+
     <div class="stat">
       <div class="stat-title">Total Snowfall Forecast</div>
       <div class="stat-value text-accent">

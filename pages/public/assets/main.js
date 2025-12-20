@@ -13,7 +13,7 @@ $toggle.addEventListener("change", () => {
   toggleUnits();
   localStorage.setItem(
     "preferredUnits",
-    $toggle.checked ? "metric" : "imperial"
+    $toggle.checked ? "metric" : "imperial",
   );
 });
 

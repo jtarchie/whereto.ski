@@ -1,10 +1,13 @@
 # GitHub Copilot Instructions for Follow the Snow
 
-This file provides guidance to GitHub Copilot for generating code and suggestions that align with the conventions and best practices of the Follow the Snow repository.
+This file provides guidance to GitHub Copilot for generating code and
+suggestions that align with the conventions and best practices of the Follow the
+Snow repository.
 
 ## Repository Overview
 
-Follow the Snow is a Ruby-based static site generator that builds a website displaying snow reports for ski resorts worldwide. The application:
+Follow the Snow is a Ruby-based static site generator that builds a website
+displaying snow reports for ski resorts worldwide. The application:
 
 - Fetches weather data from the Open-Meteo API
 - Stores ski resort information in SQLite databases
@@ -12,6 +15,7 @@ Follow the Snow is a Ruby-based static site generator that builds a website disp
 - Deploys to Cloudflare Pages via GitHub Actions
 
 **Key Technologies:**
+
 - Ruby 3.4+
 - SQLite for data storage
 - ERB for templating
@@ -45,11 +49,14 @@ Follow the Snow is a Ruby-based static site generator that builds a website disp
 Follow the RuboCop configuration defined in `.rubocop.yml`:
 
 1. **Target Ruby Version**: 3.4
-2. **Frozen String Literals**: Always include `# frozen_string_literal: true` at the top of Ruby files
-3. **Hash Syntax**: Use classic hash rockets (`=>`) instead of shorthand syntax (project standard, deviates from modern Ruby conventions)
+2. **Frozen String Literals**: Always include `# frozen_string_literal: true` at
+   the top of Ruby files
+3. **Hash Syntax**: Use classic hash rockets (`=>`) instead of shorthand syntax
+   (project standard, deviates from modern Ruby conventions)
 4. **Line Length**: No strict limit, but be reasonable
 5. **Documentation**: Class and module documentation is not required
-6. **Equal Sign Alignment**: Align equal signs in consecutive assignments for readability
+6. **Equal Sign Alignment**: Align equal signs in consecutive assignments for
+   readability
 
 ### Code Organization
 
@@ -95,7 +102,8 @@ end
 2. **Naming**: Spec files end with `_spec.rb`
 3. **Setup**: Use `spec_helper.rb` for shared configuration
 4. **WebMock**: Use WebMock to stub HTTP requests in tests
-5. **Helpers**: Common test helpers (like `stub_geo_lookup`) are defined in `spec_helper.rb`
+5. **Helpers**: Common test helpers (like `stub_geo_lookup`) are defined in
+   `spec_helper.rb`
 
 ### Test Writing Best Practices
 
@@ -243,16 +251,20 @@ The project uses Rake for automation:
 ### GitHub Actions
 
 The repository uses GitHub Actions for:
+
 - Daily automated site builds (10:00 UTC / 5 AM EST)
 - Deployment to Cloudflare Pages
 - Linting and testing on pull requests
 
 When modifying workflows, ensure:
+
 - Ruby version matches `.ruby-version`
 - Secrets are properly referenced
 - Cache strategies are used for dependencies
 
-**Note**: The OPENWEATHER_API_KEY environment variable in workflows is legacy and currently unused. The project uses the Open-Meteo API which does not require an API key for basic usage.
+**Note**: The OPENWEATHER_API_KEY environment variable in workflows is legacy
+and currently unused. The project uses the Open-Meteo API which does not require
+an API key for basic usage.
 
 ## ERB Template Guidelines
 
@@ -343,6 +355,7 @@ builder.build!
 ### Data Pipeline Pattern
 
 Data flows through a pipeline:
+
 1. Fetch from external sources (APIs, OpenSkiMap)
 2. Store in SQLite database
 3. Load and transform for site generation
@@ -363,6 +376,7 @@ As the project evolves, update this file to reflect:
 ### Review Process
 
 When updating these instructions:
+
 1. Discuss significant changes in pull requests
 2. Get consensus from maintainers
 3. Test that Copilot suggestions improve with the updates
@@ -397,6 +411,7 @@ rake fmt                    # Format all code
 ## Questions or Issues?
 
 If you encounter scenarios not covered in these instructions:
+
 1. Refer to existing code patterns in `lib/` for consistency
 2. Check the README.md for project-specific context
 3. Follow Ruby community best practices
@@ -404,5 +419,5 @@ If you encounter scenarios not covered in these instructions:
 
 ---
 
-**Last Updated**: 2025-11-06
-**Maintainers**: Please update this file when introducing new patterns or conventions.
+**Last Updated**: 2025-11-06 **Maintainers**: Please update this file when
+introducing new patterns or conventions.

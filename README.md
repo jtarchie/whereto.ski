@@ -37,8 +37,8 @@ bundle exec rspec
 ## GitHub Copilot
 
 This repository includes custom instructions for GitHub Copilot in
-`.github/copilot-instructions.md`. These instructions help Copilot generate
-code that follows our conventions and best practices.
+`.github/copilot-instructions.md`. These instructions help Copilot generate code
+that follows our conventions and best practices.
 
 If you're using GitHub Copilot, it will automatically reference these
 instructions when making suggestions. Contributors should update the

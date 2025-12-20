@@ -63,17 +63,14 @@ desc 'Build the CSS files'
 task :css do
   sh('npm run build')
   filepath = File.join(__dir__, 'pages/public/assets/main.css')
-  contents = File.read(filepath)
-  contents.gsub!(/^\s*--[\w-]+:\s*;$/, '')
-
   File.write(filepath, contents)
 end
 
 desc 'Format the codebase'
-task fmt: [:css] do
+task :fmt do
   sh('deno fmt .')
   sh('rubocop -A')
-  sh('bundle exec erblint --lint-all --enable-linters space_around_erb_tag,extra_newline -a pages/')
+  sh('bundle exec erblint --lint-all -a pages/')
 end
 
 desc 'Run the tests'

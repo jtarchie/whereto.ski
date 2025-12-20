@@ -210,8 +210,8 @@ RSpec.describe('Building') do
 
       # Find a state page to test (exclude snow-now pages)
       state_file = state_files.first
-      html = File.read(state_file)
-      doc = Nokogiri::HTML(html)
+      html       = File.read(state_file)
+      doc        = Nokogiri::HTML(html)
 
       # Check that table rows exist in the forecast table
       rows = doc.xpath('//table[.//th[contains(text(), "Resort")]]//tbody//tr')
@@ -221,12 +221,12 @@ RSpec.describe('Building') do
 
       # Check that rows either have snow-cell or no-snow class
       rows.each do |row|
-        has_snow_cell = row.xpath('.//td[@class="snow-cell"]').any?
+        has_snow_cell     = row.xpath('.//td[@class="snow-cell"]').any?
         has_no_snow_class = row['class']&.include?('no-snow')
 
         # Row should either have snow or be marked as no-snow
         expect(has_snow_cell || has_no_snow_class).to be(true),
-                                                          "Row should have snow-cell or no-snow class: #{row.to_html}"
+                                                      "Row should have snow-cell or no-snow class: #{row.to_html}"
       end
     end
 
