@@ -1,96 +1,225 @@
 <!doctype html>
+
 <html lang="en">
-<head>
-  <!-- Required meta tags -->
-  <meta charset="utf-8">
-  <meta name="description" content="<%= description %>">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <!-- Opengraph -->
-  <meta property="og:title" content="<%= title %>">
-  <meta property="og:description" content="<%= description %>">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://followthesnow.today/">
-  <meta property="og:image" content="https://followthesnow.today/assets/logo.png">
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="f7b15640-326b-4ea5-a2f3-912fdf4b1d35"></script>
-  <link rel="stylesheet" href="/assets/main.css">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="description" content="<%= description %>">
 
-  <link rel="apple-touch-icon" sizes="57x57" href="/assets/favicon/apple-icon-57x57.png">
-  <link rel="apple-touch-icon" sizes="60x60" href="/assets/favicon/apple-icon-60x60.png">
-  <link rel="apple-touch-icon" sizes="72x72" href="/assets/favicon/apple-icon-72x72.png">
-  <link rel="apple-touch-icon" sizes="76x76" href="/assets/favicon/apple-icon-76x76.png">
-  <link rel="apple-touch-icon" sizes="114x114" href="/assets/favicon/apple-icon-114x114.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="/assets/favicon/apple-icon-120x120.png">
-  <link rel="apple-touch-icon" sizes="144x144" href="/assets/favicon/apple-icon-144x144.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-icon-152x152.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-icon-180x180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon/android-icon-192x192.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon/favicon-96x96.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
-  <link rel="manifest" href="/assets/favicon/manifest.json">
-  <meta name="msapplication-TileColor" content="#ffffff">
-  <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-  <meta name="theme-color" content="#ffffff">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    >
 
-  <title>
-    followthesnow.today &raquo; <%= title %>
-  </title>
-</head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Opengraph -->
+    <meta property="og:title" content="<%= title %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://followthesnow.today/">
 
-  <!-- Navbar -->
-  <div class="drawer">
-    <input id="nav-drawer" type="checkbox" class="drawer-toggle">
-    <div class="drawer-content flex flex-col">
-      <div class="navbar bg-base-100 w-full">
-        <div class="flex-none lg:hidden">
-          <label for="nav-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-          </label>
+    <meta
+      property="og:image"
+      content="https://followthesnow.today/assets/logo.png"
+    >
+
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="f7b15640-326b-4ea5-a2f3-912fdf4b1d35"
+    ></script>
+
+    <link rel="stylesheet" href="/assets/main.css">
+
+    <link
+      rel="apple-touch-icon"
+      sizes="57x57"
+      href="/assets/favicon/apple-icon-57x57.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="60x60"
+      href="/assets/favicon/apple-icon-60x60.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="72x72"
+      href="/assets/favicon/apple-icon-72x72.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="76x76"
+      href="/assets/favicon/apple-icon-76x76.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="114x114"
+      href="/assets/favicon/apple-icon-114x114.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="120x120"
+      href="/assets/favicon/apple-icon-120x120.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="144x144"
+      href="/assets/favicon/apple-icon-144x144.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="152x152"
+      href="/assets/favicon/apple-icon-152x152.png"
+    >
+
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/assets/favicon/apple-icon-180x180.png"
+    >
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/assets/favicon/android-icon-192x192.png"
+    >
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/assets/favicon/favicon-32x32.png"
+    >
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="/assets/favicon/favicon-96x96.png"
+    >
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/assets/favicon/favicon-16x16.png"
+    >
+
+    <link rel="manifest" href="/assets/favicon/manifest.json">
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <title>followthesnow.today &raquo; <%= title %></title>
+  </head>
+
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Navbar -->
+    <div class="drawer">
+      <input id="nav-drawer" type="checkbox" class="drawer-toggle">
+
+      <div class="drawer-content flex flex-col">
+        <div class="navbar bg-base-100 w-full">
+          <div class="flex-none lg:hidden">
+            <label
+              for="nav-drawer"
+              aria-label="Open sidebar"
+              class="btn btn-square btn-ghost"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                class="inline-block w-6 h-6 stroke-current"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
+              </svg>
+            </label>
+          </div>
+
+          <div class="flex-1">
+            <a class="btn btn-ghost normal-case text-xl" href="/">
+              <img src="/assets/favicon/favicon-96x96.png" class="w-8 h-8" alt="Follow the Snow logo">
+              follow the snow
+            </a>
+          </div>
+
+          <div class="flex-none">
+            <label class="flex cursor-pointer gap-2">
+              <span class="label-text">°F</span>
+              <input type="checkbox" id="unit-toggle" class="toggle">
+              <span class="label-text">°C</span>
+            </label>
+          </div>
+
+          <div class="flex-none mx-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="filter-snow-toggle" class="toggle">
+              <span class="label-text text-sm">Only Snow</span>
+            </label>
+          </div>
         </div>
-        <div class="flex-1">
-          <a class="btn btn-ghost normal-case text-xl " href="/">
-            <img src="/assets/favicon/favicon-96x96.png" class="w-8 h-8">
-            follow the snow
-          </a>
-        </div>
-        <div class="flex-none">
-          <label class="flex cursor-pointer gap-2">
-            <span class="label-text">°F</span>
-            <input type="checkbox" id="unit-toggle" class="toggle">
-            <span class="label-text">°C</span>
-          </label>
-        </div>
-        <div class="flex-none mx-2">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="filter-snow-toggle" class="toggle">
-            <span class="label-text text-sm">Only Snow</span>
-          </label>
-        </div>
+
+        <div class="container mx-auto p-4"><%= content %></div>
+
+        <footer
+          class="
+            footer footer-horizontal footer-center bg-base-200
+            text-base-content rounded p-10
+          "
+        >
+          <nav class="grid grid-flow-col gap-4">
+            <a class="link link-hover" href="/about">About</a>
+
+            <a class="link link-hover" href="mailto:hello@followthesnow.today">
+              Contact
+            </a>
+
+            <a
+              class="link link-hover"
+              href="https://www.buymeacoffee.com/jtarchie"
+              target="_blank"
+            >
+              ☕️ Buy me a Coffee
+            </a>
+          </nav>
+
+          <aside>
+            <p>
+              © <%= Time.now.strftime("%Y") %>
+              <a href="https://github.com/jtarchie/followthesnow">Follow the Snow</a>
+              
+              <br>
+              Last Updated: <%= h current_timestamp %>
+            </p>
+          </aside>
+        </footer>
       </div>
-      <div class="container mx-auto p-4">
-        <%= content %>
+
+      <div class="drawer-side">
+        <label
+          for="nav-drawer"
+          aria-label="Close sidebar"
+          class="drawer-overlay"
+        ></label>
+
+        <ul class="menu p-4 w-80 min-h-full bg-base-200"></ul>
       </div>
-      <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
-        <nav class="grid grid-flow-col gap-4">
-          <a class="link link-hover" href="/about">About</a>
-          <a class="link link-hover" href="mailto:hello@followthesnow.today">Contact</a>
-          <a class="link link-hover" href="https://www.buymeacoffee.com/jtarchie" target="_blank">☕️ Buy me a Coffee</a>
-        </nav>
-        <aside>
-          <p>
-            © <%= Time.now.strftime("%Y") %> <a href="https://github.com/jtarchie/followthesnow">Follow the Snow</a><br>
-            Last Updated: <%= h current_timestamp %>
-          </p>
-        </aside>
-      </footer>
     </div>
-    <div class="drawer-side">
-      <label for="nav-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-      <ul class="menu p-4 w-80 min-h-full bg-base-200">
-      </ul>
-    </div>
-  </div>
-  <script src="/assets/main.js"></script>
-</body>
+
+    <script src="/assets/main.js"></script>
+  </body>
 </html>

@@ -68,7 +68,8 @@ desc 'Format the codebase'
 task :fmt do
   sh('deno fmt .')
   sh('rubocop -A')
-  sh('bundle exec erblint --lint-all -a pages/')
+  sh('herb analyze pages/')
+  sh('npx @herb-tools/formatter pages/')
 end
 
 desc 'Run the tests'

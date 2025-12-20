@@ -1,16 +1,20 @@
 <!--
----
-title: 'Snow Now for <%= h state %>'
-description: 'Current snow forecasts for ski resorts in <%= h state %>.'
----
+  ---
+  title: 'Snow Now for <%= h state %>'
+  description: 'Current snow forecasts for ski resorts in <%= h state %>.'
+  ---
 -->
 
 <div class="text-sm breadcrumbs mb-4">
   <ul>
     <li><a href="/">All</a></li>
-    <li><a href="/countries/<%= resorts.first.country_name.parameterize %>">
+
+    <li>
+      <a href="/countries/<%= resorts.first.country_name.parameterize %>">
         <%= h resorts.first.country_name %>
-      </a></li>
+      </a>
+    </li>
+
     <li><a href="/states/<%= state.parameterize %>"><%= h state %></a></li>
     <li>Snow Now</li>
   </ul>
@@ -18,6 +22,7 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 
 <div class="mb-8">
   <h1 class="text-4xl font-bold mb-2">❄️ Snow Now: <%= h state %></h1>
+
   <p class="text-lg text-gray-600 dark:text-gray-400">
     Current snow forecasts for resorts in <%= h state %>.
   </p>
@@ -26,7 +31,11 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 <!-- Top Snowy Resorts -->
 <section class="mb-8">
   <h2 class="text-3xl font-bold mb-4">Most Snow (Forecast Period)</h2>
-  <p class="mb-4">These resorts in <%= h state %> are expecting the most snowfall in the coming days:</p>
+
+  <p class="mb-4">
+    These resorts in <%= h state %> are expecting the most snowfall in the
+    coming days:
+  </p>
 
   <% top_resorts = top_snowy_resorts(state: state, limit: 15) %>
 
@@ -40,23 +49,31 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
             <th class="text-right">Total Snow</th>
           </tr>
         </thead>
+
         <tbody>
           <% top_resorts.each_with_index do |entry, index| %>
             <% resort = entry[:resort] %>
             <% total = entry[:total] %>
+
             <tr>
               <td class="font-bold">
                 <% if index < 3 %>
                   <%= ['🥇', '🥈', '🥉'][index] %>
                 <% else %>
-                  #<%= index + 1 %>
+                  #
+                  <%= index + 1 %>
                 <% end %>
               </td>
+
               <td>
-                <a href="/resorts/<%= resort.name.parameterize %>" class="link link-primary font-medium">
+                <a
+                  href="/resorts/<%= resort.name.parameterize %>"
+                  class="link link-primary font-medium"
+                >
                   <%= h resort.name %>
                 </a>
               </td>
+
               <td class="text-right font-bold text-blue-700 dark:text-blue-300">
                 <%= format_snow_total(total) %>
               </td>
@@ -67,7 +84,10 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
     </div>
   <% else %>
     <div class="alert alert-info">
-      <span>No significant snow in the forecast period for <%= h state %>. Check back later!</span>
+      <span>
+        No significant snow in the forecast period for <%= h state %>. Check
+        back later!
+      </span>
     </div>
   <% end %>
 </section>
@@ -75,7 +95,10 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 <!-- Snow Today -->
 <section class="mb-8">
   <h2 class="text-3xl font-bold mb-4">Snow Today</h2>
-  <p class="mb-4">Resorts in <%= h state %> expecting snow in the immediate forecast:</p>
+
+  <p class="mb-4">
+    Resorts in <%= h state %> expecting snow in the immediate forecast:
+  </p>
 
   <% snow_today = resorts_with_snow_today(state: state, limit: 15) %>
 
@@ -89,23 +112,31 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
             <th class="text-right">Snow Today</th>
           </tr>
         </thead>
+
         <tbody>
           <% snow_today.each_with_index do |entry, index| %>
             <% resort = entry[:resort] %>
             <% snow = entry[:snow] %>
+
             <tr>
               <td class="font-bold">
                 <% if index < 3 %>
                   <%= ['🥇', '🥈', '🥉'][index] %>
                 <% else %>
-                  #<%= index + 1 %>
+                  #
+                  <%= index + 1 %>
                 <% end %>
               </td>
+
               <td>
-                <a href="/resorts/<%= resort.name.parameterize %>" class="link link-primary font-medium">
+                <a
+                  href="/resorts/<%= resort.name.parameterize %>"
+                  class="link link-primary font-medium"
+                >
                   <%= h resort.name %>
                 </a>
               </td>
+
               <td class="text-right font-bold text-purple-700 dark:text-purple-300">
                 <%= format_snow_total(snow) %>
               </td>
@@ -116,7 +147,9 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
     </div>
   <% else %>
     <div class="alert alert-info">
-      <span>No resorts in <%= h state %> expecting snow in the immediate forecast.</span>
+      <span>
+        No resorts in <%= h state %> expecting snow in the immediate forecast.
+      </span>
     </div>
   <% end %>
 </section>
@@ -132,17 +165,21 @@ description: 'Current snow forecasts for ski resorts in <%= h state %>.'
 
     <div class="stat">
       <div class="stat-title">Resorts w/ Snow</div>
+
       <div class="stat-value text-secondary">
         <%= resorts.count { |r| r.forecasts.any? { |f| f.snow.to_f.positive? } } %>
       </div>
+
       <div class="stat-desc">In current forecast period</div>
     </div>
 
     <div class="stat">
       <div class="stat-title">Total Snowfall Forecast</div>
+
       <div class="stat-value text-accent">
         <%= format_snow_total(total_snow_for_state(state)) %>
       </div>
+
       <div class="stat-desc">Combined across all resorts</div>
     </div>
   </div>

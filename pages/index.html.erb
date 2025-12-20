@@ -1,8 +1,8 @@
 <!--
----
-title: List by countries
-description: List of countries that have ski resorts.
----
+  ---
+  title: List by countries
+  description: List of countries that have ski resorts.
+  ---
 -->
 
 <p>Please select a country to see the available regions in that area.</p>
@@ -13,17 +13,23 @@ description: List of countries that have ski resorts.
     <a href="/snow-now" class="link link-primary text-sm whitespace-nowrap">Snow Now</a>
   </h2>
 </div>
-  <ul class="list-disc pl-5 space-y-2">
+
+<ul class="list-disc pl-5 space-y-2">
   <% countries.each do |country| %>
-    <li class="flex items-center gap-2" data-has-snow="<%= country_has_snow?(country) %>">
+    <li
+      class="flex items-center gap-2"
+      data-has-snow="<%= country_has_snow?(country) %>"
+    >
       <a href="/countries/<%= country.parameterize %>" class="flex-grow">
         <%= h country %>
       </a>
+
       <% if country_has_snow?(country) %>
         <span class="snow-badge">
-          ❄️ <%= country_snow_count(country) %> (<%= format_snow_total(total_snow_for_country(country)) %>)
+          ❄️ <%= country_snow_count(country) %>
+          (<%= format_snow_total(total_snow_for_country(country)) %>)
         </span>
       <% end %>
     </li>
   <% end %>
-  </ul>
+</ul>

@@ -1,23 +1,25 @@
 <!--
----
-title: Regions by <%= country %>
-description: List of regions by <%= country %>.
----
+  ---
+  title: Regions by <%= country %>
+  description: List of regions by <%= country %>.
+  ---
 -->
 
 <div class="text-sm breadcrumbs mb-4">
   <ul>
     <li><a href="/">All</a></li>
-    <li>
-      <%= h country %>
-    </li>
+    <li><%= h country %></li>
   </ul>
 </div>
 
 <div class="mb-6">
   <h2 class="text-2xl font-semibold mb-2" id="<%= country.parameterize %>">
     <%= h country %>
-    <a href="/countries/<%= country.parameterize %>-snow-now" class="link link-primary text-sm whitespace-nowrap">
+
+    <a
+      href="/countries/<%= country.parameterize %>-snow-now"
+      class="link link-primary text-sm whitespace-nowrap"
+    >
       Snow Now
     </a>
   </h2>
@@ -30,10 +32,14 @@ description: List of regions by <%= country %>.
   </p>
   <ul class="list-disc pl-5 space-y-2">
     <% resorts_for_country(country).each do |resort| %>
-      <li class="flex items-center gap-2" data-has-snow="<%= any_snow?(resort) %>">
+      <li
+        class="flex items-center gap-2"
+        data-has-snow="<%= any_snow?(resort) %>"
+      >
         <a href="/resorts/<%= resort.name.parameterize %>" class="grow">
           <%= h resort.name %>
         </a>
+
         <% if any_snow?(resort) %>
           <span class="snow-badge">
             ❄️ <%= format_snow_total(total_snow_for(resort)) %>
@@ -46,13 +52,18 @@ description: List of regions by <%= country %>.
   <!-- Regular country: show states/regions -->
   <ul class="list-disc pl-5 space-y-2">
     <% states(country: country).each do |state| %>
-      <li class="flex items-center gap-2" data-has-snow="<%= state_has_snow?(state) %>">
+      <li
+        class="flex items-center gap-2"
+        data-has-snow="<%= state_has_snow?(state) %>"
+      >
         <a href="/states/<%= state.parameterize %>" class="grow">
           <%= h state %>
         </a>
+
         <% if state_has_snow?(state) %>
           <span class="snow-badge">
-            <%= state_snow_count(state) %> (<%= format_snow_total(total_snow_for_state(state)) %>)
+            <%= state_snow_count(state) %>
+            (<%= format_snow_total(total_snow_for_state(state)) %>)
           </span>
         <% end %>
       </li>

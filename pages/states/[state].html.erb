@@ -1,19 +1,21 @@
 <!--
----
-title: 'Weekly forecast of snow for ski areas in <%= h state %>'
-description: 'Weekly forecast of snow for ski areas in <%= h state %>'
----
+  ---
+  title: 'Weekly forecast of snow for ski areas in <%= h state %>'
+  description: 'Weekly forecast of snow for ski areas in <%= h state %>'
+  ---
 -->
 
 <div class="text-sm breadcrumbs mb-4">
   <ul>
     <li><a href="/">All</a></li>
-    <li><a href="/countries/<%= resorts.first.country_name.parameterize %>">
-        <%= h resorts.first.country_name %>
-      </a></li>
+
     <li>
-      <%= h state %>
+      <a href="/countries/<%= resorts.first.country_name.parameterize %>">
+        <%= h resorts.first.country_name %>
+      </a>
     </li>
+
+    <li><%= h state %></li>
   </ul>
 </div>
 
@@ -21,7 +23,11 @@ description: 'Weekly forecast of snow for ski areas in <%= h state %>'
   <div class="flex justify-between items-center mb-2">
     <h2 class="text-3xl font-bold">
       <%= h state %>
-      <a href="/states/<%= state.parameterize %>-snow-now" class="link link-primary text-sm whitespace-nowrap">
+
+      <a
+        href="/states/<%= state.parameterize %>-snow-now"
+        class="link link-primary text-sm whitespace-nowrap"
+      >
         Snow Now
       </a>
     </h2>
@@ -31,28 +37,28 @@ description: 'Weekly forecast of snow for ski areas in <%= h state %>'
 <h3 class="text-xl font-semibold mb-4">Forecast</h3>
 
 <% headers, rows=table_for_resorts(resorts) %>
-  <div class="overflow-x-auto">
-    <table class="table w-full sticky">
-      <!-- Table header -->
-      <thead>
-        <tr>
-          <% headers.each do |header| %>
-            <th>
-              <%= h header %>
-            </th>
-            <% end %>
-        </tr>
-      </thead>
-      <tbody>
-        <% rows.each do |row| %>
-          <% has_snow = row.drop(1).any? { |cell| snow?(cell) } %>
-          <tr<%= has_snow ? '' : ' class="no-snow"' %>>
+
+<div class="overflow-x-auto">
+  <table class="table w-full sticky">
+    <!-- Table header -->
+    <thead>
+      <tr>
+        <% headers.each do |header| %>
+          <th><%= h header %></th>
+        <% end %>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% rows.each do |row| %>
+        <% has_snow = row.drop(1).any? { |cell| snow?(cell) } %>
+
+        <% if has_snow %>
+          <tr>
             <% row.each_with_index do |cell, index| %>
               <% if index == 0 %>
                 <!-- First column is the resort name/link -->
-                <td class="font-medium">
-                  <%= cell %>
-                </td>
+                <td class="font-medium"><%= cell %></td>
               <% elsif snow?(cell) %>
                 <!-- Highlight cells with snow -->
                 <td class="snow-cell">
@@ -60,13 +66,29 @@ description: 'Weekly forecast of snow for ski areas in <%= h state %>'
                 </td>
               <% else %>
                 <!-- Regular cell -->
-                <td class="text-gray-400">
-                  <%= h cell %>
-                </td>
+                <td class="text-gray-400"><%= h cell %></td>
               <% end %>
             <% end %>
           </tr>
-          <% end %>
-      </tbody>
-    </table>
-  </div>
+        <% else %>
+          <tr class="no-snow">
+            <% row.each_with_index do |cell, index| %>
+              <% if index == 0 %>
+                <!-- First column is the resort name/link -->
+                <td class="font-medium"><%= cell %></td>
+              <% elsif snow?(cell) %>
+                <!-- Highlight cells with snow -->
+                <td class="snow-cell">
+                  <span class="snow-value"><%= h cell %>❄️</span>
+                </td>
+              <% else %>
+                <!-- Regular cell -->
+                <td class="text-gray-400"><%= h cell %></td>
+              <% end %>
+            <% end %>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</div>

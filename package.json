@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "@herb-tools/formatter": "latest",
+    "@herb-tools/linter": "latest",
     "daisyui": "^5.0.4",
     "tailwindcss": "^4.0.14"
   },

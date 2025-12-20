@@ -1,26 +1,31 @@
 <!--
----
-title: 'Weekly forecast of snow for <%= h resort.name %>'
-description: 'Weekly forecast of snow for <%= h resort.name %>'
----
+  ---
+  title: 'Weekly forecast of snow for <%= h resort.name %>'
+  description: 'Weekly forecast of snow for <%= h resort.name %>'
+  ---
 -->
 
 <div class="text-sm breadcrumbs mb-4">
   <ul>
     <li><a href="/">All</a></li>
-    <li><a href="/countries/<%= resort.country_name.parameterize %>">
+
+    <li>
+      <a href="/countries/<%= resort.country_name.parameterize %>">
         <%= h resort.country_name %>
-      </a></li>
-    <li><a href="/states/<%= resort.region_name.parameterize %>">
+      </a>
+    </li>
+
+    <li>
+      <a href="/states/<%= resort.region_name.parameterize %>">
         <%= h resort.region_name %>
-      </a></li>
+      </a>
+    </li>
+
     <li>
       <% if resort.url %>
-        <a href="<%= resort.url %>">
-          <%= h resort.name %>
-        </a>
+        <a href="<%= resort.url %>"><%= h resort.name %></a>
       <% else %>
-          <%= h resort.name %>
+        <%= h resort.name %>
       <% end %>
     </li>
   </ul>
@@ -29,41 +34,37 @@ description: 'Weekly forecast of snow for <%= h resort.name %>'
 <h2 class="text-3xl font-bold mb-4">Long Term Forecast</h2>
 
 <% headers, rows=table_for_longterm(resort) %>
-  <div class="overflow-x-auto">
-    <table class="table w-full sticky">
-      <!-- Table header -->
-      <thead>
+
+<div class="overflow-x-auto">
+  <table class="table w-full sticky">
+    <!-- Table header -->
+    <thead>
+      <tr>
+        <% headers.each do |header| %>
+          <th><%= h header %></th>
+        <% end %>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% rows.each do |row| %>
         <tr>
-          <% headers.each do |header| %>
-            <th>
-              <%= h header %>
-            </th>
+          <% row.each_with_index do |cell, index| %>
+            <% if index == 1 && snow?(cell) %>
+              <!-- Snowfall column (index 1) - highlight if there's snow -->
+              <td class="snow-cell">
+                <span class="snow-value"><%= h cell %>❄️</span>
+              </td>
+            <% elsif index == 1 %>
+              <!-- Snowfall column with no snow -->
+              <td class="text-gray-400"><%= h cell %></td>
+            <% else %>
+              <!-- Other columns -->
+              <td><%= h cell %></td>
             <% end %>
-        </tr>
-      </thead>
-      <tbody>
-        <% rows.each do |row| %>
-          <tr>
-            <% row.each_with_index do |cell, index| %>
-              <% if index == 1 && snow?(cell) %>
-                <!-- Snowfall column (index 1) - highlight if there's snow -->
-                <td class="snow-cell">
-                  <span class="snow-value"><%= h cell %>❄️</span>
-                </td>
-              <% elsif index == 1 %>
-                <!-- Snowfall column with no snow -->
-                <td class="text-gray-400">
-                  <%= h cell %>
-                </td>
-              <% else %>
-                <!-- Other columns -->
-                <td>
-                  <%= h cell %>
-                </td>
-              <% end %>
-            <% end %>
-          </tr>
           <% end %>
-      </tbody>
-    </table>
-  </div>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -63,6 +63,9 @@ GEM
     front_matter_parser (1.0.1)
     geo_coord (0.2.0)
     hashdiff (1.2.1)
+    herb (0.8.5-arm64-darwin)
+    herb (0.8.5-x86_64-darwin)
+    herb (0.8.5-x86_64-linux-gnu)
     http (5.3.1)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
@@ -182,6 +185,7 @@ DEPENDENCIES
   fast_ostruct
   front_matter_parser
   geo_coord
+  herb
   http
   nokogiri
   openssl
