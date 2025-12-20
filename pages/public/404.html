@@ -7,19 +7,17 @@
 
     <meta
       name="description"
-      content="Follow the Snow, today. Learn if it is snowing and how much."
-    >
+      content="Where To Ski - Find the best snow conditions at ski resorts worldwide.">
 
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    >
+      content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <style>
       html, body {
-        background-color: black;
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         color: white;
-        font-family: Helvetica, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
         font-size: 2rem;
         overflow: hidden;
       }
@@ -30,29 +28,70 @@
         justify-content: center;
         text-align: center;
         height: 100vh;
+        flex-direction: column;
+        gap: 2rem;
       }
+      
+      .logo {
+        font-size: 4rem;
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+      
       @keyframes spin {
         0% {
-          content: "We are all\Aprecious little\A❄️";
+          content: "Lost in the powder?";
+          opacity: 1;
         }
-        50% {
-          content: "Except when we aren't";
+        33% {
+          content: "This page doesn't exist";
+          opacity: 1;
+        }
+        66% {
+          content: "Let's get you back\Aon the slopes";
+          opacity: 1;
         }
         100% {
-          content: "Just go\Askiing already";
+          content: "Lost in the powder?";
+          opacity: 1;
         }
       }
+      
       .bump:after {
-        content: "We are all\Aprecious little\A❄️";
-        animation: spin 10s linear forwards;
+        content: "Lost in the powder?";
+        animation: spin 12s ease-in-out infinite;
         white-space: pre-wrap;
+        font-weight: 300;
+      }
+      
+      .home-link {
+        margin-top: 2rem;
+        padding: 1rem 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid white;
+        border-radius: 0.5rem;
+        color: white;
+        text-decoration: none;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .home-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
       }
     </style>
   </head>
 
   <body>
     <div class="bump">
-      &nbsp;
+      <div class="logo">✨</div>
+      <a href="/" class="home-link">← Back to Where To Ski</a>
     </div>
   </body>
 </html>

@@ -26,7 +26,7 @@
 
       <% if country_has_snow?(country) %>
         <span class="snow-badge">
-          ❄️ <%= country_snow_count(country) %>
+          <%= country_snow_count(country) %> resorts
           (<%= format_snow_total(total_snow_for_country(country)) %>)
         </span>
       <% end %>

@@ -71,13 +71,11 @@ RSpec.describe('Building') do
     it 'includes top snowy resorts section' do
       snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
       expect(snow_now_html).to include('Most Snow')
-      expect(snow_now_html).to include('🏔️')
     end
 
     it 'includes snow today section' do
       snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
       expect(snow_now_html).to include('Snow Today')
-      expect(snow_now_html).to include('📅')
     end
 
     it 'displays snow today in table format with actual snow values' do
@@ -112,7 +110,6 @@ RSpec.describe('Building') do
     it 'includes regional summaries section' do
       snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
       expect(snow_now_html).to include('Snow by Region')
-      expect(snow_now_html).to include('🌍')
     end
 
     it 'includes quick stats section' do
@@ -139,10 +136,9 @@ RSpec.describe('Building') do
 
     it 'includes snow badges with counts on index page' do
       index_html = File.read(File.join(build_dir, 'index.html'))
-      # Should have snow badge class and snowflake emoji
+      # Should have snow badge class with resort count format
       if index_html.include?('snow-badge')
-        expect(index_html).to include('❄️')
-        expect(index_html).to match(/\d+\s*\(/m) # Number followed by parenthesis (count format)
+        expect(index_html).to match(/\d+\s*resorts\s*\(/m) # "X resorts (Y.Y inches)" format
       end
     end
 
