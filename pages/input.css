@@ -1,6 +1,6 @@
 @import "tailwindcss" source(none);
 @plugin "daisyui" {
-  themes: winter --default, nord --prefersdark;
+  themes: winter --default, night --prefersdark;
 }
 
 @source "./**/*.html";
