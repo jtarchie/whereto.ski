@@ -5,13 +5,26 @@ require 'json'
 
 module FollowTheSnow
   Forecast::OpenMeteo = Struct.new(:resort, keyword_init: true) do
+    API_URL = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
     def forecasts
       @forecasts ||= begin
+        params            = {
+          latitude: resort.lat,
+          longitude: resort.lon,
+          models: 'best_match',
+          daily: %w[weathercode temperature_2m_max temperature_2m_min apparent_temperature_max apparent_temperature_min sunrise sunset snowfall_sum precipitation_hours precipitation_probability_max windspeed_10m_max windgusts_10m_max winddirection_10m_dominant uv_index_max sunshine_duration].join(','),
+          current_weather: true,
+          temperature_unit: 'fahrenheit',
+          windspeed_unit: 'mph',
+          precipitation_unit: 'inch',
+          timezone: 'America/New_York',
+          apikey: ENV.fetch('OPEN_METEO_API_KEY', nil)
+        }.compact_blank
         forecast_response = JSON.parse(
-          HTTP.timeout(10).get("https://api.open-meteo.com/v1/forecast?latitude=#{resort.lat}&longitude=#{resort.lon}&models=best_match&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,uv_index_max,sunshine_duration&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York")
+          HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: params)
         )
 
-        daily = forecast_response.fetch('daily')
+        daily             = forecast_response.fetch('daily')
 
         daily.fetch('time').each_with_index.map do |timestamp, index|
           dt                    = Date.parse(timestamp)

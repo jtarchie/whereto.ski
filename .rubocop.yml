@@ -85,3 +85,6 @@ RSpec/BeforeAfterAll:
 
 RSpec/SpecFilePathFormat:
   Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
