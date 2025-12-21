@@ -20,8 +20,12 @@ def build!(resorts, logger_io: $stderr)
 end
 
 desc 'Build the site with the latest data from the SQLite database'
-task :build do
+task :build, [:limit] => [:css] do |_t, args|
   resorts = FollowTheSnow::Resort.from_sqlite(sqlite_file)
+  if args[:limit]
+    puts "Limiting to first #{args[:limit]} resorts for build"
+    resorts = resorts.take(args[:limit].to_i)
+  end
   build!(resorts)
 end
 
@@ -129,4 +133,4 @@ task :a11y do
   end
 end
 
-task default: %i[fmt test build]
+task default: %i[fmt test build a11y]

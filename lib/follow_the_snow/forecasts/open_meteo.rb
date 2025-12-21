@@ -19,7 +19,7 @@ module FollowTheSnow
           precipitation_unit: 'inch',
           timezone: 'America/New_York',
           apikey: ENV.fetch('OPEN_METEO_API_KEY', nil)
-        }.compact_blank
+        }.compact
         forecast_response = JSON.parse(
           HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: params)
         )
