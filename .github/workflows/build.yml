@@ -38,7 +38,8 @@ jobs:
       - name: Build docs
         run: bundle exec rake build
         env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
+          OPEN_METEO_API_URL: ${{ secrets.OPEN_METEO_API_URL }}
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
