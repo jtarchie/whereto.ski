@@ -1,7 +1,8 @@
 <!--
   ---
   title: 'Snow Now for <%= h country %>'
-  description: 'Current snow forecasts for ski resorts in <%= h country %>.'
+  description: 'Current snow forecasts for ski resorts in <%= h country %>. <%= country_snow_count(country) %> resorts with snow right now.'
+  page_url: '/countries/<%= country.parameterize %>-snow-now'
   ---
 -->
 

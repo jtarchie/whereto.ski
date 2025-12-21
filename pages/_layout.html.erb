@@ -11,13 +11,42 @@
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     >
 
-    <!-- Opengraph -->
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+
+    <meta
+      property="og:url"
+      content="https://whereto.ski<%= defined?(page_url) ? page_url : '' %>"
+    >
+
     <meta property="og:title" content="<%= title %>">
     <meta property="og:description" content="<%= description %>">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://whereto.ski/">
 
-    <meta property="og:image" content="https://whereto.ski/assets/logo.svg">
+    <meta
+      property="og:image"
+      content="<%= defined?(og_image_url) ? og_image_url : 'https://whereto.ski/assets/favicon/android-icon-192x192.png' %>"
+    >
+
+    <meta property="og:image:alt" content="<%= title %>">
+    <meta property="og:site_name" content="Where To Ski">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+
+    <meta
+      name="twitter:url"
+      content="https://whereto.ski<%= defined?(page_url) ? page_url : '' %>"
+    >
+
+    <meta name="twitter:title" content="<%= title %>">
+    <meta name="twitter:description" content="<%= description %>">
+
+    <meta
+      name="twitter:image"
+      content="<%= defined?(og_image_url) ? og_image_url : 'https://whereto.ski/assets/favicon/android-icon-192x192.png' %>"
+    >
+
+    <meta name="twitter:image:alt" content="<%= title %>">
 
     <script
       defer

@@ -1,7 +1,23 @@
+<%
+  # Generate forecast summary
+  total_snow = total_snow_for(resort)
+  forecast_summary = if total_snow > 0
+    "Expecting #{format_snow_total(total_snow).gsub(/<[^>]*>/, '')} of snow in the forecast period."
+  else
+    "No significant snowfall expected in the current forecast period."
+  end
+
+  # Get the next snow day if available
+  next_snow_day = raw_forecasts_for(resort).find { |f| snow_inches(f) > 0 }
+  if next_snow_day
+    forecast_summary += " Next snow: #{next_snow_day.name}."
+  end
+%>
 <!--
   ---
   title: 'Weekly forecast of snow for <%= h resort.name %>'
-  description: 'Weekly forecast of snow for <%= h resort.name %>'
+  description: '<%= h resort.name %> in <%= h resort.region_name %>, <%= h resort.country_name %>. <%= forecast_summary %>'
+  page_url: '/resorts/<%= resort.name.parameterize %>'
   ---
 -->
 
