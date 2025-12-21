@@ -19,7 +19,18 @@
 
     try {
       const response = await fetch("/assets/search-data.json");
-      searchData = await response.json();
+      const rawData = await response.json();
+
+      // Expand compressed format for easier searching
+      // Format: { cl: [countries], d: [{t,n,c,s,u},...] }
+      // t=type (c/s/r), n=name, c=country index, s=state, u=url
+      searchData = rawData.d.map((item) => ({
+        type: item.t === "c" ? "country" : item.t === "s" ? "state" : "resort",
+        name: item.n,
+        country: typeof item.c === "number" ? rawData.cl[item.c] : undefined,
+        state: item.s,
+        url: item.u,
+      }));
     } catch (error) {
       console.error("Failed to load search data:", error);
       searchData = [];

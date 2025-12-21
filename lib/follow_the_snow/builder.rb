@@ -121,12 +121,31 @@ module FollowTheSnow
       def generate_search_index
         require 'json'
 
-        # Add countries
-        search_data = countries.map do |country|
-          {
-            type: 'country',
-            name: country,
-            url: "/countries/#{country.parameterize}"
+        # Build lookup tables for repeated strings
+        country_list = countries
+        states.reject do |state|
+          sample_resort = resorts_by_state(state).first
+          @context.small_country?(sample_resort.country_name)
+        end
+
+        # Create numeric lookup for countries (most repeated)
+        country_lookup = country_list.each_with_index.to_h
+
+        # Build search data with optimizations:
+        # - Single-char type codes: c=country, s=state, r=resort
+        # - Country references use numeric index
+        # - Shorter key names: n=name, u=url, c=country, s=state
+        search_data = {
+          cl: country_list, # country lookup
+          d: [] # data entries
+        }
+
+        # Add countries (just name and URL, type implied by structure)
+        country_list.each do |country|
+          search_data[:d] << {
+            t: 'c',
+            n: country,
+            u: "/countries/#{country.parameterize}"
           }
         end
 
@@ -135,11 +154,11 @@ module FollowTheSnow
           sample_resort = resorts_by_state(state).first
           next if @context.small_country?(sample_resort.country_name)
 
-          search_data << {
-            type: 'state',
-            name: state,
-            country: sample_resort.country_name,
-            url: "/states/#{state.parameterize}"
+          search_data[:d] << {
+            t: 's',
+            n: state,
+            c: country_lookup[sample_resort.country_name], # numeric index
+            u: "/states/#{state.parameterize}"
           }
         end
 
@@ -147,18 +166,18 @@ module FollowTheSnow
         resorts.each do |resort|
           next if resort.name.parameterize.empty?
 
-          search_data << {
-            type: 'resort',
-            name: resort.name,
-            country: resort.country_name,
-            state: resort.region_name,
-            url: "/resorts/#{resort.name.parameterize}"
+          search_data[:d] << {
+            t: 'r',
+            n: resort.name,
+            c: country_lookup[resort.country_name], # numeric index
+            s: resort.region_name,
+            u: "/resorts/#{resort.name.parameterize}"
           }
         end
 
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
         File.write(search_file, JSON.generate(search_data))
-        @logger.info('generated search index', { file: search_file, entries: search_data.length })
+        @logger.info('generated search index', { file: search_file, entries: search_data[:d].length })
       end
 
       def resorts_by_state(state)

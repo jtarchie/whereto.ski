@@ -108,8 +108,11 @@ RSpec.describe('Search Feature', :js, type: :feature) do
     it 'has search data JSON file available' do
       # Make a direct request to the JSON file
       visit '/assets/search-data.json'
-      expect(page).to have_content('"type":"country"')
-      expect(page).to have_content('"type":"resort"')
+      # Check for compressed format: "cl" array and "d" data array with type codes
+      expect(page).to have_content('"cl"')
+      expect(page).to have_content('"d"')
+      expect(page).to have_content('"t":"c"') # country type code
+      expect(page).to have_content('"t":"r"') # resort type code
     end
   end
 

@@ -246,15 +246,21 @@ RSpec.describe('Building') do
       expect(File.exist?(search_data_path)).to be(true)
 
       # Parse and verify structure
-      search_data = JSON.parse(File.read(search_data_path))
-      expect(search_data).to be_an(Array)
-      expect(search_data.length).to be > 0
+      raw_data = JSON.parse(File.read(search_data_path))
 
-      # Check that it has different types
-      types = search_data.map { |item| item['type'] }.uniq
-      expect(types).to include('country')
-      expect(types).to include('state')
-      expect(types).to include('resort')
+      # New compressed format: { cl: [countries], d: [{t,n,c,s,u},...] }
+      expect(raw_data).to be_a(Hash)
+      expect(raw_data).to have_key('cl') # country lookup
+      expect(raw_data).to have_key('d')  # data entries
+      expect(raw_data['cl']).to be_an(Array)
+      expect(raw_data['d']).to be_an(Array)
+      expect(raw_data['d'].length).to be > 0
+
+      # Check that it has different types (c=country, s=state, r=resort)
+      types = raw_data['d'].map { |item| item['t'] }.uniq
+      expect(types).to include('c') # country
+      expect(types).to include('s') # state
+      expect(types).to include('r') # resort
     end
 
     it 'includes search button in pages' do
@@ -272,28 +278,33 @@ RSpec.describe('Building') do
 
     it 'has correct structure for search data' do
       search_data_path = File.join(build_dir, 'assets', 'search-data.json')
-      search_data      = JSON.parse(File.read(search_data_path))
+      raw_data         = JSON.parse(File.read(search_data_path))
 
-      # Check country structure
-      country = search_data.find { |item| item['type'] == 'country' }
-      expect(country).to have_key('name')
-      expect(country).to have_key('url')
-      expect(country).to have_key('type')
+      # Check country structure (t='c', n=name, u=url)
+      country = raw_data['d'].find { |item| item['t'] == 'c' }
+      expect(country).to have_key('n') # name
+      expect(country).to have_key('u') # url
+      expect(country).to have_key('t') # type
+      expect(country['t']).to eq('c')
 
-      # Check state structure
-      state = search_data.find { |item| item['type'] == 'state' }
+      # Check state structure (t='s', n=name, c=country index, u=url)
+      state = raw_data['d'].find { |item| item['t'] == 's' }
       if state
-        expect(state).to have_key('name')
-        expect(state).to have_key('url')
-        expect(state).to have_key('country')
-        expect(state).to have_key('type')
+        expect(state).to have_key('n') # name
+        expect(state).to have_key('u') # url
+        expect(state).to have_key('c') # country index
+        expect(state).to have_key('t') # type
+        expect(state['t']).to eq('s')
+        expect(state['c']).to be_a(Integer) # country as numeric index
       end
 
-      # Check resort structure
-      resort = search_data.find { |item| item['type'] == 'resort' }
-      expect(resort).to have_key('name')
-      expect(resort).to have_key('url')
-      expect(resort).to have_key('type')
+      # Check resort structure (t='r', n=name, c=country index, s=state, u=url)
+      resort = raw_data['d'].find { |item| item['t'] == 'r' }
+      expect(resort).to have_key('n') # name
+      expect(resort).to have_key('u') # url
+      expect(resort).to have_key('t') # type
+      expect(resort['t']).to eq('r')
+      expect(resort['c']).to be_a(Integer) # country as numeric index
     end
   end
 end
