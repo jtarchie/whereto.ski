@@ -167,7 +167,28 @@
             </a>
           </div>
 
-          <div class="flex-none">
+          <div class="flex-none gap-2">
+            <!-- Search Button -->
+            <button
+              id="search-button"
+              class="btn btn-ghost btn-square"
+              aria-label="Search"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                class="inline-block w-5 h-5 stroke-current"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+              </svg>
+            </button>
+
             <div class="dropdown dropdown-end">
               <label tabindex="0" class="btn btn-ghost btn-square">
                 <svg
@@ -282,6 +303,46 @@
       </div>
     </div>
 
+    <!-- Search Modal -->
+    <dialog id="search-modal" class="modal">
+      <div class="modal-box w-11/12 max-w-2xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+            ✕
+          </button>
+        </form>
+
+        <h3 class="font-bold text-lg mb-4">Search Resorts</h3>
+
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search for countries, states, or resorts..."
+          class="input input-bordered w-full mb-4"
+          autocomplete="off"
+        >
+
+        <div id="search-loading" class="text-center py-8 hidden">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+
+        <div id="search-results" class="max-h-96 overflow-y-auto"></div>
+
+        <div
+          id="search-empty"
+          class="text-center py-8 text-base-content/60 hidden"
+        >
+          No results found
+        </div>
+      </div>
+
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+
     <script src="/assets/main.js"></script>
+
+    <script src="/assets/search.js"></script>
   </body>
 </html>

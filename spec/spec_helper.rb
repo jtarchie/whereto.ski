@@ -2,8 +2,35 @@
 
 require 'webmock/rspec'
 require_relative '../lib/follow_the_snow'
+require 'json'
+require 'rack'
+
+# Capybara configuration for browser testing
+require 'capybara/rspec'
+require 'selenium-webdriver'
+
+# Allow WebMock to permit connections to localhost for Capybara/Selenium
+WebMock.disable_net_connect!(allow_localhost: true)
+
+Capybara.register_driver :headless_chrome do |app|
+  options = Selenium::WebDriver::Chrome::Options.new
+  options.add_argument('--headless')
+  options.add_argument('--no-sandbox')
+  options.add_argument('--disable-dev-shm-usage')
+  options.add_argument('--disable-gpu')
+  options.add_argument('--window-size=1400,900')
+
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: options)
+end
+
+Capybara.javascript_driver     = :headless_chrome
+Capybara.default_driver        = :headless_chrome
+Capybara.default_max_wait_time = 5
 
 RSpec.configure do |config|
+  # Include Capybara DSL for feature specs
+  config.include Capybara::DSL
+
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.
@@ -83,6 +110,8 @@ RSpec.configure do |config|
   #   # test failures related to randomization by passing the same `--seed` value
   #   # as the one that triggered the failure.
   #   Kernel.srand config.seed
+
+  config.after(:all) { WebMock.reset! }
 end
 
 def stub_country_page
@@ -126,6 +155,33 @@ def stub_geo_lookup(lat:, lng:)
           city: 'Denver',
           state: 'Colorado',
           country: 'US'
+        }
+      }.to_json
+    )
+end
+
+def stub_weather_api
+  stub_request(:get, /api.open-meteo.com/)
+    .to_return(
+      status: 200,
+      body: {
+        'daily' => {
+          'time' => %w[
+            2023-03-14 2023-03-15 2023-03-16 2023-03-17 2023-03-18 2023-03-19 2023-03-20 2023-03-21
+          ],
+          'weathercode' => [3, 3, 75, 71, 73, 51, 3, 51],
+          'temperature_2m_max' => [62.2, 67.6, 50.7, 38.4, 41.1, 46.7, 54.9, 58.7],
+          'temperature_2m_min' => [36.8, 42.5, 23.7, 19.8, 28.5, 29.4, 35.5, 41.3],
+          'apparent_temperature_max' => [58.3, 63.2, 45.1, 32.6, 36.8, 42.3, 51.2, 55.4],
+          'apparent_temperature_min' => [32.1, 38.9, 18.4, 14.2, 23.7, 25.1, 31.8, 38.2],
+          'snowfall_sum' => [0.000, 0.000, 2.950, 0.138, 0.139, 0.000, 0.000, 0.000],
+          'precipitation_hours' => [0.0, 0.0, 12.0, 3.0, 6.0, 1.0, 0.0, 3.0],
+          'precipitation_probability_max' => [5, 10, 85, 45, 60, 20, 5, 35],
+          'windspeed_10m_max' => [12.8, 16.6, 15.1, 6.3, 10.6, 7.1, 4.2, 14.2],
+          'windgusts_10m_max' => [21.7, 26.2, 26.8, 9.6, 8.7, 8.9, 8.9, 27.3],
+          'winddirection_10m_dominant' => [278, 251, 35, 89, 99, 123, 220, 358],
+          'uv_index_max' => [4.2, 5.8, 2.1, 3.4, 4.7, 5.3, 6.1, 5.9],
+          'sunshine_duration' => [21_600, 28_800, 7200, 14_400, 18_000, 25_200, 32_400, 27_000]
         }
       }.to_json
     )

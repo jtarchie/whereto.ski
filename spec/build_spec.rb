@@ -12,25 +12,7 @@ RSpec.describe('Building') do
 
   before(:all) do
     # Stub API requests once for all tests
-    stub_request(:get, /api.open-meteo.com/)
-      .to_return(
-        status: 200,
-        body: {
-          'daily' => {
-            'time' => %w[
-              2023-03-14 2023-03-15 2023-03-16 2023-03-17 2023-03-18 2023-03-19 2023-03-20 2023-03-21
-            ],
-            'weathercode' => [3, 3, 75, 71, 73, 51, 3, 51],
-            'temperature_2m_max' => [62.2, 67.6, 50.7, 38.4, 41.1, 46.7, 54.9, 58.7],
-            'temperature_2m_min' => [36.8, 42.5, 23.7, 19.8, 28.5, 29.4, 35.5, 41.3],
-            'snowfall_sum' => [0.000, 0.000, 2.950, 0.138, 0.139, 0.000, 0.000, 0.000],
-            'precipitation_hours' => [0.0, 0.0, 12.0, 3.0, 6.0, 1.0, 0.0, 3.0],
-            'windspeed_10m_max' => [12.8, 16.6, 15.1, 6.3, 10.6, 7.1, 4.2, 14.2],
-            'windgusts_10m_max' => [21.7, 26.2, 26.8, 9.6, 8.7, 8.9, 8.9, 27.3],
-            'winddirection_10m_dominant' => [278, 251, 35, 89, 99, 123, 220, 358]
-          }
-        }.to_json
-      )
+    stub_weather_api
 
     # Build site once for all tests
     @build_dir  = Dir.mktmpdir
@@ -255,6 +237,63 @@ RSpec.describe('Building') do
       index_html = File.read(File.join(build_dir, 'index.html'))
       expect(index_html).to include('drawer-side')
       expect(index_html).to match(/snow-now.*Snow Now/m)
+    end
+  end
+
+  describe 'search feature' do
+    it 'generates search data JSON file' do
+      search_data_path = File.join(build_dir, 'assets', 'search-data.json')
+      expect(File.exist?(search_data_path)).to be(true)
+
+      # Parse and verify structure
+      search_data = JSON.parse(File.read(search_data_path))
+      expect(search_data).to be_an(Array)
+      expect(search_data.length).to be > 0
+
+      # Check that it has different types
+      types = search_data.map { |item| item['type'] }.uniq
+      expect(types).to include('country')
+      expect(types).to include('state')
+      expect(types).to include('resort')
+    end
+
+    it 'includes search button in pages' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      expect(index_html).to include('id="search-button"')
+      expect(index_html).to include('aria-label="Search"')
+    end
+
+    it 'includes search modal in layout' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      expect(index_html).to include('<dialog id="search-modal"')
+      expect(index_html).to include('id="search-input"')
+      expect(index_html).to include('id="search-results"')
+    end
+
+    it 'has correct structure for search data' do
+      search_data_path = File.join(build_dir, 'assets', 'search-data.json')
+      search_data      = JSON.parse(File.read(search_data_path))
+
+      # Check country structure
+      country = search_data.find { |item| item['type'] == 'country' }
+      expect(country).to have_key('name')
+      expect(country).to have_key('url')
+      expect(country).to have_key('type')
+
+      # Check state structure
+      state = search_data.find { |item| item['type'] == 'state' }
+      if state
+        expect(state).to have_key('name')
+        expect(state).to have_key('url')
+        expect(state).to have_key('country')
+        expect(state).to have_key('type')
+      end
+
+      # Check resort structure
+      resort = search_data.find { |item| item['type'] == 'resort' }
+      expect(resort).to have_key('name')
+      expect(resort).to have_key('url')
+      expect(resort).to have_key('type')
     end
   end
 end

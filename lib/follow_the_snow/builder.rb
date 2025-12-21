@@ -32,6 +32,9 @@ module FollowTheSnow
         FileUtils.mkdir_p(@build_dir)
         FileUtils.copy_entry(File.join(@source_dir, 'public'), @build_dir)
 
+        # Generate search index
+        generate_search_index
+
         layout_html = erb(File.join(@source_dir, '_layout.html.erb'))
 
         # Collect all template files
@@ -114,6 +117,49 @@ module FollowTheSnow
       end
 
       private
+
+      def generate_search_index
+        require 'json'
+
+        # Add countries
+        search_data = countries.map do |country|
+          {
+            type: 'country',
+            name: country,
+            url: "/countries/#{country.parameterize}"
+          }
+        end
+
+        # Add states (skip for small countries)
+        states.each do |state|
+          sample_resort = resorts_by_state(state).first
+          next if @context.small_country?(sample_resort.country_name)
+
+          search_data << {
+            type: 'state',
+            name: state,
+            country: sample_resort.country_name,
+            url: "/states/#{state.parameterize}"
+          }
+        end
+
+        # Add resorts (filter out those with empty parameterized names)
+        resorts.each do |resort|
+          next if resort.name.parameterize.empty?
+
+          search_data << {
+            type: 'resort',
+            name: resort.name,
+            country: resort.country_name,
+            state: resort.region_name,
+            url: "/resorts/#{resort.name.parameterize}"
+          }
+        end
+
+        search_file = File.join(@build_dir, 'assets', 'search-data.json')
+        File.write(search_file, JSON.generate(search_data))
+        @logger.info('generated search index', { file: search_file, entries: search_data.length })
+      end
 
       def resorts_by_state(state)
         @resorts_by_state ||= resorts.group_by(&:region_name)
