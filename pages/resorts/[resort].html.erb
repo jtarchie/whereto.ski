@@ -2,7 +2,7 @@
   # Generate forecast summary
   total_snow = total_snow_for(resort)
   forecast_summary = if total_snow > 0
-    "Expecting #{format_snow_total(total_snow).gsub(/<[^>]*>/, '')} of snow in the forecast period."
+    "Expecting #{format_snow_total_plain(total_snow)} of snow in the forecast period."
   else
     "No significant snowfall expected in the current forecast period."
   end

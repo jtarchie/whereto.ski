@@ -455,4 +455,309 @@ RSpec.describe('Building') do
       expect(snow_now_doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
     end
   end
+
+  describe 'social media sharing metadata' do
+    describe 'Open Graph tags' do
+      it 'includes required Open Graph tags in all pages' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        expect(doc.at_xpath("//meta[@property='og:type']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@property='og:url']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@property='og:title']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@property='og:description']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@property='og:image']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@property='og:site_name']")).not_to be_nil
+      end
+
+      it 'sets og:type to website' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_type = doc.at_xpath("//meta[@property='og:type']")
+        expect(og_type['content']).to eq('website')
+      end
+
+      it 'sets og:site_name to "Where To Ski"' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_site_name = doc.at_xpath("//meta[@property='og:site_name']")
+        expect(og_site_name['content']).to eq('Where To Ski')
+      end
+
+      it 'includes dynamic URL for index page' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_url = doc.at_xpath("//meta[@property='og:url']")
+        expect(og_url['content']).to eq('https://whereto.ski/')
+      end
+
+      it 'includes dynamic URL for resort pages' do
+        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+        expect(resort_files).not_to be_empty
+
+        resort_file = resort_files.first
+        resort_html = File.read(resort_file)
+        doc         = Nokogiri::HTML(resort_html)
+
+        og_url       = doc.at_xpath("//meta[@property='og:url']")
+        resort_slug  = File.basename(resort_file, '.html')
+        expected_url = "https://whereto.ski/resorts/#{resort_slug}"
+
+        expect(og_url['content']).to eq(expected_url)
+      end
+
+      it 'includes dynamic URL for country pages' do
+        country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+        expect(country_files).not_to be_empty
+
+        country_file = country_files.first
+        country_html = File.read(country_file)
+        doc          = Nokogiri::HTML(country_html)
+
+        og_url        = doc.at_xpath("//meta[@property='og:url']")
+        country_slug  = File.basename(country_file, '.html')
+        expected_url  = "https://whereto.ski/countries/#{country_slug}"
+
+        expect(og_url['content']).to eq(expected_url)
+      end
+
+      it 'includes image with fallback to favicon' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_image = doc.at_xpath("//meta[@property='og:image']")
+        expect(og_image['content']).to include('https://whereto.ski/')
+        expect(og_image['content']).to include('.png')
+      end
+
+      it 'includes og:image:alt tag' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_image_alt = doc.at_xpath("//meta[@property='og:image:alt']")
+        expect(og_image_alt).not_to be_nil
+        expect(og_image_alt['content']).not_to be_empty
+      end
+    end
+
+    describe 'Twitter Card tags' do
+      it 'includes required Twitter Card tags in all pages' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        expect(doc.at_xpath("//meta[@name='twitter:card']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@name='twitter:url']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@name='twitter:title']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@name='twitter:description']")).not_to be_nil
+        expect(doc.at_xpath("//meta[@name='twitter:image']")).not_to be_nil
+      end
+
+      it 'sets twitter:card to summary_large_image' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        twitter_card = doc.at_xpath("//meta[@name='twitter:card']")
+        expect(twitter_card['content']).to eq('summary_large_image')
+      end
+
+      it 'matches Twitter URL with Open Graph URL' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_url      = doc.at_xpath("//meta[@property='og:url']")['content']
+        twitter_url = doc.at_xpath("//meta[@name='twitter:url']")['content']
+
+        expect(twitter_url).to eq(og_url)
+      end
+
+      it 'matches Twitter title with Open Graph title' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_title      = doc.at_xpath("//meta[@property='og:title']")['content']
+        twitter_title = doc.at_xpath("//meta[@name='twitter:title']")['content']
+
+        expect(twitter_title).to eq(og_title)
+      end
+
+      it 'matches Twitter description with Open Graph description' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_description      = doc.at_xpath("//meta[@property='og:description']")['content']
+        twitter_description = doc.at_xpath("//meta[@name='twitter:description']")['content']
+
+        expect(twitter_description).to eq(og_description)
+      end
+
+      it 'matches Twitter image with Open Graph image' do
+        index_html = File.read(File.join(build_dir, 'index.html'))
+        doc        = Nokogiri::HTML(index_html)
+
+        og_image      = doc.at_xpath("//meta[@property='og:image']")['content']
+        twitter_image = doc.at_xpath("//meta[@name='twitter:image']")['content']
+
+        expect(twitter_image).to eq(og_image)
+      end
+    end
+
+    describe 'resort page descriptions with forecast data' do
+      it 'includes forecast information in description when snow is expected' do
+        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+        expect(resort_files).not_to be_empty
+
+        # Find a resort with snow in forecast (from stubbed data)
+        resort_with_snow = resort_files.find do |file|
+          html = File.read(file)
+          html.include?('snow-cell') || html.include?('❄️')
+        end
+
+        if resort_with_snow
+          resort_html = File.read(resort_with_snow)
+          doc         = Nokogiri::HTML(resort_html)
+
+          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+          # Should include location information
+          expect(og_description).to match(/in .+, .+/)
+          # Should mention either "Expecting" snow or "No significant snowfall"
+          expect(og_description).to match(/Expecting .+ of snow|No significant snowfall/)
+        end
+      end
+
+      it 'includes location information in resort descriptions' do
+        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+        resort_file  = resort_files.first
+        resort_html  = File.read(resort_file)
+        doc          = Nokogiri::HTML(resort_html)
+
+        og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+        # Should include "in [region], [country]" pattern
+        expect(og_description).to match(/\sin\s.+,\s.+\./)
+      end
+
+      it 'mentions snowfall amount when snow is expected' do
+        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+
+        # Find a resort with snow in forecast (from stubbed data)
+        resort_with_snow = resort_files.find do |file|
+          html = File.read(file)
+          html.include?('snow-cell') || html.include?('❄️')
+        end
+
+        if resort_with_snow
+          resort_html = File.read(resort_with_snow)
+          doc         = Nokogiri::HTML(resort_html)
+
+          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+          # Should include snowfall measurement (inches or cm/mm)
+          expect(og_description).to match(/Expecting .+\d/)
+          expect(og_description).to include('of snow in the forecast period')
+        end
+      end
+
+      it 'mentions no snowfall when none is expected' do
+        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+
+        # Find a resort without snow
+        resort_without_snow = resort_files.find do |file|
+          html = File.read(file)
+          !html.include?('snow-cell') && !html.include?('❄️')
+        end
+
+        if resort_without_snow
+          resort_html = File.read(resort_without_snow)
+          doc         = Nokogiri::HTML(resort_html)
+
+          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+          expect(og_description).to include('No significant snowfall expected')
+        end
+      end
+    end
+
+    describe 'page-specific metadata' do
+      it 'includes snow count in country page descriptions' do
+        country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+        country_file  = country_files.first
+        country_html  = File.read(country_file)
+        doc           = Nokogiri::HTML(country_html)
+
+        og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+        # Should mention resorts with snow
+        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
+      end
+
+      it 'includes snow count in state page descriptions' do
+        state_files = Dir[File.join(build_dir, 'states', '*.html')].reject { |f| f.include?('snow-now') }
+        next if state_files.empty? # Skip if no state pages (small country)
+
+        state_file = state_files.first
+        state_html = File.read(state_file)
+        doc        = Nokogiri::HTML(state_html)
+
+        og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+
+        # Should mention resorts with snow
+        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
+      end
+
+      it 'includes correct URL for snow-now page' do
+        snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
+        doc           = Nokogiri::HTML(snow_now_html)
+
+        og_url = doc.at_xpath("//meta[@property='og:url']")['content']
+        expect(og_url).to eq('https://whereto.ski/snow-now')
+      end
+
+      it 'includes correct URL for about page' do
+        about_html = File.read(File.join(build_dir, 'about.html'))
+        doc        = Nokogiri::HTML(about_html)
+
+        og_url = doc.at_xpath("//meta[@property='og:url']")['content']
+        expect(og_url).to eq('https://whereto.ski/about')
+      end
+
+      it 'includes sharing metadata in snow-now country pages' do
+        country_snow_now_files = Dir[File.join(build_dir, 'countries', '*-snow-now.html')]
+        expect(country_snow_now_files).not_to be_empty
+
+        file = country_snow_now_files.first
+        html = File.read(file)
+        doc  = Nokogiri::HTML(html)
+
+        og_url       = doc.at_xpath("//meta[@property='og:url']")
+        country_slug = File.basename(file, '.html')
+
+        expect(og_url['content']).to eq("https://whereto.ski/countries/#{country_slug}")
+      end
+    end
+
+    describe 'consistency across page types' do
+      it 'includes sharing metadata in all generated HTML files' do
+        html_files = Dir[File.join(build_dir, '**', '*.html')]
+        sample     = html_files.sample(10) # Check a random sample
+
+        sample.each do |file|
+          html = File.read(file)
+          doc  = Nokogiri::HTML(html)
+
+          expect(doc.at_xpath("//meta[@property='og:title']")).not_to be_nil,
+                                                                      "Missing og:title in #{file}"
+          expect(doc.at_xpath("//meta[@property='og:description']")).not_to be_nil,
+                                                                            "Missing og:description in #{file}"
+          expect(doc.at_xpath("//meta[@property='og:url']")).not_to be_nil,
+                                                                    "Missing og:url in #{file}"
+          expect(doc.at_xpath("//meta[@name='twitter:card']")).not_to be_nil,
+                                                                      "Missing twitter:card in #{file}"
+        end
+      end
+    end
+  end
 end

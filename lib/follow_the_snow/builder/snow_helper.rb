@@ -34,6 +34,21 @@ module FollowTheSnow
         %(<span class="imperial">#{imperial}</span><span class="metric">#{metric}</span>).html_safe
       end
 
+      # Format snow total as plain text for meta descriptions (no HTML)
+      def format_snow_total_plain(inches)
+        return '0 inches' if inches.zero?
+
+        imperial = if inches >= 1
+                     "#{inches.round(1)} inches"
+                   else
+                     "#{(inches * 10).round(0) / 10.0} inches"
+                   end
+
+        metric = inches_to_metric(inches)
+
+        "#{imperial} (#{metric})"
+      end
+
       # Check if a snow value should be highlighted
       def snow?(value)
         value.to_s.gsub(/[^\d.-]/, '').to_f.positive?
