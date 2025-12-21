@@ -2,7 +2,9 @@
   "devDependencies": {
     "@herb-tools/formatter": "latest",
     "@herb-tools/linter": "latest",
+    "@tailwindcss/cli": "^4.1.18",
     "daisyui": "^5.0.4",
+    "esbuild": "^0.27.2",
     "tailwindcss": "^4.0.14"
   },
   "scripts": {

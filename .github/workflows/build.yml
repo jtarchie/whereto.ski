@@ -5,25 +5,33 @@ on:
   schedule:
     - cron: "0 10 * * *" # 5AM EST
 
+permissions:
+  contents: read # access to check out code and install dependencies
+
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       RUBY_YJIT_ENABLE: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: npm install
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.4"
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Install minify
-        uses: jaxxstorm/action-install-gh-release@v1.9.0
+        uses: jaxxstorm/action-install-gh-release@v1.10.0
         with: # Grab the latest version
           repo: tdewolff/minify
-          tag: v2.23.5
+          tag: v2.24.8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTIONS_ALLOW_UNSECURE_COMMANDS: true
