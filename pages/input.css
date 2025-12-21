@@ -133,9 +133,7 @@ body {
   @apply bg-gradient-to-br from-cyan-100 to-blue-200 dark:from-cyan-800/40
     dark:to-blue-700/30;
   @apply shadow-lg shadow-cyan-200/50 dark:shadow-cyan-900/50;
-  @apply scale-[1.02];
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center;
 }
 
 td.text-gray-400 {
@@ -228,7 +226,6 @@ a:hover {
 .stat {
   @apply transition-all duration-300;
   @apply hover:shadow-xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30;
-  @apply hover:scale-105;
 }
 
 /* Alert boxes with mountain lodge warmth */
@@ -244,7 +241,6 @@ a:hover {
 .btn-primary {
   @apply shadow-lg shadow-primary/30;
   @apply hover:shadow-xl hover:shadow-primary/50;
-  @apply hover:scale-105;
   @apply transition-all duration-200;
 }
 

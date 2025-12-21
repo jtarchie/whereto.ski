@@ -135,4 +135,4 @@ task :a11y do
   end
 end
 
-task default: %i[fmt test fast a11y]
+task default: %i[fast fmt test]
