@@ -307,4 +307,133 @@ RSpec.describe('Building') do
       expect(resort['c']).to be_a(Integer) # country as numeric index
     end
   end
+
+  describe 'settings feature' do
+    it 'includes settings button in navigation' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      # Check for settings button with onclick handler
+      settings_button = doc.at_xpath("//button[contains(@onclick, 'settings_modal')]")
+      expect(settings_button).not_to be_nil
+    end
+
+    it 'includes settings icon SVG' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      # Check for settings gear icon in the button
+      settings_button = doc.at_xpath("//button[contains(@onclick, 'settings_modal')]")
+      expect(settings_button).not_to be_nil
+
+      settings_icon = settings_button.at_xpath('.//svg')
+      expect(settings_icon).not_to be_nil
+    end
+
+    it 'includes settings modal dialog' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal = doc.at_xpath("//dialog[@id='settings_modal']")
+      expect(modal).not_to be_nil
+      expect(modal['class']).to include('modal')
+    end
+
+    it 'includes settings modal title' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal = doc.at_xpath("//dialog[@id='settings_modal']")
+      title = modal.at_xpath(".//h3[contains(text(), 'Settings')]")
+      expect(title).not_to be_nil
+    end
+
+    it 'includes temperature unit toggle in modal' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal = doc.at_xpath("//dialog[@id='settings_modal']")
+      expect(modal).not_to be_nil
+
+      # Check for temperature unit text
+      expect(modal.text).to include('Temperature Unit')
+
+      # Check for toggle input
+      toggle = modal.at_xpath(".//input[@id='unit-toggle'][@type='checkbox']")
+      expect(toggle).not_to be_nil
+      expect(toggle['class']).to include('toggle')
+
+      # Check for °F and °C labels
+      expect(modal.text).to include('°F')
+      expect(modal.text).to include('°C')
+    end
+
+    it 'includes show only snow toggle in modal' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal = doc.at_xpath("//dialog[@id='settings_modal']")
+      expect(modal).not_to be_nil
+
+      # Check for show only snow text
+      expect(modal.text).to include('Show Only Snow')
+
+      # Check for toggle input
+      toggle = modal.at_xpath(".//input[@id='filter-snow-toggle'][@type='checkbox']")
+      expect(toggle).not_to be_nil
+      expect(toggle['class']).to include('toggle')
+    end
+
+    it 'includes close button in modal' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal        = doc.at_xpath("//dialog[@id='settings_modal']")
+      close_button = modal.at_xpath(".//button[contains(text(), 'Close')]")
+      expect(close_button).not_to be_nil
+      expect(close_button['class']).to include('btn')
+    end
+
+    it 'includes modal backdrop for closing' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal    = doc.at_xpath("//dialog[@id='settings_modal']")
+      backdrop = modal.at_xpath(".//form[@method='dialog' and contains(@class, 'modal-backdrop')]")
+      expect(backdrop).not_to be_nil
+    end
+
+    it 'has proper DaisyUI modal structure' do
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      doc        = Nokogiri::HTML(index_html)
+
+      modal = doc.at_xpath("//dialog[@id='settings_modal']")
+      expect(modal).not_to be_nil
+      expect(modal['class']).to include('modal')
+
+      # Check for modal-box
+      modal_box = modal.at_xpath(".//div[contains(@class, 'modal-box')]")
+      expect(modal_box).not_to be_nil
+
+      # Check for modal-action
+      modal_action = modal.at_xpath(".//div[contains(@class, 'modal-action')]")
+      expect(modal_action).not_to be_nil
+    end
+
+    it 'includes settings in all page types' do
+      # Check index page
+      index_html = File.read(File.join(build_dir, 'index.html'))
+      expect(index_html).to include('id="settings_modal"')
+      expect(index_html).to include('onclick="settings_modal.showModal()"')
+
+      # Check a country page
+      country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+      country_html  = File.read(country_files.first)
+      expect(country_html).to include('id="settings_modal"')
+
+      # Check snow-now page
+      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
+      expect(snow_now_html).to include('id="settings_modal"')
+    end
+  end
 end

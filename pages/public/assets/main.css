@@ -976,110 +976,6 @@
     .menu .dropdown-content:before {
       display: none;
     }
-    .dropdown {
-      position-area: var(--anchor-v, bottom) var(--anchor-h, span-right);
-      display: inline-block;
-      position: relative;
-    }
-    .dropdown > :not(:has(~ [class*="dropdown-content"])):focus {
-      --tw-outline-style: none;
-      outline-style: none;
-    }
-    @media (forced-colors: active) {
-      .dropdown > :not(:has(~ [class*="dropdown-content"])):focus {
-        outline-offset: 2px;
-        outline: 2px solid #0000;
-      }
-    }
-    .dropdown .dropdown-content {
-      position: absolute;
-    }
-    .dropdown.dropdown-close .dropdown-content,
-    .dropdown:not(details, .dropdown-open, .dropdown-hover:hover, :focus-within)
-      .dropdown-content,
-    .dropdown.dropdown-hover:not(:hover)
-      [tabindex]:first-child:focus:not(:focus-visible)
-      ~ .dropdown-content {
-      transform-origin: top;
-      opacity: 0;
-      display: none;
-      scale: 95%;
-    }
-    .dropdown[popover], .dropdown .dropdown-content {
-      z-index: 999;
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      .dropdown[popover], .dropdown .dropdown-content {
-        transition-behavior: allow-discrete;
-        transition-property: opacity, scale, display;
-        transition-duration: 0.2s;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        animation: 0.2s dropdown;
-      }
-    }
-    @starting-style {
-      .dropdown[popover], .dropdown .dropdown-content {
-        opacity: 0;
-        scale: 95%;
-      }
-    }
-    :is(
-      .dropdown:not(.dropdown-close).dropdown-open,
-      .dropdown:not(.dropdown-close):not(.dropdown-hover):focus,
-      .dropdown:not(.dropdown-close):focus-within
-    )
-      > [tabindex]:first-child {
-      pointer-events: none;
-    }
-    :is(
-      .dropdown:not(.dropdown-close).dropdown-open,
-      .dropdown:not(.dropdown-close):not(.dropdown-hover):focus,
-      .dropdown:not(.dropdown-close):focus-within
-    )
-      .dropdown-content,
-    .dropdown:not(.dropdown-close).dropdown-hover:hover .dropdown-content {
-      opacity: 1;
-      scale: 100%;
-    }
-    .dropdown:is(details) summary::-webkit-details-marker {
-      display: none;
-    }
-    .dropdown:where([popover]) {
-      background: 0 0;
-    }
-    .dropdown[popover] {
-      color: inherit;
-      position: fixed;
-    }
-    @supports not (position-area: bottom) {
-      .dropdown[popover] {
-        margin: auto;
-      }
-      .dropdown[popover].dropdown-close {
-        transform-origin: top;
-        opacity: 0;
-        display: none;
-        scale: 95%;
-      }
-      .dropdown[popover].dropdown-open:not(:popover-open) {
-        transform-origin: top;
-        opacity: 0;
-        display: none;
-        scale: 95%;
-      }
-      .dropdown[popover]::backdrop {
-        background-color: oklab(0% none none/0.3);
-      }
-    }
-    :is(
-      .dropdown[popover].dropdown-close,
-      .dropdown[popover]:not(.dropdown-open, :popover-open)
-    ) {
-      transform-origin: top;
-      opacity: 0;
-      display: none;
-      scale: 95%;
-    }
     :where(.btn) {
       width: unset;
     }
@@ -2098,6 +1994,12 @@
       padding-inline: 0;
       scale: 0;
     }
+    .modal-action {
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      display: flex;
+    }
     .breadcrumbs {
       max-width: 100%;
       padding-block: 0.5rem;
@@ -2290,20 +2192,6 @@
       outline-offset: 2px;
       outline: 2px solid;
     }
-    .menu-title {
-      color: var(--color-base-content);
-      padding-block: 0.5rem;
-      padding-inline: 0.75rem;
-    }
-    @supports (color: color-mix(in lab, red, red)) {
-      .menu-title {
-        color: color-mix(in oklab, var(--color-base-content)40%, transparent);
-      }
-    }
-    .menu-title {
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
   }
   @layer daisyui.l1.l2 {
     .modal.modal-open,
@@ -2425,32 +2313,6 @@
     }
     :where(.navbar) {
       position: relative;
-    }
-    .dropdown-end {
-      --anchor-h: span-left;
-    }
-    .dropdown-end :where(.dropdown-content) {
-      inset-inline-end: 0;
-      translate: 0;
-    }
-    [dir="rtl"] :is(.dropdown-end :where(.dropdown-content)) {
-      translate: 0;
-    }
-    .dropdown-end.dropdown-left {
-      --anchor-h: left;
-      --anchor-v: span-top;
-    }
-    .dropdown-end.dropdown-left .dropdown-content {
-      top: auto;
-      bottom: 0;
-    }
-    .dropdown-end.dropdown-right {
-      --anchor-h: right;
-      --anchor-v: span-top;
-    }
-    .dropdown-end.dropdown-right .dropdown-content {
-      top: auto;
-      bottom: 0;
     }
     .btn-circle {
       width: var(--size);
@@ -2576,9 +2438,6 @@
   .mx-auto {
     margin-inline: auto;
   }
-  .mt-3 {
-    margin-top: calc(var(--spacing) * 3);
-  }
   .mt-8 {
     margin-top: calc(var(--spacing) * 8);
   }
@@ -2643,9 +2502,6 @@
   .w-11\/12 {
     width: 91.6667%;
   }
-  .w-72 {
-    width: calc(var(--spacing) * 72);
-  }
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
@@ -2692,9 +2548,6 @@
   .gap-2 {
     gap: calc(var(--spacing) * 2);
   }
-  .gap-3 {
-    gap: calc(var(--spacing) * 3);
-  }
   .gap-4 {
     gap: calc(var(--spacing) * 4);
   }
@@ -2707,6 +2560,15 @@
       calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse))
     );
   }
+  :where(.space-y-4 > :not(:last-child)) {
+    --tw-space-y-reverse: 0;
+    margin-block-start: calc(
+      calc(var(--spacing) * 4) * var(--tw-space-y-reverse)
+    );
+    margin-block-end: calc(
+      calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse))
+    );
+  }
   .overflow-x-auto {
     overflow-x: auto;
   }
@@ -2715,10 +2577,6 @@
   }
   .rounded {
     border-radius: 0.25rem;
-  }
-  .rounded-box {
-    border-radius: var(--radius-box);
-    border-radius: var(--radius-box);
   }
   .border {
     border-style: var(--tw-border-style);
@@ -2832,19 +2690,6 @@
   .shadow {
     --tw-shadow:
       0 1px 3px 0 var(--tw-shadow-color, #0000001a),0 1px 2px -1px var(
-      --tw-shadow-color,
-      #0000001a
-    );
-    box-shadow:
-      var(--tw-inset-shadow),
-      var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow),
-      var(--tw-ring-shadow),
-      var(--tw-shadow);
-  }
-  .shadow-lg {
-    --tw-shadow:
-      0 10px 15px -3px var(--tw-shadow-color, #0000001a),0 4px 6px -4px var(
       --tw-shadow-color,
       #0000001a
     );
