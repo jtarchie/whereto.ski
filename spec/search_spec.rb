@@ -59,50 +59,53 @@ RSpec.describe('Search Feature', :js, type: :feature) do
   describe 'search button visibility' do
     it 'displays search button in navbar' do
       visit '/'
-      expect(page).to have_css('#search-button', visible: true)
+      expect(page).to have_css('button[aria-label="Search"]', visible: true)
     end
 
     it 'displays search icon SVG' do
       visit '/'
-      expect(page).to have_css('#search-button svg')
+      within('button[aria-label="Search"]') do
+        expect(page).to have_css('svg')
+      end
     end
   end
 
   describe 'search modal' do
     it 'opens search modal when clicking search button' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
 
-      expect(page).to have_css('#search-modal[open]', wait: 2)
-      expect(page).to have_css('#search-input', visible: true)
+      expect(page).to have_css('dialog[open]', wait: 2)
+      expect(page).to have_field('search-input', visible: true)
     end
 
     it 'focuses search input when modal opens' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
 
       # Check that search input has focus
-      expect(page.evaluate_script('document.activeElement.id')).to eq('search-input')
+      active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
+      expect(active_label).to eq('Search for countries, states, or resorts')
     end
 
     it 'closes modal when clicking backdrop' do
       visit '/'
-      find('#search-button').click
-      expect(page).to have_css('#search-modal[open]')
+      find('button[aria-label="Search"]').click
+      expect(page).to have_css('dialog[open]')
 
       # Click outside the modal box (on the backdrop)
-      page.execute_script("document.getElementById('search-modal').close()")
-      expect(page).not_to have_css('#search-modal[open]')
+      page.execute_script("document.querySelector('dialog[open]').close()")
+      expect(page).not_to have_css('dialog[open]')
     end
   end
 
   describe 'search data loading' do
     it 'loads search data when modal is opened' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
 
-      # Wait for loading indicator to have the hidden class (data loaded)
-      expect(page).to have_css('#search-loading.hidden', visible: :all, wait: 5)
+      # Wait for loading indicator to disappear (data loaded)
+      expect(page).not_to have_content('Loading search data...', wait: 5)
     end
 
     it 'has search data JSON file available' do
@@ -119,7 +122,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
   describe 'search functionality' do
     before do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       # Wait for search data to load
       sleep 1
     end
@@ -128,41 +131,35 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       fill_in 'search-input', with: 'United States'
 
       # Wait for debounce and results
-      expect(page).to have_css('#search-results', wait: 2)
-      expect(page).to have_content('Countries')
-      expect(page).to have_content('United States')
+      expect(page).to have_content('Countries', wait: 2)
+      expect(page).to have_link('United States')
     end
 
     it 'displays results when searching for a state' do
       fill_in 'search-input', with: 'Colorado'
 
-      expect(page).to have_css('#search-results', wait: 2)
       expect(page).to have_content('States / Regions', wait: 2)
-      expect(page).to have_content('Colorado')
+      expect(page).to have_link('Colorado')
     end
 
     it 'displays results when searching for a resort' do
       fill_in 'search-input', with: 'Vail'
 
-      expect(page).to have_css('#search-results', wait: 2)
       expect(page).to have_content('Ski Resorts', wait: 2)
-      expect(page).to have_content('Vail')
+      expect(page).to have_link('Vail')
     end
 
     it 'shows "No results found" when search returns nothing' do
       fill_in 'search-input', with: 'xyzabc123notfound'
 
-      expect(page).to have_css('#search-empty:not(.hidden)', wait: 2)
-      expect(page).to have_content('No results found')
+      expect(page).to have_content('No results found', wait: 2)
     end
 
     it 'groups results by type' do
       fill_in 'search-input', with: 'Japan'
 
-      expect(page).to have_css('#search-results', wait: 2)
-
       # Should show country
-      expect(page).to have_content('Countries')
+      expect(page).to have_content('Countries', wait: 2)
 
       # Should show resorts
       expect(page).to have_content('Ski Resorts')
@@ -172,22 +169,20 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       # Search for something very common
       fill_in 'search-input', with: 'a'
 
-      expect(page).to have_css('#search-results', wait: 2)
-
       # Count total links in results (should be limited to 50)
-      result_links = page.all('#search-results a')
-      expect(result_links.count).to be <= 50
+      within('dialog[open]') do
+        result_links = page.all('a')
+        expect(result_links.count).to be <= 50
+      end
     end
 
     it 'includes location information in resort results' do
       fill_in 'search-input', with: 'Whistler'
 
-      expect(page).to have_css('#search-results', wait: 2)
-
       # Resort results should show state and country
-      within('#search-results') do
+      within('dialog[open]') do
         # Look for the location info (state, country)
-        expect(page).to have_css('.text-xs.text-base-content\\/60')
+        expect(page).to have_css('.text-xs.text-base-content\\/60', wait: 2)
       end
     end
   end
@@ -195,14 +190,14 @@ RSpec.describe('Search Feature', :js, type: :feature) do
   describe 'search result navigation' do
     before do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       sleep 1 # Wait for search data to load
     end
 
     it 'navigates to country page when clicking country result' do
       fill_in 'search-input', with: 'Switzerland'
 
-      within('#search-results') do
+      within('dialog[open]') do
         click_link 'Switzerland', match: :first
       end
 
@@ -212,7 +207,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
     it 'navigates to resort page when clicking resort result' do
       fill_in 'search-input', with: 'Aspen'
 
-      within('#search-results') do
+      within('dialog[open]') do
         click_link 'Aspen', match: :first
       end
 
@@ -234,7 +229,9 @@ RSpec.describe('Search Feature', :js, type: :feature) do
         document.dispatchEvent(event);
       JS
 
-      expect(page).to have_css('#search-modal[open]', wait: 2)
+      expect(page).to have_css('dialog[open]', wait: 2)
+      # Check input is there by aria-label
+      expect(page).to have_css('input[aria-label="Search for countries, states, or resorts"]')
     end
 
     it 'focuses search input after keyboard shortcut' do
@@ -248,44 +245,47 @@ RSpec.describe('Search Feature', :js, type: :feature) do
         document.dispatchEvent(event);
       JS
 
-      expect(page.evaluate_script('document.activeElement.id')).to eq('search-input')
+      active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
+      expect(active_label).to eq('Search for countries, states, or resorts')
     end
   end
 
   describe 'search state management' do
     it 'clears search input and results when modal closes' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       sleep 1
 
       fill_in 'search-input', with: 'Colorado'
-      expect(page).to have_css('#search-results', wait: 2)
+      expect(page).to have_link('Colorado', wait: 2)
 
       # Close modal
-      page.execute_script("document.getElementById('search-modal').close()")
+      page.execute_script("document.querySelector('dialog[open]').close()")
 
       # Reopen modal
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
 
       # Input should be empty
-      expect(find('#search-input').value).to eq('')
+      expect(find_field('search-input').value).to eq('')
 
-      # Results should be cleared (no child elements)
-      expect(page.find('#search-results', visible: :all).text.strip).to eq('')
+      # Results should be cleared - no links should be visible
+      within('dialog[open]') do
+        expect(page).not_to have_link('Colorado', wait: 1)
+      end
     end
 
     it 'maintains search data after first load' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       sleep 1
 
       # Close and reopen
-      page.execute_script("document.getElementById('search-modal').close()")
-      find('#search-button').click
+      page.execute_script("document.querySelector('dialog[open]').close()")
+      find('button[aria-label="Search"]').click
 
       # Search should work immediately without reloading data
       fill_in 'search-input', with: 'Alaska'
-      expect(page).to have_css('#search-results', wait: 1)
+      expect(page).to have_link('Alaska', wait: 1)
     end
   end
 
@@ -294,16 +294,16 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       page.driver.browser.manage.window.resize_to(375, 667) # iPhone SE size
 
       visit '/'
-      expect(page).to have_css('#search-button', visible: true)
+      expect(page).to have_css('button[aria-label="Search"]', visible: true)
     end
 
     it 'modal is responsive on mobile' do
       page.driver.browser.manage.window.resize_to(375, 667)
 
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
 
-      expect(page).to have_css('#search-modal[open]')
+      expect(page).to have_css('dialog[open]')
       expect(page).to have_css('.modal-box')
     end
   end
@@ -313,7 +313,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       visit '/'
 
       start_time = Time.now
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       sleep 1 # Wait for data to load
       end_time   = Time.now
 
@@ -323,7 +323,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
 
     it 'debounces search input to avoid excessive filtering' do
       visit '/'
-      find('#search-button').click
+      find('button[aria-label="Search"]').click
       sleep 1
 
       # Type quickly
@@ -333,7 +333,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       fill_in 'search-input', with: 'Colo'
 
       # Should only show results after debounce period
-      expect(page).to have_css('#search-results', wait: 1)
+      expect(page).to have_link('Colorado', wait: 1)
     end
   end
 end

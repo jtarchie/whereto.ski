@@ -263,17 +263,28 @@ RSpec.describe('Building') do
       expect(types).to include('r') # resort
     end
 
-    it 'includes search button in pages' do
+    it 'includes accessible search button in pages' do
       index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('id="search-button"')
-      expect(index_html).to include('aria-label="Search"')
+      doc        = Nokogiri::HTML(index_html)
+
+      # Check for button with accessible label
+      search_button = doc.at_xpath("//button[@aria-label='Search']")
+      expect(search_button).not_to be_nil
+      expect(search_button.at_xpath('.//svg')).not_to be_nil # Has icon
     end
 
-    it 'includes search modal in layout' do
+    it 'includes accessible search modal in layout' do
       index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('<dialog id="search-modal"')
-      expect(index_html).to include('id="search-input"')
-      expect(index_html).to include('id="search-results"')
+      doc        = Nokogiri::HTML(index_html)
+
+      # Check for dialog element
+      dialog = doc.at_xpath('//dialog')
+      expect(dialog).not_to be_nil
+
+      # Check for accessible search input
+      search_input = doc.at_xpath("//input[@aria-label='Search for countries, states, or resorts']")
+      expect(search_input).not_to be_nil
+      expect(search_input['type']).to eq('search')
     end
 
     it 'has correct structure for search data' do
@@ -309,13 +320,14 @@ RSpec.describe('Building') do
   end
 
   describe 'settings feature' do
-    it 'includes settings button in navigation' do
+    it 'includes accessible settings button in navigation' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       doc        = Nokogiri::HTML(index_html)
 
-      # Check for settings button with onclick handler
-      settings_button = doc.at_xpath("//button[contains(@onclick, 'settings_modal')]")
+      # Check for settings button with accessible label
+      settings_button = doc.at_xpath("//button[@aria-label='Settings']")
       expect(settings_button).not_to be_nil
+      expect(settings_button['onclick']).to include('settings_modal')
     end
 
     it 'includes settings icon SVG' do
@@ -323,7 +335,7 @@ RSpec.describe('Building') do
       doc        = Nokogiri::HTML(index_html)
 
       # Check for settings gear icon in the button
-      settings_button = doc.at_xpath("//button[contains(@onclick, 'settings_modal')]")
+      settings_button = doc.at_xpath("//button[@aria-label='Settings']")
       expect(settings_button).not_to be_nil
 
       settings_icon = settings_button.at_xpath('.//svg')
@@ -348,17 +360,18 @@ RSpec.describe('Building') do
       expect(title).not_to be_nil
     end
 
-    it 'includes temperature unit toggle in modal' do
+    it 'includes accessible temperature unit toggle in modal' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
       expect(modal).not_to be_nil
 
-      # Check for temperature unit text
-      expect(modal.text).to include('Temperature Unit')
+      # Check for temperature unit label
+      label = modal.at_xpath(".//label[contains(text(), 'Temperature Unit')]")
+      expect(label).not_to be_nil
 
-      # Check for toggle input
+      # Check for toggle input with proper association
       toggle = modal.at_xpath(".//input[@id='unit-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
       expect(toggle['class']).to include('toggle')
@@ -368,20 +381,23 @@ RSpec.describe('Building') do
       expect(modal.text).to include('°C')
     end
 
-    it 'includes show only snow toggle in modal' do
+    it 'includes accessible show only snow toggle in modal' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
       expect(modal).not_to be_nil
 
-      # Check for show only snow text
-      expect(modal.text).to include('Show Only Snow')
-
-      # Check for toggle input
+      # Check for label element wrapping or associated with toggle
       toggle = modal.at_xpath(".//input[@id='filter-snow-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
       expect(toggle['class']).to include('toggle')
+      expect(toggle['aria-label']).to eq('Show only snow')
+
+      # Check for label text
+      label = modal.at_xpath(".//label[@for='filter-snow-toggle']")
+      expect(label).not_to be_nil
+      expect(label.text).to include('Show Only Snow')
     end
 
     it 'includes close button in modal' do
@@ -423,17 +439,20 @@ RSpec.describe('Building') do
     it 'includes settings in all page types' do
       # Check index page
       index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('id="settings_modal"')
-      expect(index_html).to include('onclick="settings_modal.showModal()"')
+      doc        = Nokogiri::HTML(index_html)
+      expect(doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
+      expect(doc.at_xpath("//dialog[@id='settings_modal']")).not_to be_nil
 
       # Check a country page
       country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
       country_html  = File.read(country_files.first)
-      expect(country_html).to include('id="settings_modal"')
+      country_doc   = Nokogiri::HTML(country_html)
+      expect(country_doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
 
       # Check snow-now page
       snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      expect(snow_now_html).to include('id="settings_modal"')
+      snow_now_doc  = Nokogiri::HTML(snow_now_html)
+      expect(snow_now_doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
     end
   end
 end

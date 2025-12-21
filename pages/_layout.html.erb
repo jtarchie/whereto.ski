@@ -121,16 +121,17 @@
   <body>
     <!-- Navbar -->
     <div class="drawer">
-      <input id="nav-drawer" type="checkbox" class="drawer-toggle">
+      <input
+        id="nav-drawer"
+        type="checkbox"
+        class="drawer-toggle"
+        aria-label="Navigation menu toggle"
+      >
 
       <div class="drawer-content flex flex-col">
         <div class="navbar bg-base-100 w-full">
           <div class="flex-none lg:hidden">
-            <label
-              for="nav-drawer"
-              aria-label="Open sidebar"
-              class="btn btn-square btn-ghost"
-            >
+            <label for="nav-drawer" class="btn btn-square btn-ghost">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -192,6 +193,7 @@
             <button
               class="btn btn-ghost btn-square"
               onclick="settings_modal.showModal()"
+              aria-label="Settings"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -221,28 +223,32 @@
 
                 <div class="space-y-4">
                   <div class="flex items-center justify-between p-2">
-                    <span>Temperature Unit</span>
+                    <label for="unit-toggle" class="grow">
+                      Temperature Unit
+                    </label>
 
-                    <label class="flex cursor-pointer gap-2">
+                    <div class="flex cursor-pointer gap-2">
                       <span class="label-text text-xs">°F</span>
 
                       <input
                         type="checkbox"
                         id="unit-toggle"
                         class="toggle toggle-sm"
+                        aria-label="Toggle between Fahrenheit and Celsius"
                       >
 
                       <span class="label-text text-xs">°C</span>
-                    </label>
+                    </div>
                   </div>
 
                   <div class="flex items-center justify-between p-2">
-                    <span>Show Only Snow</span>
+                    <label for="filter-snow-toggle">Show Only Snow</label>
 
                     <input
                       type="checkbox"
                       id="filter-snow-toggle"
                       class="toggle toggle-sm"
+                      aria-label="Show only snow"
                     >
                   </div>
                 </div>
@@ -298,11 +304,7 @@
       </div>
 
       <div class="drawer-side">
-        <label
-          for="nav-drawer"
-          aria-label="Close sidebar"
-          class="drawer-overlay"
-        ></label>
+        <label for="nav-drawer" class="drawer-overlay"></label>
 
         <ul class="menu p-4 w-80 min-h-full bg-base-200"></ul>
       </div>
@@ -320,11 +322,12 @@
         <h3 class="font-bold text-lg mb-4">Search Resorts</h3>
 
         <input
-          type="text"
+          type="search"
           id="search-input"
           placeholder="Search for countries, states, or resorts..."
           class="input input-bordered w-full mb-4"
           autocomplete="off"
+          aria-label="Search for countries, states, or resorts"
         >
 
         <div id="search-loading" class="text-center py-8 hidden">
