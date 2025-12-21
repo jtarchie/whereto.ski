@@ -79,6 +79,8 @@ task :fmt do
   sh('rubocop -A')
   sh('herb analyze pages/')
   sh('npx @herb-tools/formatter pages/')
+  sh('npx esbuild pages/public/assets/main.js --minify --outfile=pages/public/assets/main.js --allow-overwrite')
+  sh('npx esbuild pages/public/assets/main.css --minify --outfile=pages/public/assets/main.css --allow-overwrite')
 end
 
 desc 'Run the tests'
@@ -133,4 +135,4 @@ task :a11y do
   end
 end
 
-task default: %i[fmt test build a11y]
+task default: %i[fmt test fast a11y]
