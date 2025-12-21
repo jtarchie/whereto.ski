@@ -58,7 +58,7 @@ module FollowTheSnow
             case filename
             when /\[resort\]/
               # rate limit from open meteo (600 / minute) halved for safety
-              limiter = Limiter::RateQueue.new(25, interval: 10, balanced: true)
+              limiter = Limiter::RateQueue.new(50, interval: 10, balanced: true)
 
               # Filter out resorts with names that don't parameterize properly (e.g., Cyrillic, Greek)
               valid_resorts = resorts.reject { |r| r.name.parameterize.empty? }
