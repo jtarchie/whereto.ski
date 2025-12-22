@@ -41,7 +41,7 @@ RSpec.describe('Building') do
     # Now skipping:
     # - State pages for small countries (threshold=20): ~170 files
     # - Resort pages with non-Latin names that don't parameterize: ~48 files
-    expect(html_files.length).to eq(3673)
+    expect(html_files.length).to eq(4067)
   end
 
   describe 'snow-now page' do
