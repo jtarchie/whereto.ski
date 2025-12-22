@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require 'active_support/core_ext/object'
 require 'down'
 require 'fast_ostruct'
 require 'http'
 require 'json'
+require 'ruby-limiter'
 require 'sqlite3'
-require 'active_support/core_ext/object'
 
 module FollowTheSnow
   class OpenSkiMapBuilder
@@ -182,7 +183,9 @@ module FollowTheSnow
     private
 
     def find_address(lat, lon)
-      response = JSON.parse(HTTP.follow.headers('Accept-Language' => 'en-US,en;q=0.5').timeout(10).get(%(https://nominatim.openstreetmap.org/reverse?lat=#{lat.to_f}&lon=#{lon.to_f}&format=jsonv2)).to_s)
+      @limiter ||= Limiter::RateQueue.new(60, interval: 60, balanced: true)
+      @limiter.shift unless defined?(RSpec)
+      response = JSON.parse(HTTP.follow.headers('Accept-Language' => 'en-US,en;q=0.5', 'User-Agent' => 'FollowTheSnow/1.0').timeout(20).get(%(https://nominatim.openstreetmap.org/reverse?lat=#{lat.to_f}&lon=#{lon.to_f}&format=jsonv2)).to_s)
       response['address']
     end
   end
