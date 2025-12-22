@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
       RUBY_YJIT_ENABLE: "1"

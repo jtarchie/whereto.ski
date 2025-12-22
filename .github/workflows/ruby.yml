@@ -15,6 +15,7 @@ on:
 
 jobs:
   test:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       RUBY_YJIT_ENABLE: "1"
