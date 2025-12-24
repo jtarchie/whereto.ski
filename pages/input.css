@@ -230,14 +230,11 @@ td.text-gray-400 {
 
 /* Avalanche-style table hover effects */
 table tbody tr {
-  @apply transition-all duration-200;
+  @apply transition-colors duration-200;
 }
 
 table tbody tr:hover {
   @apply bg-blue-50/50 dark:bg-blue-900/10;
-  @apply scale-[1.01];
-  @apply shadow-sm;
-  transform-origin: center;
 }
 
 /* Mountain peak accents for headers */
