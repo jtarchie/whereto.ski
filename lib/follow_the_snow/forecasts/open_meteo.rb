@@ -38,7 +38,7 @@ module FollowTheSnow
           precip_prob           = daily.fetch('precipitation_probability_max')[index].to_i
 
           Forecast.new(
-            name: dt.strftime('%a'),
+            name: dt.strftime('%a %m/%d'),
             short: weather_codes(daily.fetch('weathercode')[index]),
             snow: snow_range,
             temp: temp_range,

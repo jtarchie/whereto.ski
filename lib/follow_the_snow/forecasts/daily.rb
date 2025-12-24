@@ -7,7 +7,7 @@ module FollowTheSnow
   Forecast::Daily = Struct.new(:forecasts, keyword_init: true) do
     class ForecastDelegate < SimpleDelegator
       def time_of_day
-        __getobj__.time_of_day.strftime('%a')
+        __getobj__.time_of_day.strftime('%a %m/%d')
       end
 
       def snow
