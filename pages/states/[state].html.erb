@@ -2,7 +2,7 @@
   ---
   title: 'Weekly forecast of snow for ski areas in <%= h state %>'
   description: 'Weekly forecast of snow for ski areas in <%= h state %>. <%= state_snow_count(state) %> resorts with snow in the forecast.'
-  page_url: '/states/<%= state.to_slug.normalize.to_s %>'
+  page_url: '/states/<%= state.to_url %>'
   ---
 -->
 
@@ -11,7 +11,7 @@
     <li><a href="/">All</a></li>
 
     <li>
-      <a href="/countries/<%= resorts.first.country_name.to_slug.normalize.to_s %>">
+      <a href="/countries/<%= resorts.first.country_name.to_url %>">
         <%= h resorts.first.country_name %>
       </a>
     </li>
@@ -26,7 +26,7 @@
       <%= h state %>
 
       <a
-        href="/states/<%= state.to_slug.normalize.to_s %>-snow-now"
+        href="/states/<%= state.to_url %>-snow-now"
         class="link link-primary text-sm whitespace-nowrap"
       >
         Snow Now

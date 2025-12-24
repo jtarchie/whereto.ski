@@ -40,8 +40,8 @@ RSpec.describe('Building') do
     # Original: 3841 files
     # Now skipping:
     # - State pages for small countries (threshold=20): ~170 files
-    # With babosa, all resorts can now be slugified (including Cyrillic, Greek, etc.)
-    expect(html_files.length).to eq(4311)
+    # With stringex, all resorts can be slugified with excellent transliteration
+    expect(html_files.length).to eq(4312)
   end
 
   describe 'snow-now page' do

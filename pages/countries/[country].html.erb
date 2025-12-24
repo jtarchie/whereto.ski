@@ -2,7 +2,7 @@
   ---
   title: Regions by <%= country %>
   description: View ski resort snow forecasts for <%= country %>. <%= country_snow_count(country) %> resorts with snow in the forecast.
-  page_url: '/countries/<%= country.to_slug.normalize.to_s %>'
+  page_url: '/countries/<%= country.to_url %>'
   ---
 -->
 
@@ -14,11 +14,11 @@
 </div>
 
 <div class="mb-6">
-  <h2 class="text-2xl font-semibold mb-2" id="<%= country.to_slug.normalize.to_s %>">
+  <h2 class="text-2xl font-semibold mb-2" id="<%= country.to_url %>">
     <%= h country %>
 
     <a
-      href="/countries/<%= country.to_slug.normalize.to_s %>-snow-now"
+      href="/countries/<%= country.to_url %>-snow-now"
       class="link link-primary text-sm whitespace-nowrap"
     >
       Snow Now
@@ -57,7 +57,7 @@
         class="flex items-center gap-2"
         data-has-snow="<%= state_has_snow?(state) %>"
       >
-        <a href="/states/<%= state.to_slug.normalize.to_s %>" class="grow">
+        <a href="/states/<%= state.to_url %>" class="grow">
           <%= h state %>
         </a>
 

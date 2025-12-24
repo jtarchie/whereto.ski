@@ -64,9 +64,9 @@
               </td>
 
               <td class="text-sm text-gray-600 dark:text-gray-400">
-                <a href="/countries/<%= resort.country_name.to_slug.normalize.to_s %>" class="hover:underline"><%= h resort.country_name %></a>
+                <a href="/countries/<%= resort.country_name.to_url %>" class="hover:underline"><%= h resort.country_name %></a>
                 ›
-                <a href="/states/<%= resort.region_name.to_slug.normalize.to_s %>" class="hover:underline"><%= h resort.region_name %></a>
+                <a href="/states/<%= resort.region_name.to_url %>" class="hover:underline"><%= h resort.region_name %></a>
               </td>
 
               <td class="text-right font-bold text-blue-700 dark:text-blue-300">
@@ -132,9 +132,9 @@
               </td>
 
               <td class="text-sm text-gray-600 dark:text-gray-400">
-                <a href="/countries/<%= resort.country_name.to_slug.normalize.to_s %>" class="hover:underline"><%= h resort.country_name %></a>
+                <a href="/countries/<%= resort.country_name.to_url %>" class="hover:underline"><%= h resort.country_name %></a>
                 ›
-                <a href="/states/<%= resort.region_name.to_slug.normalize.to_s %>" class="hover:underline"><%= h resort.region_name %></a>
+                <a href="/states/<%= resort.region_name.to_url %>" class="hover:underline"><%= h resort.region_name %></a>
               </td>
 
               <td class="text-right font-bold text-blue-700 dark:text-blue-300">
@@ -179,7 +179,7 @@
             <tr class="hover:bg-base-200">
               <td>
                 <a
-                  href="/countries/<%= summary[:country].to_slug.normalize.to_s %>"
+                  href="/countries/<%= summary[:country].to_url %>"
                   class="font-medium hover:underline"
                 >
                   <%= h summary[:country] %>

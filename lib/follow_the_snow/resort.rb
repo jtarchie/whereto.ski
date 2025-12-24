@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require 'babosa'
 require 'sqlite3'
-require 'unidecode'
+require 'stringex'
 
 module FollowTheSnow
   Resort = Struct.new(
@@ -33,21 +32,13 @@ module FollowTheSnow
     end
 
     def slug
-      # Check if the name contains CJK characters (Chinese, Japanese, Korean)
-      # CJK Unicode ranges: \u4e00-\u9fff (CJK Unified), \u3040-\u30ff (Hiragana/Katakana)
-      has_cjk = name.match?(/[\u3040-\u30ff\u4e00-\u9fff]/)
-
-      if has_cjk
-        # For CJK names, use unidecode which provides good romanization
-        # e.g., ニセコ → niseko, 白馬 → bai ma, 长白山 → chang bai shan
-        name.to_ascii.to_slug.normalize.to_s
-      else
-        # For other scripts (Cyrillic, Greek, Turkish, etc.), use babosa
-        # which provides better transliteration with language-specific rules
-        slug           = name.to_slug
-        transliterated = slug.transliterate(:cyrillic).transliterate(:greek).transliterate(:latin)
-        transliterated.normalize.to_s
-      end
+      # Stringex provides excellent transliteration for all character sets:
+      # - CJK (Chinese, Japanese, Korean): ニセコ → niseko, 白馬 → bai-ma, 长白山 → chang-bai-shan
+      # - Cyrillic (Russian, Bulgarian, etc.): Красная Поляна → krasnaia-poliana
+      # - Greek: Καλαβρυτα → kalabruta
+      # - Turkish, German, etc.: Gölcük → golcuk, Palandöken → palandoken
+      # - Special characters: rock & roll → rock-and-roll, $12 → 12-dollars
+      name.to_url
     end
 
     def forecasts(aggregates: [

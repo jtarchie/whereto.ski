@@ -26,12 +26,12 @@ RSpec.describe('Resort') do
 
     it 'transliterates Cyrillic characters (Russian)' do
       resort = FollowTheSnow::Resort.new(name: 'Красная Поляна')
-      expect(resort.slug).to eq('krasnaya-polyana')
+      expect(resort.slug).to eq('krasnaia-poliana')
     end
 
     it 'transliterates Greek characters' do
       resort = FollowTheSnow::Resort.new(name: 'Καλαβρυτα')
-      expect(resort.slug).to eq('kalavryta')
+      expect(resort.slug).to eq('kalabruta')
     end
 
     it 'transliterates German umlauts' do
@@ -71,7 +71,7 @@ RSpec.describe('Resort') do
 
     it 'handles mixed Latin and non-Latin characters' do
       resort = FollowTheSnow::Resort.new(name: 'Горнолыжный курорт Rosa Khutor')
-      expect(resort.slug).to eq('gornolyzhnyj-kurort-rosa-khutor')
+      expect(resort.slug).to eq('gornolyzhnyi-kurort-rosa-khutor')
     end
 
     it 'removes extra spaces and hyphens' do

@@ -26,13 +26,13 @@
     <li><a href="/">All</a></li>
 
     <li>
-      <a href="/countries/<%= resort.country_name.to_slug.normalize.to_s %>">
+      <a href="/countries/<%= resort.country_name.to_url %>">
         <%= h resort.country_name %>
       </a>
     </li>
 
     <li>
-      <a href="/states/<%= resort.region_name.to_slug.normalize.to_s %>">
+      <a href="/states/<%= resort.region_name.to_url %>">
         <%= h resort.region_name %>
       </a>
     </li>

@@ -2,12 +2,12 @@
 
 require 'active_support'
 require 'active_support/inflector'
-require 'babosa'
 require 'fileutils'
 require 'front_matter_parser'
 require 'ougai'
 require 'parallel'
 require 'ruby-limiter'
+require 'stringex'
 require 'tilt'
 require 'tilt/erb'
 require_relative 'builder/context'
@@ -62,7 +62,7 @@ module FollowTheSnow
               limiter = Limiter::RateQueue.new(50, interval: 10, balanced: true)
 
               # Filter out resorts with names that don't generate valid slugs
-              valid_resorts = resorts.reject { |r| r.name.to_slug.normalize.to_s.empty? }
+              valid_resorts = resorts.reject { |r| r.name.to_url.empty? }
 
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 limiter.shift unless defined?(RSpec)
@@ -86,7 +86,7 @@ module FollowTheSnow
               end
 
               Parallel.each(states_to_build, in_threads: @num_threads) do |state|
-                state_filename = build_filename.gsub('[state]', state.to_slug.normalize.to_s)
+                state_filename = build_filename.gsub('[state]', state.to_url)
                 write_file(
                   layout_html,
                   filename,
@@ -99,7 +99,7 @@ module FollowTheSnow
               end
             when /\[country\]/
               Parallel.each(countries, in_threads: @num_threads) do |country|
-                country_filename = build_filename.gsub('[country]', country.to_slug.normalize.to_s)
+                country_filename = build_filename.gsub('[country]', country.to_url)
                 write_file(
                   layout_html,
                   filename,
@@ -146,7 +146,7 @@ module FollowTheSnow
           search_data[:d] << {
             t: 'c',
             n: country,
-            u: "/countries/#{country.to_slug.normalize}"
+            u: "/countries/#{country.to_url}"
           }
         end
 
@@ -159,7 +159,7 @@ module FollowTheSnow
             t: 's',
             n: state,
             c: country_lookup[sample_resort.country_name], # numeric index
-            u: "/states/#{state.to_slug.normalize}"
+            u: "/states/#{state.to_url}"
           }
         end
 
