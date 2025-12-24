@@ -185,7 +185,7 @@ module FollowTheSnow
     def find_address(lat, lon)
       @limiter ||= Limiter::RateQueue.new(60, interval: 60, balanced: true)
       @limiter.shift unless defined?(RSpec)
-      response = JSON.parse(HTTP.follow.headers('Accept-Language' => 'en-US,en;q=0.5', 'User-Agent' => 'FollowTheSnow/1.0').timeout(20).get(%(https://nominatim.openstreetmap.org/reverse?lat=#{lat.to_f}&lon=#{lon.to_f}&format=jsonv2)).to_s)
+      response   = JSON.parse(HTTP.follow.headers('Accept-Language' => 'en-US,en;q=0.5', 'User-Agent' => 'FollowTheSnow/1.0').timeout(20).get(%(https://nominatim.openstreetmap.org/reverse?lat=#{lat.to_f}&lon=#{lon.to_f}&format=jsonv2)).to_s)
       response['address']
     end
   end

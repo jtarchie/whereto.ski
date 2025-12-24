@@ -2,7 +2,7 @@
   ---
   title: 'Snow Now for <%= h state %>'
   description: 'Current snow forecasts for ski resorts in <%= h state %>. <%= state_snow_count(state) %> resorts with snow right now.'
-  page_url: '/states/<%= state.parameterize %>-snow-now'
+  page_url: '/states/<%= state.to_slug.normalize.to_s %>-snow-now'
   ---
 -->
 
@@ -11,12 +11,12 @@
     <li><a href="/">All</a></li>
 
     <li>
-      <a href="/countries/<%= resorts.first.country_name.parameterize %>">
+      <a href="/countries/<%= resorts.first.country_name.to_slug.normalize.to_s %>">
         <%= h resorts.first.country_name %>
       </a>
     </li>
 
-    <li><a href="/states/<%= state.parameterize %>"><%= h state %></a></li>
+    <li><a href="/states/<%= state.to_slug.normalize.to_s %>"><%= h state %></a></li>
     <li>Snow Now</li>
   </ul>
 </div>
@@ -68,7 +68,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.parameterize %>"
+                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
                   class="link link-primary font-medium"
                 >
                   <%= h resort.name %>
@@ -131,7 +131,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.parameterize %>"
+                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
                   class="link link-primary font-medium"
                 >
                   <%= h resort.name %>

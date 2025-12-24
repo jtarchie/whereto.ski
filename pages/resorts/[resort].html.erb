@@ -17,7 +17,7 @@
   ---
   title: 'Weekly forecast of snow for <%= h resort.name %>'
   description: '<%= h resort.name %> in <%= h resort.region_name %>, <%= h resort.country_name %>. <%= forecast_summary %>'
-  page_url: '/resorts/<%= resort.name.parameterize %>'
+  page_url: '/resorts/<%= resort.name.to_slug.normalize.to_s %>'
   ---
 -->
 
@@ -26,13 +26,13 @@
     <li><a href="/">All</a></li>
 
     <li>
-      <a href="/countries/<%= resort.country_name.parameterize %>">
+      <a href="/countries/<%= resort.country_name.to_slug.normalize.to_s %>">
         <%= h resort.country_name %>
       </a>
     </li>
 
     <li>
-      <a href="/states/<%= resort.region_name.parameterize %>">
+      <a href="/states/<%= resort.region_name.to_slug.normalize.to_s %>">
         <%= h resort.region_name %>
       </a>
     </li>

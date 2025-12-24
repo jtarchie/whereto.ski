@@ -2,6 +2,7 @@
 
 require 'active_support'
 require 'active_support/inflector'
+require 'babosa'
 require 'fileutils'
 require 'front_matter_parser'
 require 'ougai'
@@ -60,13 +61,13 @@ module FollowTheSnow
               # rate limit from open meteo (600 / minute) halved for safety
               limiter = Limiter::RateQueue.new(50, interval: 10, balanced: true)
 
-              # Filter out resorts with names that don't parameterize properly (e.g., Cyrillic, Greek)
-              valid_resorts = resorts.reject { |r| r.name.parameterize.empty? }
+              # Filter out resorts with names that don't generate valid slugs
+              valid_resorts = resorts.reject { |r| r.name.to_slug.normalize.to_s.empty? }
 
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 limiter.shift unless defined?(RSpec)
 
-                resort_filename = build_filename.gsub('[resort]', resort.name.parameterize)
+                resort_filename = build_filename.gsub('[resort]', resort.name.to_slug.normalize.to_s)
                 write_file(
                   layout_html,
                   filename,
@@ -85,7 +86,7 @@ module FollowTheSnow
               end
 
               Parallel.each(states_to_build, in_threads: @num_threads) do |state|
-                state_filename = build_filename.gsub('[state]', state.parameterize)
+                state_filename = build_filename.gsub('[state]', state.to_slug.normalize.to_s)
                 write_file(
                   layout_html,
                   filename,
@@ -98,7 +99,7 @@ module FollowTheSnow
               end
             when /\[country\]/
               Parallel.each(countries, in_threads: @num_threads) do |country|
-                country_filename = build_filename.gsub('[country]', country.parameterize)
+                country_filename = build_filename.gsub('[country]', country.to_slug.normalize.to_s)
                 write_file(
                   layout_html,
                   filename,
@@ -145,7 +146,7 @@ module FollowTheSnow
           search_data[:d] << {
             t: 'c',
             n: country,
-            u: "/countries/#{country.parameterize}"
+            u: "/countries/#{country.to_slug.normalize}"
           }
         end
 
@@ -158,20 +159,20 @@ module FollowTheSnow
             t: 's',
             n: state,
             c: country_lookup[sample_resort.country_name], # numeric index
-            u: "/states/#{state.parameterize}"
+            u: "/states/#{state.to_slug.normalize}"
           }
         end
 
-        # Add resorts (filter out those with empty parameterized names)
+        # Add resorts (filter out those with empty slug names)
         resorts.each do |resort|
-          next if resort.name.parameterize.empty?
+          next if resort.name.to_slug.normalize.to_s.empty?
 
           search_data[:d] << {
             t: 'r',
             n: resort.name,
             c: country_lookup[resort.country_name], # numeric index
             s: resort.region_name,
-            u: "/resorts/#{resort.name.parameterize}"
+            u: "/resorts/#{resort.name.to_slug.normalize}"
           }
         end
 

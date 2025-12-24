@@ -3,6 +3,7 @@
 source 'https://rubygems.org'
 
 gem 'activesupport'
+gem 'babosa'
 gem 'capybara'
 gem 'down'
 gem 'erb_lint'

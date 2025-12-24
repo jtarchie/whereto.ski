@@ -2,7 +2,7 @@
   ---
   title: 'Snow Now for <%= h country %>'
   description: 'Current snow forecasts for ski resorts in <%= h country %>. <%= country_snow_count(country) %> resorts with snow right now.'
-  page_url: '/countries/<%= country.parameterize %>-snow-now'
+  page_url: '/countries/<%= country.to_slug.normalize.to_s %>-snow-now'
   ---
 -->
 
@@ -11,7 +11,7 @@
     <li><a href="/">All</a></li>
 
     <li>
-      <a href="/countries/<%= country.parameterize %>"><%= h country %></a>
+      <a href="/countries/<%= country.to_slug.normalize.to_s %>"><%= h country %></a>
     </li>
 
     <li>Snow Now</li>
@@ -66,7 +66,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.parameterize %>"
+                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
                   class="link link-primary font-medium"
                 >
                   <%= h resort.name %>
@@ -78,7 +78,7 @@
                   <%= h resort.region_name %>
                 <% else %>
                   <a
-                    href="/states/<%= resort.region_name.parameterize %>"
+                    href="/states/<%= resort.region_name.to_slug.normalize.to_s %>"
                     class="hover:underline"
                   >
                     <%= h resort.region_name %>
@@ -143,7 +143,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.parameterize %>"
+                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
                   class="link link-primary font-medium"
                 >
                   <%= h resort.name %>
@@ -155,7 +155,7 @@
                   <%= h resort.region_name %>
                 <% else %>
                   <a
-                    href="/states/<%= resort.region_name.parameterize %>"
+                    href="/states/<%= resort.region_name.to_slug.normalize.to_s %>"
                     class="hover:underline"
                   >
                     <%= h resort.region_name %>
@@ -204,7 +204,7 @@
               <tr>
                 <td>
                   <a
-                    href="/states/<%= summary[:state].parameterize %>/snow-now"
+                    href="/states/<%= summary[:state].to_slug.normalize.to_s %>/snow-now"
                     class="link link-primary font-medium"
                   >
                     <%= h summary[:state] %>

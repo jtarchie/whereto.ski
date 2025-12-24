@@ -2,7 +2,7 @@
   ---
   title: Regions by <%= country %>
   description: View ski resort snow forecasts for <%= country %>. <%= country_snow_count(country) %> resorts with snow in the forecast.
-  page_url: '/countries/<%= country.parameterize %>'
+  page_url: '/countries/<%= country.to_slug.normalize.to_s %>'
   ---
 -->
 
@@ -14,11 +14,11 @@
 </div>
 
 <div class="mb-6">
-  <h2 class="text-2xl font-semibold mb-2" id="<%= country.parameterize %>">
+  <h2 class="text-2xl font-semibold mb-2" id="<%= country.to_slug.normalize.to_s %>">
     <%= h country %>
 
     <a
-      href="/countries/<%= country.parameterize %>-snow-now"
+      href="/countries/<%= country.to_slug.normalize.to_s %>-snow-now"
       class="link link-primary text-sm whitespace-nowrap"
     >
       Snow Now
@@ -37,7 +37,7 @@
         class="flex items-center gap-2"
         data-has-snow="<%= any_snow?(resort) %>"
       >
-        <a href="/resorts/<%= resort.name.parameterize %>" class="grow">
+        <a href="/resorts/<%= resort.name.to_slug.normalize.to_s %>" class="grow">
           <%= h resort.name %>
         </a>
 
@@ -57,7 +57,7 @@
         class="flex items-center gap-2"
         data-has-snow="<%= state_has_snow?(state) %>"
       >
-        <a href="/states/<%= state.parameterize %>" class="grow">
+        <a href="/states/<%= state.to_slug.normalize.to_s %>" class="grow">
           <%= h state %>
         </a>
 

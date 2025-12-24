@@ -21,7 +21,7 @@
       class="flex items-center gap-2"
       data-has-snow="<%= country_has_snow?(country) %>"
     >
-      <a href="/countries/<%= country.parameterize %>" class="flex-grow">
+      <a href="/countries/<%= country.to_slug.normalize.to_s %>" class="flex-grow">
         <%= h country %>
       </a>
 
