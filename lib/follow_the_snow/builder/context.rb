@@ -313,7 +313,108 @@ module FollowTheSnow
         end
       end
 
+      # Calculate "Best Days to Ski" scores for a resort
+      # Returns array of hashes with date, score (0-100), and reasons
+      def best_ski_days(resort, limit: 7)
+        forecasts = raw_forecasts_for(resort)
+
+        scored_days = forecasts.map do |forecast|
+          score, reasons = calculate_ski_score(forecast)
+          {
+            date: forecast.time_of_day,
+            name: forecast.name,
+            score: score,
+            rating: score_to_rating(score),
+            reasons: reasons,
+            snow: snow_inches(forecast)
+          }
+        end
+
+        scored_days.take(limit)
+      end
+
+      # Get the single best day in the forecast
+      def best_day_to_ski(resort)
+        best_ski_days(resort, limit: 16).max_by { |day| day[:score] }
+      end
+
       private
+
+      # Calculate ski score (0-100) based on conditions
+      def calculate_ski_score(forecast)
+        score   = 50 # Base score
+        reasons = []
+
+        # Fresh snow is the biggest factor (+0-40 points)
+        snow = snow_inches(forecast)
+        if snow >= 6
+          score += 40
+          reasons << "Deep powder day! (#{snow.round(1)}\")"
+        elsif snow >= 3
+          score += 30
+          reasons << "Great fresh snow (#{snow.round(1)}\")"
+        elsif snow >= 1
+          score += 20
+          reasons << "Fresh snow (#{snow.round(1)}\")"
+        elsif snow.positive?
+          score += 10
+          reasons << 'Light dusting'
+        end
+
+        # Wind penalty (-0-25 points)
+        max_wind = forecast.wind_speed&.end || 0
+        if max_wind > 40
+          score -= 25
+          reasons << 'High winds likely'
+        elsif max_wind > 25
+          score -= 15
+          reasons << 'Windy conditions'
+        elsif max_wind > 15
+          score -= 5
+        elsif max_wind < 10
+          score += 5
+          reasons << 'Calm winds'
+        end
+
+        # Temperature comfort (-10 to +10 points)
+        min_temp = forecast.temp&.begin || 32
+        if min_temp.negative?
+          score -= 10
+          reasons << 'Extremely cold'
+        elsif min_temp < 10
+          score -= 5
+          reasons << 'Very cold'
+        elsif min_temp.between?(20, 32)
+          score += 10
+          reasons << 'Ideal temps'
+        elsif min_temp > 40
+          score -= 5
+          reasons << 'Warm (possible slush)'
+        end
+
+        # Precipitation probability bonus for snow days
+        precip_prob = forecast.precipitation_probability || 0
+        if snow.positive? && precip_prob > 70
+          score += 5
+          reasons << 'Snowing during the day'
+        end
+
+        # Clamp score between 0-100
+        score = score.clamp(0, 100)
+
+        [score, reasons]
+      end
+
+      # Convert numeric score to rating label
+      def score_to_rating(score)
+        case score
+        when 85..100 then 'Epic'
+        when 70..84 then 'Great'
+        when 55..69 then 'Good'
+        when 40..54 then 'Fair'
+        else 'Poor'
+        end
+      end
 
       # Filter resorts by country and/or state
       def filter_resorts(country: nil, state: nil)

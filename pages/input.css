@@ -154,6 +154,38 @@ td.text-gray-400 {
   @apply border-l-4 border-l-cyan-400 dark:border-l-cyan-500;
 }
 
+/* Best Days to Ski - Score cards */
+.ski-day-card {
+  @apply border border-base-300 transition-transform;
+}
+
+.ski-day-card:hover {
+  @apply scale-105;
+}
+
+.ski-day-epic {
+  @apply bg-gradient-to-br from-cyan-400 to-blue-500 text-white;
+  @apply shadow-md shadow-cyan-500/30;
+}
+
+.ski-day-great {
+  @apply bg-gradient-to-br from-green-400 to-emerald-500 text-white;
+  @apply shadow-md shadow-green-500/30;
+}
+
+.ski-day-good {
+  @apply bg-gradient-to-br from-lime-400 to-green-500 text-white;
+}
+
+.ski-day-fair {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50
+    dark:text-yellow-200;
+}
+
+.ski-day-poor {
+  @apply bg-base-200 text-base-content/50;
+}
+
 /* Dynamic snow badge with fresh pow vibes */
 .snow-badge {
   @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs
