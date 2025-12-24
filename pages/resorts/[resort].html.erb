@@ -147,8 +147,9 @@
           </tr>
           <% current_date = hour_date %>
         <% end %>
-        <tr class="<%= hour.snowfall && hour.snowfall > 0 ? 'snow-cell' : '' %>">
-          <td class="sticky left-0 bg-base-100 z-10 font-medium"><%= format_hour(hour.time) %></td>
+        <% has_snow = hour.snowfall && hour.snowfall > 0 %>
+        <tr class="<%= has_snow ? 'hourly-snow-row' : '' %>">
+          <td class="sticky left-0 z-10 font-medium <%= has_snow ? 'bg-cyan-50 dark:bg-cyan-900/30' : 'bg-base-100' %>"><%= format_hour(hour.time) %></td>
           <td class="text-lg"><%= weather_icon(hour.weather_code, is_day: hour.is_day) %></td>
           <td><%= format_temperature(hour.temperature) %></td>
           <td><%= format_temperature(hour.apparent_temperature) %></td>

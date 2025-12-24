@@ -140,6 +140,20 @@ td.text-gray-400 {
   @apply opacity-60;
 }
 
+/* Hourly table snow row - simpler styling that doesn't break table layout */
+.hourly-snow-row {
+  @apply bg-gradient-to-r from-cyan-50/80 to-blue-50/60 dark:from-cyan-900/30
+    dark:to-blue-900/20;
+}
+
+.hourly-snow-row td {
+  @apply border-y border-cyan-200 dark:border-cyan-800;
+}
+
+.hourly-snow-row td:first-child {
+  @apply border-l-4 border-l-cyan-400 dark:border-l-cyan-500;
+}
+
 /* Dynamic snow badge with fresh pow vibes */
 .snow-badge {
   @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs
@@ -234,7 +248,7 @@ a:hover {
 }
 
 .alert-info {
-  @apply border-cyan-500 bg-cyan-50/50 dark:bg-cyan-900/20;
+  @apply border-cyan-500 bg-cyan-50/50 dark:bg-cyan-900/50 dark:text-cyan-100;
 }
 
 /* Button enhancements - send it! */
