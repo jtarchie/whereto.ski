@@ -57,9 +57,7 @@
         class="flex items-center gap-2"
         data-has-snow="<%= state_has_snow?(state) %>"
       >
-        <a href="/states/<%= state.to_url %>" class="grow">
-          <%= h state %>
-        </a>
+        <a href="/states/<%= state.to_url %>" class="grow"><%= h state %></a>
 
         <% if state_has_snow?(state) %>
           <span class="snow-badge">
