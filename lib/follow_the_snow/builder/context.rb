@@ -201,6 +201,99 @@ module FollowTheSnow
         [headers, rows]
       end
 
+      # Get current conditions for a resort
+      def current_conditions_for(resort)
+        resort.current_conditions
+      end
+
+      # Get hourly forecasts for a resort (next 48 hours by default)
+      def hourly_forecasts_for(resort, hours: 48)
+        resort.hourly_forecasts.take(hours)
+      end
+
+      # Get weather icon based on weather code
+      def weather_icon(code, is_day: true)
+        case code
+        when 0 # Clear sky
+          is_day ? '☀️' : '🌙'
+        when 1, 2 # Mainly clear, partly cloudy
+          is_day ? '⛅' : '☁️'
+        when 3 # Overcast
+          '☁️'
+        when 45, 48 # Fog
+          '🌫️'
+        when 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82 # Drizzle and Rain
+          '🌧️'
+        when 71, 73, 75, 77, 85, 86 # Snow
+          '❄️'
+        when 95, 96, 99 # Thunderstorm
+          '⛈️'
+        else
+          '🌤️'
+        end
+      end
+
+      # Format temperature with imperial/metric toggle support
+      def format_temperature(fahrenheit)
+        return '-' if fahrenheit.nil?
+
+        celsius = ((fahrenheit - 32) * 5.0 / 9.0).round(1)
+        %(<span class="imperial">#{fahrenheit}°F</span><span class="metric">#{celsius}°C</span>).html_safe
+      end
+
+      # Format wind speed with direction
+      def format_wind(speed, direction, gust: nil)
+        return '-' if speed.nil?
+
+        kph    = (speed * 1.60934).round(1)
+        result = %(#{direction} <span class="imperial">#{speed} mph</span><span class="metric">#{kph} kph</span>)
+
+        if gust && gust > speed
+          gust_kph = (gust * 1.60934).round(1)
+          result  += %( (gusts <span class="imperial">#{gust} mph</span><span class="metric">#{gust_kph} kph</span>))
+        end
+
+        result.html_safe
+      end
+
+      # Format elevation/height in feet and meters
+      def format_elevation(feet)
+        return '-' if feet.nil?
+
+        meters = (feet * 0.3048).round(0)
+        %(<span class="imperial">#{feet.to_i.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} ft</span><span class="metric">#{meters.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} m</span>).html_safe
+      end
+
+      # Format visibility
+      def format_visibility(meters)
+        return '-' if meters.nil?
+
+        miles = (meters / 1609.34).round(1)
+        km    = (meters / 1000.0).round(1)
+        %(<span class="imperial">#{miles} mi</span><span class="metric">#{km} km</span>).html_safe
+      end
+
+      # Format precipitation amount
+      def format_precipitation(inches)
+        return '-' if inches.nil? || inches.zero?
+
+        mm = (inches * 25.4).round(1)
+        %(<span class="imperial">#{inches}"</span><span class="metric">#{mm} mm</span>).html_safe
+      end
+
+      # Format time for hourly display
+      def format_hour(time)
+        time.strftime('%I %p').gsub(/^0/, '')
+      end
+
+      # Format snowfall for display
+      def format_snowfall(inches)
+        return '-' if inches.nil? || inches.zero?
+
+        cm = (inches * 2.54).round(1)
+        %(<span class="imperial">#{inches}"</span><span class="metric">#{cm} cm</span>).html_safe
+      end
+
       def current_timestamp
         Time.zone = 'Eastern Time (US & Canada)'
         Time.zone.now.strftime('%Y-%m-%d %l:%M%p %Z')

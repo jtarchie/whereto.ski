@@ -12,6 +12,10 @@
   if next_snow_day
     forecast_summary += " Next snow: #{next_snow_day.name}."
   end
+
+  # Get current conditions and hourly forecasts
+  current = current_conditions_for(resort)
+  hourly = hourly_forecasts_for(resort, hours: 48)
 %>
 <!--
   ---
@@ -47,7 +51,135 @@
   </ul>
 </div>
 
-<h2 class="text-3xl font-bold mb-4">Long Term Forecast</h2>
+<!-- Resort Info Header -->
+<div class="mb-6">
+  <h1 class="text-4xl font-bold mb-2"><%= h resort.name %></h1>
+  <p class="text-base-content/70">
+    <%= h resort.region_name %>, <%= h resort.country_name %>
+    <% if resort.min_elevation && resort.max_elevation %>
+      <span class="ml-2">
+        📍 <%= format_elevation(resort.min_elevation) %> - <%= format_elevation(resort.max_elevation) %>
+      </span>
+    <% end %>
+  </p>
+</div>
+
+<!-- Snow Summary Card -->
+<% if total_snow > 0 %>
+<div class="alert alert-info mb-6">
+  <div>
+    <span class="text-2xl">❄️</span>
+    <div>
+      <h3 class="font-bold">Snow in Forecast!</h3>
+      <p>Expecting <%= format_snow_total(total_snow) %> total in the next 16 days</p>
+    </div>
+  </div>
+</div>
+<% end %>
+
+<!-- Current Conditions & Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <!-- Current Temperature -->
+  <div class="stat bg-base-200 rounded-lg">
+    <div class="stat-figure text-3xl">
+      <%= weather_icon(current.weather_code, is_day: current.is_day) %>
+    </div>
+    <div class="stat-title">Right Now</div>
+    <div class="stat-value text-2xl"><%= format_temperature(current.temperature) %></div>
+    <div class="stat-desc"><%= h current.weather_description %></div>
+  </div>
+
+  <!-- Feels Like -->
+  <div class="stat bg-base-200 rounded-lg">
+    <div class="stat-figure text-3xl">🌡️</div>
+    <div class="stat-title">Feels Like</div>
+    <div class="stat-value text-2xl"><%= format_temperature(current.apparent_temperature) %></div>
+    <div class="stat-desc">Humidity: <%= current.humidity %>%</div>
+  </div>
+
+  <!-- Wind -->
+  <div class="stat bg-base-200 rounded-lg">
+    <div class="stat-figure text-3xl">💨</div>
+    <div class="stat-title">Wind</div>
+    <div class="stat-value text-xl"><%= format_wind(current.wind_speed, current.wind_direction) %></div>
+    <% if current.wind_gust && current.wind_gust > current.wind_speed %>
+      <div class="stat-desc">Gusts: <span class="imperial"><%= current.wind_gust %> mph</span><span class="metric"><%= (current.wind_gust * 1.60934).round(1) %> kph</span></div>
+    <% end %>
+  </div>
+
+  <!-- Cloud Cover -->
+  <div class="stat bg-base-200 rounded-lg">
+    <div class="stat-figure text-3xl">☁️</div>
+    <div class="stat-title">Cloud Cover</div>
+    <div class="stat-value text-2xl"><%= current.cloud_cover %>%</div>
+    <div class="stat-desc"><%= current.is_day ? 'Daytime' : 'Nighttime' %></div>
+  </div>
+</div>
+
+<!-- Hourly Forecast Section -->
+<h2 class="text-3xl font-bold mb-4">Hourly Forecast</h2>
+<p class="text-base-content/70 mb-4">Next 48 hours of detailed weather data</p>
+
+<div class="overflow-x-auto mb-8">
+  <table class="table table-xs w-full">
+    <thead>
+      <tr class="bg-base-200">
+        <th class="sticky left-0 bg-base-200 z-10">Time</th>
+        <th></th>
+        <th>Temp</th>
+        <th>Feels</th>
+        <th>Precip %</th>
+        <th>Snow</th>
+        <th>Humidity</th>
+        <th>Wind</th>
+        <th>Gusts</th>
+        <th>Cloud</th>
+        <th>Freeze Lvl</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% current_date = nil %>
+      <% hourly.each do |hour| %>
+        <% hour_date = hour.time.strftime('%a %m/%d') %>
+        <% if hour_date != current_date %>
+          <tr class="bg-base-300/50">
+            <td colspan="11" class="font-bold text-sm py-1"><%= hour_date %></td>
+          </tr>
+          <% current_date = hour_date %>
+        <% end %>
+        <tr class="<%= hour.snowfall && hour.snowfall > 0 ? 'snow-cell' : '' %>">
+          <td class="sticky left-0 bg-base-100 z-10 font-medium"><%= format_hour(hour.time) %></td>
+          <td class="text-lg"><%= weather_icon(hour.weather_code, is_day: hour.is_day) %></td>
+          <td><%= format_temperature(hour.temperature) %></td>
+          <td><%= format_temperature(hour.apparent_temperature) %></td>
+          <td><%= hour.precipitation_probability %>%</td>
+          <td class="<%= hour.snowfall && hour.snowfall > 0 ? 'font-bold text-cyan-600 dark:text-cyan-400' : 'text-gray-400' %>">
+            <% if hour.snowfall && hour.snowfall > 0 %>
+              <%= format_snowfall(hour.snowfall) %> ❄️
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td><%= hour.humidity %>%</td>
+          <td><%= hour.wind_direction %> <span class="imperial"><%= hour.wind_speed %></span><span class="metric"><%= (hour.wind_speed * 1.60934).round(1) %></span></td>
+          <td><span class="imperial"><%= hour.wind_gust %></span><span class="metric"><%= (hour.wind_gust * 1.60934).round(1) %></span></td>
+          <td><%= hour.cloud_cover %>%</td>
+          <td>
+            <% if hour.freezing_level %>
+              <%= format_elevation(hour.freezing_level * 3.28084) %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Daily Forecast Section -->
+<h2 class="text-3xl font-bold mb-4">16-Day Forecast</h2>
+<p class="text-base-content/70 mb-4">Extended outlook for planning your trip</p>
 
 <% headers, rows=table_for_longterm(resort) %>
 
@@ -83,4 +215,9 @@
       <% end %>
     </tbody>
   </table>
+</div>
+
+<!-- Weather Data Attribution -->
+<div class="mt-8 text-sm text-base-content/50 text-center">
+  <p>Weather data provided by <a href="https://open-meteo.com/" target="_blank" class="link">Open-Meteo</a></p>
 </div>

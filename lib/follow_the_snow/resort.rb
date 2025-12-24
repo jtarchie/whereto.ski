@@ -44,15 +44,27 @@ module FollowTheSnow
     def forecasts(aggregates: [
       Forecast::Daily
     ])
-      @forecast ||= Forecast::OpenMeteo.new(
-        resort: self
-      )
-
-      aggregates.reduce(@forecast) do |forecaster, aggregate|
+      aggregates.reduce(forecast_client) do |forecaster, aggregate|
         aggregate.new(
           forecasts: forecaster.forecasts
         )
       end.forecasts
+    end
+
+    def hourly_forecasts
+      forecast_client.hourly_forecasts
+    end
+
+    def current_conditions
+      forecast_client.current_conditions
+    end
+
+    private
+
+    def forecast_client
+      @forecast_client ||= Forecast::OpenMeteo.new(
+        resort: self
+      )
     end
   end
 end

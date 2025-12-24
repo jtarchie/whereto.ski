@@ -292,3 +292,48 @@ body.filter-snow-only tr.no-snow {
 .breadcrumbs li::before {
   @apply text-cyan-500 dark:text-cyan-400;
 }
+
+/* Hourly forecast table enhancements */
+.table-xs th,
+.table-xs td {
+  @apply whitespace-nowrap;
+}
+
+/* Sticky first column in hourly table */
+.table .sticky {
+  position: sticky;
+}
+
+/* Enhanced stat cards for current conditions */
+.stat {
+  @apply transition-all duration-300;
+  @apply hover:shadow-xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30;
+  @apply border border-transparent hover:border-cyan-200
+    dark:hover:border-cyan-800;
+}
+
+.stat-value {
+  @apply wrap-break-word;
+}
+
+/* Date separator rows in hourly forecast */
+.bg-base-300\/50 td {
+  @apply border-t-2 border-cyan-200 dark:border-cyan-800;
+}
+
+/* Compact hourly table on mobile */
+@media (max-width: 768px) {
+  .table-xs {
+    @apply text-xs;
+  }
+
+  .table-xs th,
+  .table-xs td {
+    @apply px-1 py-1;
+  }
+}
+
+/* Attribution link styling */
+.text-base-content\/50 a {
+  @apply text-cyan-600 dark:text-cyan-400;
+}
