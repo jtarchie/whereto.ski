@@ -56,7 +56,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
+                  href="/resorts/<%= resort.slug %>"
                   class="font-medium hover:underline"
                 >
                   <%= h resort.name %>
@@ -124,7 +124,7 @@
 
               <td>
                 <a
-                  href="/resorts/<%= resort.name.to_slug.normalize.to_s %>"
+                  href="/resorts/<%= resort.slug %>"
                   class="font-medium hover:underline"
                 >
                   <%= h resort.name %>

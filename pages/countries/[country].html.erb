@@ -37,7 +37,7 @@
         class="flex items-center gap-2"
         data-has-snow="<%= any_snow?(resort) %>"
       >
-        <a href="/resorts/<%= resort.name.to_slug.normalize.to_s %>" class="grow">
+        <a href="/resorts/<%= resort.slug %>" class="grow">
           <%= h resort.name %>
         </a>
 

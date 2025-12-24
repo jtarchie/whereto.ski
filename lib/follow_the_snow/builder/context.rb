@@ -163,7 +163,7 @@ module FollowTheSnow
             f.snow.to_s
           end
 
-          row  = [%(<a href="/resorts/#{resort.name.to_slug.normalize}">#{resort.name}</a>).html_safe]
+          row  = [%(<a href="/resorts/#{resort.slug}">#{resort.name}</a>).html_safe]
           row += if snow_days.length == max_days.length
                    snow_days
                  else

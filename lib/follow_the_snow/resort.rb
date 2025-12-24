@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'babosa'
 require 'sqlite3'
 
 module FollowTheSnow
@@ -28,6 +29,17 @@ module FollowTheSnow
       rows.close
 
       results
+    end
+
+    def slug
+      # Try to transliterate with multiple strategies for better international support
+      slug = name.to_slug
+
+      # Try to transliterate using approximate ASCII conversion
+      # which works for most character sets (Cyrillic, Greek, etc.)
+      transliterated = slug.transliterate(:cyrillic).transliterate(:greek).transliterate(:latin)
+
+      transliterated.normalize.to_s
     end
 
     def forecasts(aggregates: [

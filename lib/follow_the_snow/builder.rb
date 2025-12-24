@@ -67,7 +67,7 @@ module FollowTheSnow
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 limiter.shift unless defined?(RSpec)
 
-                resort_filename = build_filename.gsub('[resort]', resort.name.to_slug.normalize.to_s)
+                resort_filename = build_filename.gsub('[resort]', resort.slug)
                 write_file(
                   layout_html,
                   filename,
@@ -165,14 +165,14 @@ module FollowTheSnow
 
         # Add resorts (filter out those with empty slug names)
         resorts.each do |resort|
-          next if resort.name.to_slug.normalize.to_s.empty?
+          next if resort.slug.empty?
 
           search_data[:d] << {
             t: 'r',
             n: resort.name,
             c: country_lookup[resort.country_name], # numeric index
             s: resort.region_name,
-            u: "/resorts/#{resort.name.to_slug.normalize}"
+            u: "/resorts/#{resort.slug}"
           }
         end
 
