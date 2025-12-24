@@ -338,6 +338,44 @@ module FollowTheSnow
         best_ski_days(resort, limit: 16).max_by { |day| day[:score] }
       end
 
+      # Calculate "Best Days to Ski" aggregated across multiple resorts (for state/country pages)
+      # Returns array of day summaries with resort counts by rating
+      def best_ski_days_for_region(resorts_list, limit: 7)
+        # Collect all resort scores by day
+        day_data = Hash.new { |h, k| h[k] = { scores: [], snow_totals: [], resorts_with_snow: 0 } }
+
+        resorts_list.each do |resort|
+          best_ski_days(resort, limit: limit).each do |day|
+            day_data[day[:name]][:scores] << day[:score]
+            day_data[day[:name]][:snow_totals] << day[:snow]
+            day_data[day[:name]][:resorts_with_snow] += 1 if day[:snow].positive?
+            day_data[day[:name]][:date]             ||= day[:date]
+          end
+        end
+
+        # Calculate aggregated stats for each day
+        day_data.map do |name, data|
+          avg_score     = data[:scores].sum.to_f / data[:scores].size
+          total_resorts = data[:scores].size
+          epic_count    = data[:scores].count { |s| s >= 85 }
+          great_count   = data[:scores].count { |s| s >= 70 && s < 85 }
+          good_count    = data[:scores].count { |s| s >= 55 && s < 70 }
+
+          {
+            name: name,
+            date: data[:date],
+            avg_score: avg_score.round,
+            rating: score_to_rating(avg_score),
+            total_resorts: total_resorts,
+            resorts_with_snow: data[:resorts_with_snow],
+            epic_count: epic_count,
+            great_count: great_count,
+            good_count: good_count,
+            max_snow: data[:snow_totals].max || 0
+          }
+        end.sort_by { |d| d[:date] }.take(limit)
+      end
+
       private
 
       # Calculate ski score (0-100) based on conditions

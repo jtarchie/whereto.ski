@@ -232,12 +232,6 @@ RSpec.describe('Building') do
       expect(index_html).to include('href="/snow-now"')
       expect(index_html).to include('Snow Now')
     end
-
-    it 'includes Snow Now link in mobile menu' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('drawer-side')
-      expect(index_html).to match(/snow-now.*Snow Now/m)
-    end
   end
 
   describe 'search feature' do

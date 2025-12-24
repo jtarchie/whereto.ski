@@ -480,4 +480,296 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
       expect(context.total_snow_for(resort_without_snow)).to eq(0)
     end
   end
+
+  describe '#best_ski_days' do
+    let(:resort_with_varied_conditions) do
+      FollowTheSnow::Resort.new(
+        id: 10,
+        name: 'Varied Resort',
+        country_name: 'United States of America',
+        country_code: 'US',
+        region_name: 'Colorado',
+        region_code: 'CO',
+        lat: 39.5,
+        lon: -106.0
+      )
+    end
+    let(:varied_context) { described_class.new(resorts: [resort_with_varied_conditions]) }
+
+    before do
+      allow(resort_with_varied_conditions).to receive(:forecasts).and_return([
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Monday',
+                                                                                 time_of_day: Date.new(2023, 3, 14),
+                                                                                 snow: 8.0,
+                                                                                 temp: 25..32,
+                                                                                 wind_speed: 5..10,
+                                                                                 wind_gust: '15 mph',
+                                                                                 wind_direction: 'N'
+                                                                               ),
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Tuesday',
+                                                                                 time_of_day: Date.new(2023, 3, 15),
+                                                                                 snow: 0.0,
+                                                                                 temp: 35..45,
+                                                                                 wind_speed: 30..45,
+                                                                                 wind_gust: '55 mph',
+                                                                                 wind_direction: 'W'
+                                                                               ),
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Wednesday',
+                                                                                 time_of_day: Date.new(2023, 3, 16),
+                                                                                 snow: 2.0,
+                                                                                 temp: 28..35,
+                                                                                 wind_speed: 8..12,
+                                                                                 wind_gust: '18 mph',
+                                                                                 wind_direction: 'NW'
+                                                                               )
+                                                                             ])
+    end
+
+    it 'returns array of scored days' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+
+      expect(days).to be_an(Array)
+      expect(days.length).to eq(3)
+    end
+
+    it 'includes required keys in each day' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+
+      expect(days).to all(include(:date, :name, :score, :rating, :reasons, :snow))
+    end
+
+    it 'scores powder days higher' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+
+      powder_day  = days.find { |d| d[:name] == 'Monday' }
+      no_snow_day = days.find { |d| d[:name] == 'Tuesday' }
+
+      expect(powder_day[:score]).to be > no_snow_day[:score]
+    end
+
+    it 'penalizes high wind days' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+
+      windy_day = days.find { |d| d[:name] == 'Tuesday' }
+      calm_day  = days.find { |d| d[:name] == 'Wednesday' }
+
+      # Tuesday has 30-45mph winds, Wednesday has 8-12mph
+      expect(calm_day[:score]).to be > windy_day[:score]
+    end
+
+    it 'assigns correct ratings based on score' do
+      days          = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+      valid_ratings = %w[Epic Great Good Fair Poor]
+
+      expect(days.map { |d| d[:rating] }).to all(be_in(valid_ratings))
+    end
+
+    it 'respects limit parameter' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 2)
+      expect(days.length).to eq(2)
+    end
+
+    it 'includes snow amount in each day' do
+      days = varied_context.best_ski_days(resort_with_varied_conditions, limit: 3)
+
+      powder_day = days.find { |d| d[:name] == 'Monday' }
+      expect(powder_day[:snow]).to eq(8.0)
+    end
+  end
+
+  describe '#best_day_to_ski' do
+    let(:resort_with_varied_conditions) do
+      FollowTheSnow::Resort.new(
+        id: 10,
+        name: 'Varied Resort',
+        country_name: 'United States of America',
+        country_code: 'US',
+        region_name: 'Colorado',
+        region_code: 'CO',
+        lat: 39.5,
+        lon: -106.0
+      )
+    end
+    let(:varied_context) { described_class.new(resorts: [resort_with_varied_conditions]) }
+
+    before do
+      allow(resort_with_varied_conditions).to receive(:forecasts).and_return([
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Monday',
+                                                                                 time_of_day: Date.new(2023, 3, 14),
+                                                                                 snow: 0.5,
+                                                                                 temp: 30..40,
+                                                                                 wind_speed: 10..15,
+                                                                                 wind_gust: '20 mph',
+                                                                                 wind_direction: 'N'
+                                                                               ),
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Tuesday',
+                                                                                 time_of_day: Date.new(2023, 3, 15),
+                                                                                 snow: 6.0,
+                                                                                 temp: 25..30,
+                                                                                 wind_speed: 5..8,
+                                                                                 wind_gust: '12 mph',
+                                                                                 wind_direction: 'NW'
+                                                                               ),
+                                                                               FollowTheSnow::Forecast.new(
+                                                                                 name: 'Wednesday',
+                                                                                 time_of_day: Date.new(2023, 3, 16),
+                                                                                 snow: 0.0,
+                                                                                 temp: 35..45,
+                                                                                 wind_speed: 8..12,
+                                                                                 wind_gust: '18 mph',
+                                                                                 wind_direction: 'W'
+                                                                               )
+                                                                             ])
+    end
+
+    it 'returns the day with highest score' do
+      best = varied_context.best_day_to_ski(resort_with_varied_conditions)
+
+      # Tuesday has 6" snow + calm winds = should be best
+      expect(best[:name]).to eq('Tuesday')
+    end
+
+    it 'returns a hash with expected keys' do
+      best = varied_context.best_day_to_ski(resort_with_varied_conditions)
+
+      expect(best).to have_key(:score)
+      expect(best).to have_key(:rating)
+      expect(best).to have_key(:reasons)
+    end
+  end
+
+  describe '#best_ski_days_for_region' do
+    let(:resort_vail) do
+      FollowTheSnow::Resort.new(
+        id: 20,
+        name: 'Vail',
+        country_name: 'United States of America',
+        country_code: 'US',
+        region_name: 'Colorado',
+        region_code: 'CO',
+        lat: 39.6,
+        lon: -106.4
+      )
+    end
+
+    let(:resort_breckenridge) do
+      FollowTheSnow::Resort.new(
+        id: 21,
+        name: 'Breckenridge',
+        country_name: 'United States of America',
+        country_code: 'US',
+        region_name: 'Colorado',
+        region_code: 'CO',
+        lat: 39.5,
+        lon: -106.1
+      )
+    end
+
+    let(:region_context) { described_class.new(resorts: [resort_vail, resort_breckenridge]) }
+
+    before do
+      allow(resort_vail).to receive(:forecasts).and_return([
+                                                             FollowTheSnow::Forecast.new(
+                                                               name: 'Monday',
+                                                               time_of_day: Date.new(2023, 3, 14),
+                                                               snow: 5.0,
+                                                               temp: 25..32,
+                                                               wind_speed: 8..12,
+                                                               wind_gust: '18 mph',
+                                                               wind_direction: 'N'
+                                                             ),
+                                                             FollowTheSnow::Forecast.new(
+                                                               name: 'Tuesday',
+                                                               time_of_day: Date.new(2023, 3, 15),
+                                                               snow: 0.0,
+                                                               temp: 35..42,
+                                                               wind_speed: 5..10,
+                                                               wind_gust: '15 mph',
+                                                               wind_direction: 'W'
+                                                             )
+                                                           ])
+
+      allow(resort_breckenridge).to receive(:forecasts).and_return([
+                                                                     FollowTheSnow::Forecast.new(
+                                                                       name: 'Monday',
+                                                                       time_of_day: Date.new(2023, 3, 14),
+                                                                       snow: 3.0,
+                                                                       temp: 28..35,
+                                                                       wind_speed: 10..15,
+                                                                       wind_gust: '20 mph',
+                                                                       wind_direction: 'NW'
+                                                                     ),
+                                                                     FollowTheSnow::Forecast.new(
+                                                                       name: 'Tuesday',
+                                                                       time_of_day: Date.new(2023, 3, 15),
+                                                                       snow: 0.0,
+                                                                       temp: 32..40,
+                                                                       wind_speed: 6..12,
+                                                                       wind_gust: '16 mph',
+                                                                       wind_direction: 'W'
+                                                                     )
+                                                                   ])
+    end
+
+    it 'returns array of aggregated day data' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      expect(days).to be_an(Array)
+      expect(days.length).to eq(2)
+    end
+
+    it 'includes aggregated stats in each day' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      expect(days).to all(include(:name, :avg_score, :rating, :total_resorts,
+                                  :resorts_with_snow, :epic_count, :great_count, :good_count, :max_snow))
+    end
+
+    it 'correctly counts resorts with snow' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      monday  = days.find { |d| d[:name] == 'Monday' }
+      tuesday = days.find { |d| d[:name] == 'Tuesday' }
+
+      # Both resorts have snow on Monday
+      expect(monday[:resorts_with_snow]).to eq(2)
+
+      # Neither resort has snow on Tuesday
+      expect(tuesday[:resorts_with_snow]).to eq(0)
+    end
+
+    it 'calculates average score across resorts' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      monday = days.find { |d| d[:name] == 'Monday' }
+
+      # Should be an average of both resort scores
+      expect(monday[:avg_score]).to be_between(50, 100)
+    end
+
+    it 'tracks max snow amount' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      monday = days.find { |d| d[:name] == 'Monday' }
+
+      # Max snow is 5.0" from Vail
+      expect(monday[:max_snow]).to eq(5.0)
+    end
+
+    it 'counts total resorts correctly' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 2)
+
+      expect(days.map { |d| d[:total_resorts] }).to all(eq(2))
+    end
+
+    it 'respects limit parameter' do
+      days = region_context.best_ski_days_for_region([resort_vail, resort_breckenridge], limit: 1)
+      expect(days.length).to eq(1)
+    end
+  end
 end

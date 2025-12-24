@@ -35,6 +35,54 @@
   </div>
 </div>
 
+<!-- Best Days to Ski for Region -->
+<% region_days = best_ski_days_for_region(resorts, limit: 7) %>
+
+<div class="mb-8">
+  <h3 class="text-xl font-bold mb-3">🎿 Best Days to Ski in <%= h state %></h3>
+
+  <p class="text-base-content/70 text-sm mb-4">
+    Aggregated across <%= resorts.size %> resorts
+  </p>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+    <% region_days.each do |day| %>
+      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> p-3 rounded-lg text-center">
+        <div class="text-xs font-medium opacity-80"><%= day[:name] %></div>
+        <div class="text-2xl font-black my-1"><%= day[:avg_score] %></div>
+
+        <div class="text-xs font-bold uppercase tracking-wide">
+          <%= day[:rating] %>
+        </div>
+
+        <% if day[:resorts_with_snow] > 0 %>
+          <div class="text-xs mt-1">
+            ❄️ <%= day[:resorts_with_snow] %>
+            resort<%= day[:resorts_with_snow] == 1 ? '' : 's' %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <% best = region_days.max_by { |d| d[:avg_score] } %>
+
+  <% if best && best[:avg_score] >= 60 %>
+    <div class="mt-4 p-3 bg-base-200 rounded-lg">
+      <span class="font-bold">💡 Best day:</span>
+      <span><%= best[:name] %></span>
+
+      <% if best[:resorts_with_snow] > 0 %>
+        <span class="text-sm opacity-80">
+          (<%= best[:resorts_with_snow] %>
+          resort<%= best[:resorts_with_snow] == 1 ? '' : 's' %> with snow
+          expected)
+        </span>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
 <h3 class="text-xl font-semibold mb-4">Forecast</h3>
 
 <% headers, rows=table_for_resorts(resorts) %>
