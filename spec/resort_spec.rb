@@ -44,11 +44,24 @@ RSpec.describe('Resort') do
       expect(resort.slug).to eq('palandoken')
     end
 
-    it 'handles Japanese characters (keeps original if no transliterator)' do
+    it 'transliterates Japanese characters (Katakana)' do
       resort = FollowTheSnow::Resort.new(name: 'ニセコ')
-      # Babosa doesn't have a Japanese transliterator, so it preserves the characters
-      # but creates a valid slug with them
-      expect(resort.slug).to eq('ニセコ')
+      expect(resort.slug).to eq('niseko')
+    end
+
+    it 'transliterates Japanese characters (Kanji)' do
+      resort = FollowTheSnow::Resort.new(name: '白馬')
+      expect(resort.slug).to eq('bai-ma')
+    end
+
+    it 'transliterates Chinese characters (Simplified)' do
+      resort = FollowTheSnow::Resort.new(name: '长白山')
+      expect(resort.slug).to eq('chang-bai-shan')
+    end
+
+    it 'transliterates Chinese characters (Traditional)' do
+      resort = FollowTheSnow::Resort.new(name: '長白山')
+      expect(resort.slug).to eq('chang-bai-shan')
     end
 
     it 'transliterates Bulgarian characters' do

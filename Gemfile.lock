@@ -190,6 +190,7 @@ GEM
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
+    unidecode (1.0.0)
     uri (1.1.1)
     webmock (3.26.1)
       addressable (>= 2.8.0)
@@ -232,6 +233,7 @@ DEPENDENCIES
   selenium-webdriver
   sqlite3
   tilt
+  unidecode
   webmock
 
 BUNDLED WITH
