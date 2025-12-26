@@ -103,12 +103,12 @@ module FollowTheSnow
 
       daily.fetch('time').each_with_index.map do |timestamp, index|
         dt                    = Date.parse(timestamp)
-        temp_range            = (daily.fetch('temperature_2m_min')[index].round(2))..(daily['temperature_2m_max'][index].round(2))
-        apparent_temp_range   = (daily.fetch('apparent_temperature_min')[index].round(2))..(daily['apparent_temperature_max'][index].round(2))
-        snow_range            = 0..daily.fetch('snowfall_sum')[index].round(2)
-        wind_gust_range       = 0..daily.fetch('wind_gusts_10m_max')[index].round(2)
-        wind_speed_range      = 0..daily.fetch('wind_speed_10m_max')[index].round(2)
-        uv_max                = daily.fetch('uv_index_max')[index].round(1)
+        temp_range            = (daily.fetch('temperature_2m_min')[index]&.round(2))..(daily['temperature_2m_max'][index]&.round(2))
+        apparent_temp_range   = (daily.fetch('apparent_temperature_min')[index]&.round(2))..(daily['apparent_temperature_max'][index]&.round(2))
+        snow_range            = 0..(daily.fetch('snowfall_sum')[index]&.round(2) || 0)
+        wind_gust_range       = 0..(daily.fetch('wind_gusts_10m_max')[index]&.round(2) || 0)
+        wind_speed_range      = 0..(daily.fetch('wind_speed_10m_max')[index]&.round(2) || 0)
+        uv_max                = daily.fetch('uv_index_max')[index]&.round(1)
         sunshine_secs         = daily.fetch('sunshine_duration')[index].to_i
         precip_prob           = daily.fetch('precipitation_probability_max')[index].to_i
         precip_sum            = daily.fetch('precipitation_sum')[index].to_f.round(2)
@@ -143,13 +143,13 @@ module FollowTheSnow
           time: time,
           temperature: hourly.fetch('temperature_2m')[index]&.round(1),
           apparent_temperature: hourly.fetch('apparent_temperature')[index]&.round(1),
-          humidity: hourly.fetch('relative_humidity_2m')[index]&.to_i,
-          precipitation_probability: hourly.fetch('precipitation_probability')[index]&.to_i,
+          humidity: hourly.fetch('relative_humidity_2m')[index].to_i,
+          precipitation_probability: hourly.fetch('precipitation_probability')[index].to_i,
           precipitation: hourly.fetch('precipitation')[index]&.round(2),
           snowfall: hourly.fetch('snowfall')[index]&.round(2),
           weather_code: hourly.fetch('weather_code')[index],
           weather_description: weather_codes(hourly.fetch('weather_code')[index]),
-          cloud_cover: hourly.fetch('cloud_cover')[index]&.to_i,
+          cloud_cover: hourly.fetch('cloud_cover')[index].to_i,
           wind_speed: hourly.fetch('wind_speed_10m')[index]&.round(1),
           wind_direction: wind_direction(hourly.fetch('wind_direction_10m')[index]),
           wind_gust: hourly.fetch('wind_gusts_10m')[index]&.round(1),
@@ -166,10 +166,10 @@ module FollowTheSnow
       CurrentConditions.new(
         temperature: current.fetch('temperature_2m')&.round(1),
         apparent_temperature: current.fetch('apparent_temperature')&.round(1),
-        humidity: current.fetch('relative_humidity_2m')&.to_i,
+        humidity: current.fetch('relative_humidity_2m').to_i,
         weather_code: current.fetch('weather_code'),
         weather_description: weather_codes(current.fetch('weather_code')),
-        cloud_cover: current.fetch('cloud_cover')&.to_i,
+        cloud_cover: current.fetch('cloud_cover').to_i,
         wind_speed: current.fetch('wind_speed_10m')&.round(1),
         wind_direction: wind_direction(current.fetch('wind_direction_10m')),
         wind_gust: current.fetch('wind_gusts_10m')&.round(1),
