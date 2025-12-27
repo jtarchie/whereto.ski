@@ -56,12 +56,15 @@ module FollowTheSnow
 
       # Extract numeric snow value from forecast
       def snow_inches(forecast)
-        return 0 unless forecast&.snow
+        return 0 if forecast.nil?
 
-        if forecast.snow.respond_to?(:end)
-          forecast.snow.end.to_f
-        elsif forecast.snow.respond_to?(:to_f)
-          forecast.snow.to_f
+        snow = forecast.snow
+        return 0 if snow.nil?
+
+        if snow.respond_to?(:end)
+          snow.end.to_f
+        elsif snow.respond_to?(:to_f)
+          snow.to_f
         else
           0
         end
