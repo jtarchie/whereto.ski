@@ -47,7 +47,7 @@ desc 'Build the CSS and JS files'
 task :assets do
   sh('npm run build')
   sh('npx esbuild pages/input.js --bundle --minify --outfile=pages/public/assets/main.js')
-  sh('npx esbuild pages/public/assets/main.css --minify --outfile=pages/public/assets/main.css')
+  sh('npx esbuild pages/public/assets/main.css --minify --allow-overwrite --outfile=pages/public/assets/main.css')
 end
 
 desc 'Format the codebase'
