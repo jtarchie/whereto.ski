@@ -54,7 +54,67 @@
         localStorage.setItem("filterSnowOnly", isChecked);
       });
     }
+
+    // Date sorting functionality for state/country pages
+    initDateSorting();
   });
+
+  // Initialize date sorting for forecast tables
+  function initDateSorting() {
+    const sortSelect = document.getElementById("sort-by-date");
+    const table = document.getElementById("forecast-table");
+    const tbody = document.getElementById("forecast-body");
+
+    if (!sortSelect || !table || !tbody) return;
+
+    // Get date headers from the table (skip first column which is "Location")
+    const headers = table.querySelectorAll("thead th");
+    const dateHeaders = Array.from(headers).slice(1);
+
+    // Populate the dropdown with date options
+    dateHeaders.forEach((header, index) => {
+      const option = document.createElement("option");
+      option.value = index;
+      option.textContent = header.textContent.trim();
+      sortSelect.appendChild(option);
+    });
+
+    // Store original row order for reset
+    const originalRows = Array.from(tbody.querySelectorAll("tr"));
+
+    // Handle sort selection
+    sortSelect.addEventListener("change", () => {
+      const selectedIndex = sortSelect.value;
+
+      if (selectedIndex === "") {
+        // Reset to original order
+        originalRows.forEach((row) => tbody.appendChild(row));
+        return;
+      }
+
+      const colIndex = parseInt(selectedIndex, 10);
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+
+      // Sort rows by snow value for the selected date (descending)
+      rows.sort((a, b) => {
+        const aValues = a.dataset.snowValues
+          ? a.dataset.snowValues.split(",")
+          : [];
+        const bValues = b.dataset.snowValues
+          ? b.dataset.snowValues.split(",")
+          : [];
+
+        const aSnow = parseFloat(aValues[colIndex]) || 0;
+        const bSnow = parseFloat(bValues[colIndex]) || 0;
+
+        return bSnow - aSnow; // Descending order
+      });
+
+      // Re-append rows in sorted order
+      rows.forEach((row) => tbody.appendChild(row));
+    });
+  }
+
   let searchData = null;
   let isLoading = false;
 

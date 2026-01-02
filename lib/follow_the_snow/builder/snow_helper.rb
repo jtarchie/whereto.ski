@@ -54,6 +54,11 @@ module FollowTheSnow
         value.to_s.gsub(/[^\d.-]/, '').to_f.positive?
       end
 
+      # Extract numeric snow amount from a cell value for sorting
+      def snow_amount(value)
+        value.to_s.gsub(/[^\d.-]/, '').to_f
+      end
+
       # Extract numeric snow value from forecast
       def snow_inches(forecast)
         return 0 if forecast.nil?

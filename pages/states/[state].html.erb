@@ -83,27 +83,38 @@
   <% end %>
 </div>
 
-<h3 class="text-xl font-semibold mb-4">Forecast</h3>
+<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+  <h3 class="text-xl font-semibold">Forecast</h3>
+
+  <div class="flex items-center gap-2">
+    <label for="sort-by-date" class="text-sm text-base-content/70">Sort by snow:</label>
+
+    <select id="sort-by-date" class="select select-sm select-bordered">
+      <option value="">Default</option>
+    </select>
+  </div>
+</div>
 
 <% headers, rows=table_for_resorts(resorts) %>
 
 <div class="overflow-x-auto">
-  <table class="table w-full sticky">
+  <table id="forecast-table" class="table w-full sticky">
     <!-- Table header -->
     <thead>
       <tr>
-        <% headers.each do |header| %>
-          <th><%= h header %></th>
+        <% headers.each_with_index do |header, index| %>
+          <th data-col-index="<%= index %>"><%= h header %></th>
         <% end %>
       </tr>
     </thead>
 
-    <tbody>
+    <tbody id="forecast-body">
       <% rows.each do |row| %>
         <% has_snow = row.drop(1).any? { |cell| snow?(cell) } %>
+        <% snow_values = row.drop(1).map { |cell| snow_amount(cell) }.join(',') %>
 
         <% if has_snow %>
-          <tr>
+          <tr data-snow-values="<%= snow_values %>">
             <% row.each_with_index do |cell, index| %>
               <% if index == 0 %>
                 <!-- First column is the resort name/link -->
@@ -120,7 +131,7 @@
             <% end %>
           </tr>
         <% else %>
-          <tr class="no-snow">
+          <tr class="no-snow" data-snow-values="<%= snow_values %>">
             <% row.each_with_index do |cell, index| %>
               <% if index == 0 %>
                 <!-- First column is the resort name/link -->
