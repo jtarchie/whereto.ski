@@ -247,3 +247,5 @@ docs/
 Brewfile.lock.json
 .envrc
 *.geojson
+pages/public/assets/main.js
+pages/public/assets/main.css

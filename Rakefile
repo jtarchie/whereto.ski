@@ -43,9 +43,11 @@ task fast: [:css] do
   build!(resorts)
 end
 
-desc 'Build the CSS files'
+desc 'Build the CSS and JS files'
 task :css do
   sh('npm run build')
+  sh('npx esbuild pages/input.js --bundle --minify --outfile=pages/public/assets/main.js')
+  sh('npx esbuild pages/public/assets/main.css --minify --outfile=pages/public/assets/main.css')
 end
 
 desc 'Format the codebase'
@@ -54,8 +56,6 @@ task :fmt do
   sh('rubocop -A')
   sh('herb analyze pages/')
   sh('npx @herb-tools/formatter pages/')
-  sh('npx esbuild pages/public/assets/main.js --minify --outfile=pages/public/assets/main.js --allow-overwrite')
-  sh('npx esbuild pages/public/assets/main.css --minify --outfile=pages/public/assets/main.css --allow-overwrite')
 end
 
 desc 'Run the tests'
