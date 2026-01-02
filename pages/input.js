@@ -61,57 +61,62 @@
 
   // Initialize date sorting for forecast tables
   function initDateSorting() {
-    const sortSelect = document.getElementById("sort-by-date");
     const table = document.getElementById("forecast-table");
     const tbody = document.getElementById("forecast-body");
 
-    if (!sortSelect || !table || !tbody) return;
+    if (!table || !tbody) return;
 
-    // Get date headers from the table (skip first column which is "Location")
-    const headers = table.querySelectorAll("thead th");
-    const dateHeaders = Array.from(headers).slice(1);
-
-    // Populate the dropdown with date options
-    dateHeaders.forEach((header, index) => {
-      const option = document.createElement("option");
-      option.value = index;
-      option.textContent = header.textContent.trim();
-      sortSelect.appendChild(option);
-    });
+    // Get sortable headers (date columns only)
+    const sortableHeaders = table.querySelectorAll("thead th.sortable-header");
+    if (sortableHeaders.length === 0) return;
 
     // Store original row order for reset
     const originalRows = Array.from(tbody.querySelectorAll("tr"));
+    let currentSortCol = null;
 
-    // Handle sort selection
-    sortSelect.addEventListener("change", () => {
-      const selectedIndex = sortSelect.value;
+    // Handle header click for sorting
+    sortableHeaders.forEach((header) => {
+      header.addEventListener("click", () => {
+        const colIndex = parseInt(header.dataset.colIndex, 10);
 
-      if (selectedIndex === "") {
-        // Reset to original order
-        originalRows.forEach((row) => tbody.appendChild(row));
-        return;
-      }
+        // Clear all sort indicators
+        sortableHeaders.forEach((h) => {
+          h.querySelector(".sort-indicator").textContent = "";
+          h.classList.remove("sorting-active");
+        });
 
-      const colIndex = parseInt(selectedIndex, 10);
-      const rows = Array.from(tbody.querySelectorAll("tr"));
+        // If clicking the same column, reset to original order
+        if (currentSortCol === colIndex) {
+          originalRows.forEach((row) => tbody.appendChild(row));
+          currentSortCol = null;
+          return;
+        }
 
-      // Sort rows by snow value for the selected date (descending)
-      rows.sort((a, b) => {
-        const aValues = a.dataset.snowValues
-          ? a.dataset.snowValues.split(",")
-          : [];
-        const bValues = b.dataset.snowValues
-          ? b.dataset.snowValues.split(",")
-          : [];
+        // Sort by the clicked column
+        currentSortCol = colIndex;
+        header.querySelector(".sort-indicator").textContent = "↓";
+        header.classList.add("sorting-active");
 
-        const aSnow = parseFloat(aValues[colIndex]) || 0;
-        const bSnow = parseFloat(bValues[colIndex]) || 0;
+        const rows = Array.from(tbody.querySelectorAll("tr"));
 
-        return bSnow - aSnow; // Descending order
+        // Sort rows by snow value for the selected date (descending)
+        rows.sort((a, b) => {
+          const aValues = a.dataset.snowValues
+            ? a.dataset.snowValues.split(",")
+            : [];
+          const bValues = b.dataset.snowValues
+            ? b.dataset.snowValues.split(",")
+            : [];
+
+          const aSnow = parseFloat(aValues[colIndex]) || 0;
+          const bSnow = parseFloat(bValues[colIndex]) || 0;
+
+          return bSnow - aSnow; // Descending order
+        });
+
+        // Re-append rows in sorted order
+        rows.forEach((row) => tbody.appendChild(row));
       });
-
-      // Re-append rows in sorted order
-      rows.forEach((row) => tbody.appendChild(row));
     });
   }
 

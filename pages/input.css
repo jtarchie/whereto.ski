@@ -154,6 +154,11 @@ td.text-gray-400 {
   @apply border-l-4 border-l-cyan-400 dark:border-l-cyan-500;
 }
 
+/* Sortable table headers */
+.sortable-header.sorting-active {
+  @apply bg-base-200;
+}
+
 /* Best Days to Ski - Compact score cards */
 .ski-day-card {
   @apply border border-base-300 transition-all duration-200;

@@ -55,55 +55,54 @@ RSpec.describe('Date Sorting Feature', :js, type: :feature) do
   end
 
   describe 'state page' do
-    it 'has date sorting dropdown' do
+    it 'has sortable date column headers' do
       visit '/states/colorado'
-      expect(page).to have_select('sort-by-date')
+      expect(page).to have_css('th.sortable-header')
     end
 
-    it 'has Default option in dropdown' do
+    it 'shows instruction text for sorting' do
       visit '/states/colorado'
-      expect(page).to have_select('sort-by-date', with_options: ['Default'])
+      expect(page).to have_content('Click a date column to sort by snow depth')
     end
 
-    it 'populates dropdown with date options from table headers' do
+    it 'has cursor-pointer class on sortable headers' do
       visit '/states/colorado'
 
-      # Get the dropdown options
-      options = find('#sort-by-date').all('option').map(&:text)
+      headers = all('th.sortable-header')
+      expect(headers.length).to be > 0
 
-      # Should have Default plus date options
-      expect(options.length).to be > 1
-      expect(options.first).to eq('Default')
+      headers.each do |header|
+        expect(header['class']).to include('cursor-pointer')
+      end
     end
 
-    it 'sorts table by selected date descending' do
+    it 'sorts table when clicking a date header' do
       visit '/states/colorado'
 
-      # Get initial order of first resort names
-      initial_first = find('#forecast-body tr:first-child td:first-child').text
+      # Click the first sortable header
+      first_header = find('th.sortable-header', match: :first)
+      first_header.click
 
-      # Select a date column (index 0 = first date after Location column)
-      select_option = find('#sort-by-date option:nth-child(2)')
-      find('#sort-by-date').select(select_option.text)
-
-      # Table should be re-sorted (may or may not change the first row depending on data)
-      # Just verify the select changed and table has rows
-      expect(find('#sort-by-date').value).to eq('0')
+      # Should show sort indicator
+      expect(first_header).to have_css('.sort-indicator', text: '↓')
       expect(page).to have_css('#forecast-body tr')
     end
 
-    it 'resets to original order when Default is selected' do
+    it 'resets to original order when clicking same header again' do
       visit '/states/colorado'
 
       # Get initial order of all resorts
       initial_order = all('#forecast-body tr td:first-child').map(&:text)
 
-      # Select a date to sort
-      select_option = find('#sort-by-date option:nth-child(2)')
-      find('#sort-by-date').select(select_option.text)
+      # Click header to sort
+      first_header = find('th.sortable-header', match: :first)
+      first_header.click
 
-      # Reset to default
-      find('#sort-by-date').select('Default')
+      # Click same header again to reset
+      first_header.click
+
+      # Header should no longer have sorting-active class
+      expect(first_header['class']).not_to include('sorting-active')
 
       # Should be back to original order
       final_order = all('#forecast-body tr td:first-child').map(&:text)
@@ -116,6 +115,22 @@ RSpec.describe('Date Sorting Feature', :js, type: :feature) do
       # Check that rows have the data attribute for sorting
       rows = all('#forecast-body tr[data-snow-values]')
       expect(rows.length).to be > 0
+    end
+
+    it 'changes sort indicator when clicking different headers' do
+      visit '/states/colorado'
+
+      headers = all('th.sortable-header')
+      next if headers.length < 2
+
+      # Click first header
+      headers[0].click
+      expect(headers[0]['class']).to include('sorting-active')
+
+      # Click second header
+      headers[1].click
+      expect(headers[0]['class']).not_to include('sorting-active')
+      expect(headers[1]['class']).to include('sorting-active')
     end
   end
 end

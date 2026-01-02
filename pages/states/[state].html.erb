@@ -77,17 +77,11 @@
   </div>
 </div>
 
-<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-  <h3 class="text-xl font-semibold">Forecast</h3>
+<h3 class="text-xl font-semibold mb-4">Forecast</h3>
 
-  <div class="flex items-center gap-2">
-    <label for="sort-by-date" class="text-sm text-base-content/70">Sort by snow:</label>
-
-    <select id="sort-by-date" class="select select-sm select-bordered">
-      <option value="">Default</option>
-    </select>
-  </div>
-</div>
+<p class="text-sm text-base-content/60 mb-2">
+  Click a date column to sort by snow depth
+</p>
 
 <% headers, rows=table_for_resorts(resorts) %>
 
@@ -97,7 +91,18 @@
     <thead>
       <tr>
         <% headers.each_with_index do |header, index| %>
-          <th data-col-index="<%= index %>"><%= h header %></th>
+          <% if index == 0 %>
+            <th><%= h header %></th>
+          <% else %>
+            <th
+              data-col-index="<%= index - 1 %>"
+              class="cursor-pointer hover:bg-base-200 select-none sortable-header"
+              title="Sort by <%= h header %>"
+            >
+              <%= h header %>
+              <span class="sort-indicator text-xs ml-1"></span>
+            </th>
+          <% end %>
         <% end %>
       </tr>
     </thead>
