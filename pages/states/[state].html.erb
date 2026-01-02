@@ -35,52 +35,46 @@
   </div>
 </div>
 
-<!-- Best Days to Ski for Region -->
+<!-- Best Days to Ski for Region - Compact view -->
 <% region_days = best_ski_days_for_region(resorts, limit: 7) %>
+<% best = region_days.max_by { |d| d[:avg_score] } %>
 
-<div class="mb-8">
-  <h3 class="text-xl font-bold mb-3">🎿 Best Days to Ski in <%= h state %></h3>
+<div class="mb-6">
+  <div class="flex items-center gap-2 mb-2">
+    <h3 class="text-lg font-bold">🎿 Best Days in <%= h state %></h3>
 
-  <p class="text-base-content/70 text-sm mb-4">
-    Aggregated across <%= resorts.size %> resorts
-  </p>
+    <% if best && best[:avg_score] >= 60 %>
+      <span class="badge badge-success badge-sm"><%= best[:name] %> best</span>
+    <% end %>
 
-  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+    <span class="text-xs text-base-content/60">
+      (<%= resorts.size %> resorts)
+    </span>
+  </div>
+
+  <div class="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
     <% region_days.each do |day| %>
-      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> p-3 rounded-lg text-center">
-        <div class="text-xs font-medium opacity-80"><%= day[:name] %></div>
-        <div class="text-2xl font-black my-1"><%= day[:avg_score] %></div>
+      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> px-2 py-1.5 rounded-md text-center shrink-0 min-w-16">
+        <div class="text-[10px] font-medium opacity-80 leading-tight">
+          <%= day[:name] %>
+        </div>
 
-        <div class="text-xs font-bold uppercase tracking-wide">
-          <%= day[:rating] %>
+        <div class="text-base font-black leading-tight">
+          <%= day[:avg_score] %>
         </div>
 
         <% if day[:resorts_with_snow] > 0 %>
-          <div class="text-xs mt-1">
-            ❄️ <%= day[:resorts_with_snow] %>
-            resort<%= day[:resorts_with_snow] == 1 ? '' : 's' %>
+          <div class="text-[10px] leading-tight">
+            ❄️<%= day[:resorts_with_snow] %>
+          </div>
+        <% else %>
+          <div class="text-[10px] opacity-60 leading-tight">
+            <%= day[:rating] %>
           </div>
         <% end %>
       </div>
     <% end %>
   </div>
-
-  <% best = region_days.max_by { |d| d[:avg_score] } %>
-
-  <% if best && best[:avg_score] >= 60 %>
-    <div class="mt-4 p-3 bg-base-200 rounded-lg">
-      <span class="font-bold">💡 Best day:</span>
-      <span><%= best[:name] %></span>
-
-      <% if best[:resorts_with_snow] > 0 %>
-        <span class="text-sm opacity-80">
-          (<%= best[:resorts_with_snow] %>
-          resort<%= best[:resorts_with_snow] == 1 ? '' : 's' %> with snow
-          expected)
-        </span>
-      <% end %>
-    </div>
-  <% end %>
 </div>
 
 <div class="flex flex-wrap items-center justify-between gap-4 mb-4">

@@ -86,45 +86,42 @@
   </div>
 <% end %>
 
-<!-- Best Days to Ski - The killer feature! -->
+<!-- Best Days to Ski - Compact view -->
 <% ski_days = best_ski_days(resort, limit: 7) %>
+<% best = best_day_to_ski(resort) %>
 
-<div class="mb-8">
-  <h2 class="text-2xl font-bold mb-3">🎿 Best Days to Ski</h2>
+<div class="mb-6">
+  <div class="flex items-center gap-2 mb-2">
+    <h2 class="text-lg font-bold">🎿 Best Days to Ski</h2>
 
-  <p class="text-base-content/70 text-sm mb-4">
-    Based on snow, wind, and temperature conditions
-  </p>
+    <% if best && best[:score] >= 70 %>
+      <span class="badge badge-success badge-sm">
+        <%= best[:name] %> recommended
+      </span>
+    <% end %>
+  </div>
 
-  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+  <div class="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
     <% ski_days.each do |day| %>
-      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> p-3 rounded-lg text-center">
-        <div class="text-xs font-medium opacity-80"><%= day[:name] %></div>
-        <div class="text-2xl font-black my-1"><%= day[:score] %></div>
-
-        <div class="text-xs font-bold uppercase tracking-wide">
-          <%= day[:rating] %>
+      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> px-2 py-1.5 rounded-md text-center shrink-0 min-w-16">
+        <div class="text-[10px] font-medium opacity-80 leading-tight">
+          <%= day[:name] %>
         </div>
 
+        <div class="text-base font-black leading-tight"><%= day[:score] %></div>
+
         <% if day[:snow] > 0 %>
-          <div class="text-xs mt-1">❄️ <%= day[:snow].round(1) %>"</div>
+          <div class="text-[10px] leading-tight">
+            ❄️<%= day[:snow].round(1) %>"
+          </div>
+        <% else %>
+          <div class="text-[10px] opacity-60 leading-tight">
+            <%= day[:rating] %>
+          </div>
         <% end %>
       </div>
     <% end %>
   </div>
-
-  <% best = best_day_to_ski(resort) %>
-
-  <% if best && best[:score] >= 70 %>
-    <div class="mt-4 p-3 bg-base-200 rounded-lg">
-      <span class="font-bold">💡 Recommendation:</span>
-      <span><%= best[:name] %> looks like the best day to go!</span>
-
-      <% if best[:reasons].any? %>
-        <span class="text-sm opacity-80">(<%= best[:reasons].first %>)</span>
-      <% end %>
-    </div>
-  <% end %>
 </div>
 
 <!-- Current Conditions & Quick Stats -->
