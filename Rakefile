@@ -20,7 +20,7 @@ def build!(resorts, logger_io: $stderr)
 end
 
 desc 'Build the site with the latest data from the SQLite database'
-task :build, [:limit] => [:css] do |_t, args|
+task :build, [:limit] => [:assets] do |_t, args|
   resorts = FollowTheSnow::Resort.from_sqlite(sqlite_file)
   if args[:limit]
     puts "Limiting to first #{args[:limit]} resorts for build"
@@ -30,7 +30,7 @@ task :build, [:limit] => [:css] do |_t, args|
 end
 
 desc 'Build the site with fake data for testing purposes'
-task fast: [:css] do
+task fast: [:assets] do
   require_relative 'spec/spec_helper'
   include WebMock::API
 
@@ -44,7 +44,7 @@ task fast: [:css] do
 end
 
 desc 'Build the CSS and JS files'
-task :css do
+task :assets do
   sh('npm run build')
   sh('npx esbuild pages/input.js --bundle --minify --outfile=pages/public/assets/main.js')
   sh('npx esbuild pages/public/assets/main.css --minify --outfile=pages/public/assets/main.css')
@@ -59,7 +59,7 @@ task :fmt do
 end
 
 desc 'Run the tests'
-task :test do
+task test: [:assets] do
   sh('bundle exec rspec')
 end
 
