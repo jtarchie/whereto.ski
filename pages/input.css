@@ -380,3 +380,31 @@ body.filter-snow-only tr.no-snow {
 .text-base-content\/50 a {
   @apply text-cyan-600 dark:text-cyan-400;
 }
+
+/* Mobile search modal - handle virtual keyboard */
+@media (max-width: 640px) {
+  /* Position modal at top on mobile for better keyboard handling */
+  .modal-top .modal-box {
+    margin-top: env(safe-area-inset-top, 0);
+    border-radius: 0 0 1rem 1rem;
+  }
+
+  /* Reduce padding when keyboard might be open */
+  .modal-top .modal-box {
+    padding-bottom: 1rem;
+  }
+
+  /* Ensure search results don't overflow when keyboard is open */
+  #search-results {
+    max-height: 40dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Handle viewport resize from virtual keyboard */
+@supports (height: 100dvh) {
+  .modal-top .modal-box {
+    max-height: 85dvh;
+  }
+}

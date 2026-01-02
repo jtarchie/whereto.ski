@@ -307,8 +307,8 @@
     </div>
 
     <!-- Search Modal -->
-    <dialog id="search-modal" class="modal">
-      <div class="modal-box w-11/12 max-w-2xl">
+    <dialog id="search-modal" class="modal modal-top sm:modal-middle">
+      <div class="modal-box w-full max-w-2xl mx-auto sm:w-11/12 max-h-[80dvh] sm:max-h-[85vh]">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
             ✕
@@ -323,6 +323,7 @@
           placeholder="Search for countries, states, or resorts..."
           class="input input-bordered w-full mb-4"
           autocomplete="off"
+          enterkeyhint="search"
           aria-label="Search for countries, states, or resorts"
         >
 
@@ -330,7 +331,7 @@
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div id="search-results" class="max-h-96 overflow-y-auto"></div>
+        <div id="search-results" class="max-h-[50dvh] sm:max-h-96 overflow-y-auto"></div>
 
         <div
           id="search-empty"

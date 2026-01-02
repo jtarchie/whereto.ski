@@ -251,16 +251,47 @@
     searchInput.focus();
   });
 
+  // Handle virtual keyboard on mobile
+  function handleMobileKeyboard() {
+    if (!window.visualViewport) return;
+
+    const modalBox = modal.querySelector(".modal-box");
+    if (!modalBox) return;
+
+    window.visualViewport.addEventListener("resize", () => {
+      if (modal.open) {
+        // Adjust modal height based on visible viewport
+        const viewportHeight = window.visualViewport.height;
+        modalBox.style.maxHeight = `${viewportHeight - 20}px`;
+      }
+    });
+
+    window.visualViewport.addEventListener("scroll", () => {
+      if (modal.open) {
+        // Keep modal visible when keyboard pushes content
+        modalBox.style.transform = `translateY(${window.visualViewport.offsetTop}px)`;
+      }
+    });
+  }
+
+  // Initialize mobile keyboard handling
+  handleMobileKeyboard();
+
   // Search on input
   searchInput.addEventListener("input", (e) => {
     debouncedSearch(e.target.value);
   });
 
-  // Clear results when modal closes
+  // Reset modal styles when closed
   modal.addEventListener("close", () => {
     searchInput.value = "";
     searchResults.innerHTML = "";
     searchEmpty.classList.add("hidden");
+    const modalBox = modal.querySelector(".modal-box");
+    if (modalBox) {
+      modalBox.style.maxHeight = "";
+      modalBox.style.transform = "";
+    }
   });
 
   // Keyboard shortcut: Cmd/Ctrl + K to open search
