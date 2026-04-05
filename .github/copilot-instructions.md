@@ -16,7 +16,7 @@ displaying snow reports for ski resorts worldwide. The application:
 
 **Key Technologies:**
 
-- Ruby 3.4+
+- Ruby 4.0+
 - SQLite for data storage
 - ERB for templating
 - RSpec for testing
@@ -48,7 +48,7 @@ displaying snow reports for ski resorts worldwide. The application:
 
 Follow the RuboCop configuration defined in `.rubocop.yml`:
 
-1. **Target Ruby Version**: 3.4
+1. **Target Ruby Version**: 4.0
 2. **Frozen String Literals**: Always include `# frozen_string_literal: true` at
    the top of Ruby files
 3. **Hash Syntax**: Use classic hash rockets (`=>`) instead of shorthand syntax
@@ -260,7 +260,7 @@ The project uses Rake for automation:
 
 **System Tools (installed via Homebrew on macOS):**
 
-- Ruby 3.4+ (see `.ruby-version`)
+- Ruby 4.0+ (see `.ruby-version`)
 - Node.js (for Tailwind CSS compilation)
 - minify (for production builds only)
 - Deno (for formatting JavaScript/JSON)
