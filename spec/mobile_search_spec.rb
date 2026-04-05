@@ -9,23 +9,8 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
 
   before(:all) do
     stub_weather_api
-
-    # Build site once
-    @build_dir = Dir.mktmpdir
-    pages_dir  = File.expand_path(File.join(__dir__, '..', 'pages'))
-    sqlite     = File.expand_path(File.join(__dir__, '..', 'data', 'features.sqlite'))
-    resorts    = FollowTheSnow::Resort.from_sqlite(sqlite)
-
-    builder = FollowTheSnow::Builder::Site.new(
-      build_dir: @build_dir,
-      resorts: resorts,
-      source_dir: pages_dir,
-      logger_io: File.open(File::NULL, 'w')
-    )
-
-    builder.build!
-
-    # Set up Capybara to serve the static site
+    SharedBuild.perform!
+    @build_dir      = SharedBuild.build_dir
     build_directory = @build_dir
     Capybara.app    = Rack::Builder.new do
       use Rack::Static,
@@ -48,10 +33,6 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
         end
       }
     end
-  end
-
-  after(:all) do
-    FileUtils.rm_rf(@build_dir) if @build_dir && File.exist?(@build_dir)
   end
 
   describe 'mobile viewport search' do
