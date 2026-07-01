@@ -14,7 +14,7 @@
     toggleUnits();
     localStorage.setItem(
       "preferredUnits",
-      $toggle.checked ? "metric" : "imperial"
+      $toggle.checked ? "metric" : "imperial",
     );
   });
 
@@ -176,10 +176,10 @@
     const results = searchData
       .filter((item) => {
         const nameMatch = item.name.toLowerCase().includes(lowerQuery);
-        const countryMatch =
-          item.country && item.country.toLowerCase().includes(lowerQuery);
-        const stateMatch =
-          item.state && item.state.toLowerCase().includes(lowerQuery);
+        const countryMatch = item.country &&
+          item.country.toLowerCase().includes(lowerQuery);
+        const stateMatch = item.state &&
+          item.state.toLowerCase().includes(lowerQuery);
         return nameMatch || countryMatch || stateMatch;
       })
       .slice(0, 50); // Limit to 50 results
@@ -206,7 +206,8 @@
       html +=
         '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Countries</h4><ul class="menu">';
       grouped.country.forEach((item) => {
-        html += `<li><a href="${item.url}" class="flex items-center gap-2"><span>🌍</span><span>${item.name}</span></a></li>`;
+        html +=
+          `<li><a href="${item.url}" class="flex items-center gap-2"><span>🌍</span><span>${item.name}</span></a></li>`;
       });
       html += "</ul></div>";
     }
@@ -216,7 +217,8 @@
       html +=
         '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">States / Regions</h4><ul class="menu">';
       grouped.state.forEach((item) => {
-        html += `<li><a href="${item.url}" class="flex items-center gap-2"><span>📍</span><span>${item.name}</span><span class="text-xs text-base-content/60">${item.country}</span></a></li>`;
+        html +=
+          `<li><a href="${item.url}" class="flex items-center gap-2"><span>📍</span><span>${item.name}</span><span class="text-xs text-base-content/60">${item.country}</span></a></li>`;
       });
       html += "</ul></div>";
     }
@@ -226,7 +228,8 @@
       html +=
         '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Ski Resorts</h4><ul class="menu">';
       grouped.resort.forEach((item) => {
-        html += `<li><a href="${item.url}" class="flex items-center gap-2"><span>⛷️</span><div class="flex flex-col items-start"><span>${item.name}</span><span class="text-xs text-base-content/60">${item.state}, ${item.country}</span></div></a></li>`;
+        html +=
+          `<li><a href="${item.url}" class="flex items-center gap-2"><span>⛷️</span><div class="flex flex-col items-start"><span>${item.name}</span><span class="text-xs text-base-content/60">${item.state}, ${item.country}</span></div></a></li>`;
       });
       html += "</ul></div>";
     }
@@ -274,7 +277,8 @@
     window.visualViewport.addEventListener("scroll", () => {
       if (modal.open) {
         // Keep modal visible when keyboard pushes content
-        modalBox.style.transform = `translateY(${window.visualViewport.offsetTop}px)`;
+        modalBox.style.transform =
+          `translateY(${window.visualViewport.offsetTop}px)`;
       }
     });
   }

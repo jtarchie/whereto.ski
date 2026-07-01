@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'tmpdir'
 require 'nokogiri'
 
-RSpec.describe('Best Days to Ski - Compact View') do
+RSpec.describe('Best Days to Ski - Compact View', type: :feature) do
   let(:build_dir) { @build_dir }
 
   before(:all) do
@@ -36,7 +36,7 @@ RSpec.describe('Best Days to Ski - Compact View') do
 
         # Look for flex container with overflow-x-auto
         flex_container = doc.at_xpath("//*[contains(@class, 'overflow-x-auto') and contains(@class, 'flex')]")
-        expect(flex_container).not_to be_nil, "Should have horizontal scrollable flex container"
+        expect(flex_container).not_to be_nil, 'Should have horizontal scrollable flex container'
       end
     end
 
@@ -52,8 +52,8 @@ RSpec.describe('Best Days to Ski - Compact View') do
         next if cards.empty?
 
         cards.each do |card|
-          expect(card['class']).to include('shrink-0'), "Cards should have shrink-0 class"
-          expect(card['class']).to include('min-w-16'), "Cards should have min-w-16 class"
+          expect(card['class']).to include('shrink-0'), 'Cards should have shrink-0 class'
+          expect(card['class']).to include('min-w-16'), 'Cards should have min-w-16 class'
         end
       end
     end
@@ -113,7 +113,7 @@ RSpec.describe('Best Days to Ski - Compact View') do
 
         # Look for flex container with overflow-x-auto
         flex_container = doc.at_xpath("//*[contains(@class, 'overflow-x-auto') and contains(@class, 'flex')]")
-        expect(flex_container).not_to be_nil, "Should have horizontal scrollable flex container"
+        expect(flex_container).not_to be_nil, 'Should have horizontal scrollable flex container'
       end
     end
 
@@ -126,7 +126,7 @@ RSpec.describe('Best Days to Ski - Compact View') do
 
         # Should have inline resort count
         resort_count = doc.at_xpath("//*[contains(@class, 'text-base-content/60') and contains(text(), 'resorts')]")
-        expect(resort_count).not_to be_nil, "Should have inline resort count"
+        expect(resort_count).not_to be_nil, 'Should have inline resort count'
 
         # Should NOT have the old paragraph style
         expect(html).not_to include('Aggregated across')

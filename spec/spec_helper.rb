@@ -29,9 +29,7 @@ Capybara.default_max_wait_time = 5
 
 module SharedBuild
   class << self
-    def build_dir
-      @build_dir
-    end
+    attr_reader :build_dir
 
     def perform!
       return if @build_dir
@@ -43,9 +41,9 @@ module SharedBuild
 
       builder = FollowTheSnow::Builder::Site.new(
         build_dir: @build_dir,
-        resorts:   resorts,
+        resorts: resorts,
         source_dir: pages_dir,
-        logger_io:  File.open(File::NULL, 'w')
+        logger_io: File.open(File::NULL, 'w')
       )
       builder.build!
     end

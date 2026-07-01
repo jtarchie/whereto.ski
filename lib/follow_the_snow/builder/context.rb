@@ -123,7 +123,7 @@ module FollowTheSnow
               total_resorts: resorts.count
             }
           end.select { |s| s[:resort_count].positive? }
-                         .sort_by { |s| -s[:total_snow] }
+             .sort_by { |s| -s[:total_snow] }
         else
           # Return country-level summaries
           resorts_by_countries.map do |country_name, resorts|
@@ -142,7 +142,7 @@ module FollowTheSnow
               total_resorts: resorts.count
             }
           end.select { |s| s[:resort_count].positive? }
-                              .sort_by { |s| -s[:total_snow] }
+             .sort_by { |s| -s[:total_snow] }
         end
       end
 

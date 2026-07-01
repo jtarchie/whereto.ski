@@ -135,7 +135,7 @@ RSpec.describe('Building') do
       # Small countries show per-resort snow (e.g., "❄️ 3.2 inches")
       # Regular countries show state count (e.g., "5 (10.5 inches)")
       # Both should have snow-badge class and some measurement
-      expect(html).to match(/snow-badge/)
+      expect(html).to include('snow-badge')
       expect(html).to match(/\d+\.\d+|"/) # Either decimal number or inch/cm unit
     end
 
