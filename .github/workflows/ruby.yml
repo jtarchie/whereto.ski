@@ -32,3 +32,18 @@ jobs:
         run: bundle exec rspec
         env:
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+
+  lint:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: Lint ERB templates (Herb)
+        run: npx @herb-tools/linter pages/ --github --fail-level error
+      - name: Check ERB formatting (Herb)
+        run: npx @herb-tools/formatter pages/ --check

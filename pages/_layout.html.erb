@@ -298,7 +298,6 @@
           <p>
             © <%= Time.now.strftime("%Y") %>
             <a href="https://github.com/jtarchie/followthesnow">Where To Ski</a>
-            
             <br>
             Last Updated: <%= h current_timestamp %>
           </p>
@@ -308,7 +307,12 @@
 
     <!-- Search Modal -->
     <dialog id="search-modal" class="modal modal-top sm:modal-middle">
-      <div class="modal-box w-full max-w-2xl mx-auto sm:w-11/12 max-h-[80dvh] sm:max-h-[85vh]">
+      <div
+        class="
+          modal-box w-full max-w-2xl mx-auto sm:w-11/12 max-h-[80dvh]
+          sm:max-h-[85vh]
+        "
+      >
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
             ✕
@@ -331,7 +335,10 @@
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div id="search-results" class="max-h-[50dvh] sm:max-h-96 overflow-y-auto"></div>
+        <div
+          id="search-results"
+          class="max-h-[50dvh] sm:max-h-96 overflow-y-auto"
+        ></div>
 
         <div
           id="search-empty"

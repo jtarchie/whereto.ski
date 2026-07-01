@@ -56,9 +56,7 @@
   <h1 class="text-4xl font-bold mb-2"><%= h resort.name %></h1>
 
   <p class="text-base-content/70">
-    <%= h resort.region_name %>
-    ,
-    <%= h resort.country_name %>
+    <%= h resort.region_name %>,<%= h resort.country_name %>
     <% if resort.min_elevation && resort.max_elevation %>
       <span class="ml-2">
         📍 <%= format_elevation(resort.min_elevation) %> -

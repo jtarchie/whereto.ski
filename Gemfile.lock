@@ -1,12 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    actionview (8.1.3)
-      activesupport (= 8.1.3)
-      builder (~> 3.1)
-      erubi (~> 1.11)
-      rails-dom-testing (~> 2.2)
-      rails-html-sanitizer (~> 1.6)
     activesupport (8.1.3)
       base64
       bigdecimal
@@ -24,15 +18,7 @@ GEM
       public_suffix (>= 2.0.2, < 8.0)
     ast (2.4.3)
     base64 (0.3.0)
-    better_html (2.2.0)
-      actionview (>= 7.0)
-      activesupport (>= 7.0)
-      ast (~> 2.0)
-      erubi (~> 1.4)
-      parser (>= 2.4)
-      smart_properties
     bigdecimal (4.1.2)
-    builder (3.3.0)
     capybara (3.40.0)
       addressable
       matrix
@@ -47,21 +33,12 @@ GEM
     crack (1.0.1)
       bigdecimal
       rexml
-    crass (1.0.7)
     diff-lcs (1.6.2)
     domain_name (0.6.20240107)
     down (5.6.0)
       addressable (~> 2.8)
       base64 (~> 0.3)
     drb (2.2.3)
-    erb_lint (0.9.0)
-      activesupport
-      better_html (>= 2.0.1)
-      parser (>= 2.7.1.4)
-      rainbow
-      rubocop (>= 1)
-      smart_properties
-    erubi (1.13.1)
     fast_ostruct (1.1.0)
       json (>= 2)
     front_matter_parser (1.0.1)
@@ -82,9 +59,6 @@ GEM
     lint_roller (1.1.0)
     llhttp (0.6.2)
     logger (1.7.0)
-    loofah (2.25.1)
-      crass (~> 1.0.2)
-      nokogiri (>= 1.12.0)
     matrix (0.4.3)
     mini_mime (1.1.5)
     minitest (6.0.6)
@@ -117,13 +91,6 @@ GEM
     rack (3.2.6)
     rack-test (2.2.0)
       rack (>= 1.3)
-    rails-dom-testing (2.3.0)
-      activesupport (>= 5.0.0)
-      minitest
-      nokogiri (>= 1.6)
-    rails-html-sanitizer (1.7.0)
-      loofah (~> 2.25)
-      nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
     rainbow (3.1.1)
     rake (13.4.2)
     regexp_parser (2.12.0)
@@ -172,7 +139,6 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
-    smart_properties (1.17.0)
     sqlite3 (2.9.5-arm64-darwin)
     sqlite3 (2.9.5-x86_64-darwin)
     sqlite3 (2.9.5-x86_64-linux-gnu)
@@ -204,7 +170,6 @@ DEPENDENCIES
   activesupport
   capybara
   down
-  erb_lint
   fast_ostruct
   front_matter_parser
   geo_coord
