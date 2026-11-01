@@ -2,6 +2,7 @@
 
 require 'sqlite3'
 require 'stringex'
+require 'active_support/core_ext/module/delegation'
 
 module FollowTheSnow
   Resort = Struct.new(
@@ -58,6 +59,9 @@ module FollowTheSnow
     def current_conditions
       forecast_client.current_conditions
     end
+
+    delegate :base_forecasts, :base_hourly_forecasts, :past_snowfall, :snow_depth, :timezone,
+             to: :forecast_client
 
     private
 

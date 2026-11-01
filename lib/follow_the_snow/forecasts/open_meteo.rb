@@ -27,6 +27,7 @@ module FollowTheSnow
       wind_direction_10m
       wind_gusts_10m
       freezing_level_height
+      snow_depth
       visibility
       is_day
     ].freeze
@@ -64,44 +65,117 @@ module FollowTheSnow
       wind_gusts_10m
     ].freeze
 
+    PAST_DAYS = 3
+
+    # Summit is primary: it's where resorts measure and where most snow falls.
     def forecasts
-      @forecasts ||= parse_daily_forecasts
+      @forecasts ||= upcoming_days(parse_daily_forecasts(summit_data))
     end
 
     def hourly_forecasts
-      @hourly_forecasts ||= parse_hourly_forecasts
+      @hourly_forecasts ||= summit_hours.select { |h| h.time >= now }
     end
 
     def current_conditions
       @current_conditions ||= parse_current_conditions
     end
 
+    def base_forecasts
+      return forecasts unless base_data
+
+      @base_forecasts ||= upcoming_days(parse_daily_forecasts(base_data))
+    end
+
+    def base_hourly_forecasts
+      return hourly_forecasts unless base_data
+
+      @base_hourly_forecasts ||= parse_hourly_forecasts(base_data).select { |h| h.time >= now }
+    end
+
+    def past_snowfall(hours: 72)
+      summit_hours
+        .select { |h| h.time < now && h.time >= now - (hours * 3600) }
+        .sum { |h| h.snowfall.to_f }
+        .round(2)
+    end
+
+    # Imperial requests get depth in feet, but every snow value here is inches.
+    def snow_depth
+      feet = hourly_forecasts.first&.snow_depth
+      feet && (feet * 12).round(1)
+    end
+
+    def timezone
+      summit_data.fetch('timezone', 'UTC')
+    end
+
+    def now
+      @now ||= begin
+        current = local_time(summit_data.fetch('current').fetch('time'), summit_data)
+        current - (current.min * 60)
+      end
+    end
+
     private
+
+    def summit_data
+      fetch_data.last
+    end
+
+    def summit_hours
+      @summit_hours ||= parse_hourly_forecasts(summit_data)
+    end
+
+    def base_data
+      fetch_data.first if fetch_data.length > 1
+    end
+
+    def upcoming_days(days)
+      days.reject { |d| d.time_of_day < now.to_date }
+    end
+
+    def local_time(timestamp, data)
+      year, month, day, hour, minute = timestamp.scan(/\d+/).map(&:to_i)
+      Time.new(year, month, day, hour || 0, minute || 0, 0, data.fetch('utc_offset_seconds', 0))
+    end
+
+    def request_params
+      params = {
+        latitude: resort.lat,
+        longitude: resort.lon,
+        models: 'best_match',
+        hourly: HOURLY_PARAMS.join(','),
+        daily: DAILY_PARAMS.join(','),
+        current: CURRENT_PARAMS.join(','),
+        temperature_unit: 'fahrenheit',
+        wind_speed_unit: 'mph',
+        precipitation_unit: 'inch',
+        timezone: 'auto',
+        past_days: PAST_DAYS,
+        forecast_days: 16,
+        apikey: ENV.fetch('OPEN_METEO_API_KEY', nil)
+      }
+
+      # Base + summit as two locations in one request; elevations are meters.
+      if resort.min_elevation && resort.max_elevation
+        params[:latitude]  = [resort.lat, resort.lat].join(',')
+        params[:longitude] = [resort.lon, resort.lon].join(',')
+        params[:elevation] = [resort.min_elevation, resort.max_elevation].map { |e| e.to_f.round }.join(',')
+      end
+
+      params.compact
+    end
 
     def fetch_data
       @fetch_data ||= begin
-        params = {
-          latitude: resort.lat,
-          longitude: resort.lon,
-          models: 'best_match',
-          hourly: HOURLY_PARAMS.join(','),
-          daily: DAILY_PARAMS.join(','),
-          current: CURRENT_PARAMS.join(','),
-          temperature_unit: 'fahrenheit',
-          wind_speed_unit: 'mph',
-          precipitation_unit: 'inch',
-          timezone: 'America/New_York',
-          forecast_days: 16,
-          apikey: ENV.fetch('OPEN_METEO_API_KEY', nil)
-        }.compact
-
         attempts = 0
         begin
           attempts += 1
-          response  = HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: params)
+          response  = HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: request_params)
           payload   = JSON.parse(response.to_s)
-          check_error!(response.code, payload)
-          payload
+          locations = payload.is_a?(Array) ? payload : [payload]
+          locations.each { |location| check_error!(response.code, location) }
+          locations
         rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, RetryableError => e
           raise ApiError, "Resort ID #{resort&.id || 'N/A'}: gave up after #{attempts} attempts: #{e.message}" if attempts >= MAX_ATTEMPTS
 
@@ -122,8 +196,8 @@ module FollowTheSnow
       raise ApiError, "Resort ID #{resort&.id || 'N/A'}: Open-Meteo error: #{reason}"
     end
 
-    def parse_daily_forecasts
-      daily = fetch_data.fetch('daily')
+    def parse_daily_forecasts(data)
+      daily = data.fetch('daily')
 
       daily.fetch('time').each_with_index.map do |timestamp, index|
         dt                    = Date.parse(timestamp)
@@ -157,14 +231,14 @@ module FollowTheSnow
       end
     end
 
-    def parse_hourly_forecasts
-      hourly = fetch_data.fetch('hourly')
+    def parse_hourly_forecasts(data)
+      hourly     = data.fetch('hourly')
+      snow_depth = hourly.fetch('snow_depth', [])
 
       hourly.fetch('time').each_with_index.map do |timestamp, index|
-        time = Time.parse(timestamp)
-
         HourlyForecast.new(
-          time: time,
+          time: local_time(timestamp, data),
+          snow_depth: snow_depth[index],
           temperature: hourly.fetch('temperature_2m')[index]&.round(1),
           apparent_temperature: hourly.fetch('apparent_temperature')[index]&.round(1),
           humidity: hourly.fetch('relative_humidity_2m')[index].to_i,
@@ -185,7 +259,7 @@ module FollowTheSnow
     end
 
     def parse_current_conditions
-      current = fetch_data.fetch('current')
+      current = summit_data.fetch('current')
 
       CurrentConditions.new(
         temperature: current.fetch('temperature_2m')&.round(1),
@@ -199,7 +273,7 @@ module FollowTheSnow
         wind_gust: current.fetch('wind_gusts_10m')&.round(1),
         precipitation: current.fetch('precipitation')&.round(2),
         is_day: current.fetch('is_day') == 1,
-        time: Time.parse(current.fetch('time'))
+        time: local_time(current.fetch('time'), summit_data)
       )
     end
 

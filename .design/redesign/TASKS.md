@@ -18,7 +18,7 @@ shorthand, `rake fmt` clean, Herb lint passes, specs updated in the same task
   stubbing an error payload then success passes; `rake build[20]` succeeds
   locally with the real API. _Modifies: `open_meteo.rb`, `open_meteo_spec.rb`._
 
-- [ ] **2. Forecast data v2**: request `timezone=auto`, `past_days=3`, hourly
+- [x] **2. Forecast data v2**: request `timezone=auto`, `past_days=3`, hourly
   `snow_depth`, and base + summit points (multi-location `elevation=` request;
   fallback: summit only if rate budget breaks). Store resort IANA timezone;
   expose past-72h, next-24h, next-7d, 16d totals per elevation; stop

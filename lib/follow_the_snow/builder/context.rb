@@ -313,6 +313,16 @@ module FollowTheSnow
         end
       end
 
+      def snow_summary(resort)
+        daily = raw_forecasts_for(resort)
+        {
+          past_72h: resort.past_snowfall(hours: 72),
+          next_24h: resort.hourly_forecasts.take(24).sum { |h| h.snowfall.to_f }.round(2),
+          next_7d: daily.take(7).sum { |f| snow_inches(f) }.round(2),
+          next_16d: daily.sum { |f| snow_inches(f) }.round(2)
+        }
+      end
+
       # Calculate "Best Days to Ski" scores for a resort
       # Returns array of hashes with date, score (0-100), and reasons
       def best_ski_days(resort, limit: 7)

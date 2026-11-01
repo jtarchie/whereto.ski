@@ -8,7 +8,9 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       FollowTheSnow::Resort,
       id: 1,
       lat: 39.6403,
-      lon: -106.3742
+      lon: -106.3742,
+      min_elevation: nil,
+      max_elevation: nil
     )
   end
 
@@ -169,7 +171,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
             status: 200,
             body: {
               'current' => {
-                'time' => '2023-03-14T12:00',
+                'time' => '2023-03-14T00:00',
                 'temperature_2m' => 45.2,
                 'relative_humidity_2m' => 65,
                 'apparent_temperature' => 42.1,
@@ -321,6 +323,50 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
         expect(current.wind_direction).to eq(:N) # defaults to :N for nil
         expect(current.is_day).to be(true)
       end
+    end
+  end
+
+  describe 'forecast data v2' do
+    let(:mountain) do
+      instance_double(FollowTheSnow::Resort, id: 2, lat: 41.332, lon: -106.8, min_elevation: 2105, max_elevation: 3207.6)
+    end
+    let(:client) { described_class.new(resort: mountain) }
+
+    before { stub_weather_api }
+
+    it 'asks for base and summit in one resort-local request' do
+      client.forecasts
+
+      expect(a_request(:get, /api.open-meteo.com/).with(query: hash_including(
+        'latitude' => '41.332,41.332', 'elevation' => '2105,3208', 'timezone' => 'auto', 'past_days' => '3'
+      ))).to have_been_made.once
+    end
+
+    it 'starts daily and hourly forecasts at the resort-local now' do
+      expect(client.timezone).to eq('America/Denver')
+      expect(client.forecasts.length).to eq(16)
+      expect(client.forecasts.first.name).to eq('Tue 03/14')
+      expect(client.hourly_forecasts.first.time.utc.iso8601).to eq('2023-03-14T18:00:00Z')
+    end
+
+    it 'sums the past 72 hours of summit snowfall' do
+      hourly = JSON.parse(weather_api_body(lat: 41.332, lon: -106.8)).fetch('hourly')
+      past   = hourly.fetch('time').each_index.grep(12..83).sum { |i| hourly.fetch('snowfall')[i] }
+
+      expect(past).to be_positive
+      expect(client.past_snowfall(hours: 72)).to eq(past.round(2))
+    end
+
+    it 'keeps base separate from summit' do
+      summit = client.forecasts.sum { |f| f.snow.end }
+      base   = client.base_forecasts.sum { |f| f.snow.end }
+
+      expect(base).to be < summit
+      expect(client.base_hourly_forecasts.first.temperature).to be > client.hourly_forecasts.first.temperature
+    end
+
+    it 'reports snow depth in inches' do
+      expect(client.snow_depth).to eq(48.0)
     end
   end
 

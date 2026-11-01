@@ -54,7 +54,8 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
   through aggregator classes (`Forecast::Daily`) chained via `reduce`. So
   rendering = network I/O.
 - **Rate limiting.** Resort pages render in parallel (50 threads) behind
-  `Limiter::RateQueue` (50 / 10s, half Open-Meteo's limit); limiter is skipped
+  `Limiter::RateQueue` (25 resorts / 10s = 50 calls, base + summit each, half
+  Open-Meteo's limit); limiter is skipped
   when `RSpec` is defined. Resorts render first so state/country pages hit
   memoized forecasts.
 - **Small countries** (`Context#small_country?`) get no state pages and no state

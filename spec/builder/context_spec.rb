@@ -99,6 +99,17 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
                                                               ])
   end
 
+  describe '#snow_summary' do
+    it 'combines past, 24h, 7d and 16d totals' do
+      allow(resort_with_snow).to receive_messages(
+        past_snowfall: 1.25,
+        hourly_forecasts: [FollowTheSnow::HourlyForecast.new(snowfall: 0.5), FollowTheSnow::HourlyForecast.new(snowfall: nil)]
+      )
+
+      expect(context.snow_summary(resort_with_snow)).to eq(past_72h: 1.25, next_24h: 0.5, next_7d: 7.8, next_16d: 7.8)
+    end
+  end
+
   describe '#country_has_snow?' do
     it 'returns true when a country has resorts with snow' do
       expect(context.country_has_snow?('United States of America')).to be(true)
