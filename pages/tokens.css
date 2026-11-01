@@ -1,10 +1,9 @@
 /*
   whereto.ski design tokens — Dieter Rams (functionalist)
 
-  Format: Tailwind v4 CSS-first. Phase 6 moves this to pages/tokens.css and
-  imports it from pages/input.css after `@import "tailwindcss"` (daisyUI
-  removed). Utilities come out as bg-canvas, text-ink-2, border-line,
-  bg-snow-3, text-on-snow-3, fill-mark-4, etc.
+  Format: Tailwind v4 CSS-first, imported by pages/input.css. Utilities come
+  out as bg-canvas, text-ink-2, border-line, bg-snow-3, text-on-snow-3,
+  fill-mark-4, etc.
 
   Rules
   - Interface is neutral (cool grey, hue 250, near-zero chroma).

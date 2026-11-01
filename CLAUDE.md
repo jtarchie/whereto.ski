@@ -30,7 +30,7 @@ Git LFS — needs `git lfs pull` or nothing builds.
   `pages/`.
 - `rake a11y` — vnu + pa11y-ci against an existing `docs/` (run a build first).
 - `rake scrape` — rebuild `features.sqlite` from OpenSkiMap.
-- Preview: `ruby -run -ehttpd docs/ -p8000`.
+- Preview: `python3 -m http.server 8000 -d docs` (Ruby 4 dropped webrick).
 
 CI (`ruby.yml`) runs rspec plus Herb lint (`--fail-level error`) and
 `herb formatter --check` on `pages/`. `build.yml` builds daily and deploys;
@@ -76,3 +76,7 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
   their `=` aligned; `rubocop -A` fixes it. Metrics cops are off.
 - ERB is linted/formatted by Herb (`.herb.yml`); run `rake fmt` before
   committing template changes.
+- Styling: Tailwind v4 with project tokens in `pages/tokens.css` (default
+  palette and type scale are reset; use `bg-canvas`, `text-ink-2`,
+  `bg-snow-N` …). No component library. Blue is reserved for snow amounts.
+  Design docs: `.design/redesign/`.

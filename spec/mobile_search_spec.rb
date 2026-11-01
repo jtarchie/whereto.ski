@@ -46,12 +46,12 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
       page.driver.browser.manage.window.resize_to(1400, 900)
     end
 
-    it 'uses modal-top class on mobile for better keyboard handling' do
+    it 'pins the dialog to the top on mobile so the keyboard does not cover it' do
       visit '/'
+      find('button[aria-label="Search"]').click
 
-      # Check that modal has modal-top class (use visible: false since dialog is hidden)
-      modal = find('#search-modal', visible: false)
-      expect(modal['class']).to include('modal-top')
+      top = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().top")
+      expect(top).to be < 20
     end
 
     it 'opens search modal on mobile' do
@@ -85,13 +85,12 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
       expect(results_container['class']).to include('overflow-y-auto')
     end
 
-    it 'modal box uses dvh units for mobile viewport' do
+    it 'fits the dialog within the viewport' do
       visit '/'
       find('button[aria-label="Search"]').click
 
-      modal_box = find('.modal-box')
-      # Check for responsive classes
-      expect(modal_box['class']).to match(/max-h-\[.*dvh\]|sm:max-h/)
+      bottom = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().bottom")
+      expect(bottom).to be <= evaluate_script('window.innerHeight')
     end
 
     it 'search still functions correctly on mobile viewport' do
@@ -112,28 +111,10 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
 
       # Click the X button
       within('dialog[open]') do
-        find('button.btn-circle').click
+        find('button[aria-label="Close"]').click
       end
 
       expect(page).not_to have_css('dialog[open]')
-    end
-  end
-
-  describe 'modal CSS classes' do
-    it 'has modal-top sm:modal-middle for responsive positioning' do
-      visit '/'
-      modal = find('#search-modal', visible: false)
-      expect(modal['class']).to include('modal-top')
-      expect(modal['class']).to include('sm:modal-middle')
-    end
-
-    it 'modal box has responsive width classes' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-
-      modal_box = find('.modal-box')
-      expect(modal_box['class']).to include('w-full')
-      expect(modal_box['class']).to include('sm:w-11/12')
     end
   end
 end

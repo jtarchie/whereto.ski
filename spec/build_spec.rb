@@ -108,7 +108,7 @@ RSpec.describe('Building') do
     it 'includes filter toggle on index page' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       expect(index_html).to include('filter-snow-toggle')
-      expect(index_html).to include('Only Snow')
+      expect(index_html).to include('Only show resorts with snow')
     end
 
     it 'includes data-has-snow attributes on country pages' do
@@ -257,7 +257,7 @@ RSpec.describe('Building') do
       expect(dialog).not_to be_nil
 
       # Check for accessible search input
-      search_input = doc.at_xpath("//input[@aria-label='Search for countries, states, or resorts']")
+      search_input = doc.at_xpath("//input[@aria-label='Search for countries, regions, or resorts']")
       expect(search_input).not_to be_nil
       expect(search_input['type']).to eq('search')
     end
@@ -323,7 +323,7 @@ RSpec.describe('Building') do
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
       expect(modal).not_to be_nil
-      expect(modal['class']).to include('modal')
+      expect(modal['class']).to include('dialog')
     end
 
     it 'includes settings modal title' do
@@ -331,7 +331,7 @@ RSpec.describe('Building') do
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
-      title = modal.at_xpath(".//h3[contains(text(), 'Settings')]")
+      title = modal.at_xpath(".//h2[contains(text(), 'Settings')]")
       expect(title).not_to be_nil
     end
 
@@ -343,13 +343,13 @@ RSpec.describe('Building') do
       expect(modal).not_to be_nil
 
       # Check for temperature unit label
-      label = modal.at_xpath(".//label[contains(text(), 'Temperature Unit')]")
-      expect(label).not_to be_nil
+      label = modal.at_xpath(".//label[@for='unit-toggle']")
+      expect(label.text).to include('Metric units')
 
       # Check for toggle input with proper association
       toggle = modal.at_xpath(".//input[@id='unit-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
-      expect(toggle['class']).to include('toggle')
+      expect(toggle['class']).to include('switch')
 
       # Check for °F and °C labels
       expect(modal.text).to include('°F')
@@ -366,13 +366,12 @@ RSpec.describe('Building') do
       # Check for label element wrapping or associated with toggle
       toggle = modal.at_xpath(".//input[@id='filter-snow-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
-      expect(toggle['class']).to include('toggle')
-      expect(toggle['aria-label']).to eq('Show only snow')
+      expect(toggle['class']).to include('switch')
 
       # Check for label text
       label = modal.at_xpath(".//label[@for='filter-snow-toggle']")
       expect(label).not_to be_nil
-      expect(label.text).to include('Show Only Snow')
+      expect(label.text).to include('Only show resorts with snow')
     end
 
     it 'includes close button in modal' do
@@ -380,35 +379,18 @@ RSpec.describe('Building') do
       doc        = Nokogiri::HTML(index_html)
 
       modal        = doc.at_xpath("//dialog[@id='settings_modal']")
-      close_button = modal.at_xpath(".//button[contains(text(), 'Close')]")
+      close_button = modal.at_xpath(".//form[@method='dialog']/button[@aria-label='Close']")
       expect(close_button).not_to be_nil
-      expect(close_button['class']).to include('btn')
     end
 
-    it 'includes modal backdrop for closing' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      doc        = Nokogiri::HTML(index_html)
-
-      modal    = doc.at_xpath("//dialog[@id='settings_modal']")
-      backdrop = modal.at_xpath(".//form[@method='dialog' and contains(@class, 'modal-backdrop')]")
-      expect(backdrop).not_to be_nil
-    end
-
-    it 'has proper DaisyUI modal structure' do
+    it 'has native dialog structure' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
-      expect(modal).not_to be_nil
-      expect(modal['class']).to include('modal')
-
-      # Check for modal-box
-      modal_box = modal.at_xpath(".//div[contains(@class, 'modal-box')]")
-      expect(modal_box).not_to be_nil
-
-      # Check for modal-action
-      modal_action = modal.at_xpath(".//div[contains(@class, 'modal-action')]")
-      expect(modal_action).not_to be_nil
+      expect(modal['class']).to include('dialog')
+      expect(modal['aria-labelledby']).to eq('settings-title')
+      expect(modal.at_xpath(".//div[contains(@class, 'dialog-box')]")).not_to be_nil
     end
 
     it 'includes settings in all page types' do

@@ -232,8 +232,7 @@
 
           <td class="<%= hour.snowfall && hour.snowfall > 0 ? 'font-bold text-cyan-600 dark:text-cyan-400' : 'text-gray-400' %>">
             <% if hour.snowfall && hour.snowfall > 0 %>
-              <%= format_snowfall(hour.snowfall) %>
-              ❄️
+              <%= format_snowfall(hour.snowfall) %> ❄️
             <% else %>
               -
             <% end %>

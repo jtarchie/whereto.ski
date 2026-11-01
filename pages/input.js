@@ -263,7 +263,7 @@
   function handleMobileKeyboard() {
     if (!window.visualViewport) return;
 
-    const modalBox = modal.querySelector(".modal-box");
+    const modalBox = modal.querySelector(".dialog-box");
     if (!modalBox) return;
 
     window.visualViewport.addEventListener("resize", () => {
@@ -296,11 +296,18 @@
     searchInput.value = "";
     searchResults.innerHTML = "";
     searchEmpty.classList.add("hidden");
-    const modalBox = modal.querySelector(".modal-box");
+    const modalBox = modal.querySelector(".dialog-box");
     if (modalBox) {
       modalBox.style.maxHeight = "";
       modalBox.style.transform = "";
     }
+  });
+
+  // Native <dialog> ignores backdrop clicks; the dialog element itself is the backdrop hit area.
+  document.querySelectorAll("dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close();
+    });
   });
 
   // Keyboard shortcut: Cmd/Ctrl + K to open search

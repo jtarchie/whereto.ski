@@ -39,7 +39,7 @@ shorthand, `rake fmt` clean, Herb lint passes, specs updated in the same task
   `openskimap.rb` view SQL (same fields, for the next `rake scrape`),
   `resort.rb`, `context.rb`._
 
-- [ ] **4. Token swap + layout shell (Dieter Rams)**: move
+- [x] **4. Token swap + layout shell (Dieter Rams)**: move
   `DESIGN_TOKENS.css` → `pages/tokens.css`, import it in `input.css`, remove
   daisyUI (npm + `@plugin`) and all legacy CSS (gradients, shimmer, snowfall
   keyframes, gradient underlines). Base layer: system font, `tabular-nums`,

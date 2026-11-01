@@ -66,7 +66,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
 
       # Check that search input has focus
       active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
-      expect(active_label).to eq('Search for countries, states, or resorts')
+      expect(active_label).to eq('Search for countries, regions, or resorts')
     end
 
     it 'closes modal when clicking backdrop' do
@@ -130,10 +130,10 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       expect(page).to have_link('Vail')
     end
 
-    it 'shows "No results found" when search returns nothing' do
+    it 'shows "No matches. Try a town or region name." when search returns nothing' do
       fill_in 'search-input', with: 'xyzabc123notfound'
 
-      expect(page).to have_content('No results found', wait: 2)
+      expect(page).to have_content('No matches. Try a town or region name.', wait: 2)
     end
 
     it 'groups results by type' do
@@ -212,7 +212,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
 
       expect(page).to have_css('dialog[open]', wait: 2)
       # Check input is there by aria-label
-      expect(page).to have_css('input[aria-label="Search for countries, states, or resorts"]')
+      expect(page).to have_css('input[aria-label="Search for countries, regions, or resorts"]')
     end
 
     it 'focuses search input after keyboard shortcut' do
@@ -227,7 +227,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       JS
 
       active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
-      expect(active_label).to eq('Search for countries, states, or resorts')
+      expect(active_label).to eq('Search for countries, regions, or resorts')
     end
   end
 
@@ -285,7 +285,7 @@ RSpec.describe('Search Feature', :js, type: :feature) do
       find('button[aria-label="Search"]').click
 
       expect(page).to have_css('dialog[open]')
-      expect(page).to have_css('.modal-box')
+      expect(page).to have_css('.dialog-box')
     end
   end
 
