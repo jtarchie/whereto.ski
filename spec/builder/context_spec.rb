@@ -110,6 +110,42 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
     end
   end
 
+  describe '#more_snow_nearby' do
+    def summary(next7d)
+      { next_7d: next7d }
+    end
+
+    it 'points to the snowiest neighbor only when it has double and 3 inches more' do
+      allow(context).to receive(:snow_summary).and_return(summary(4.0))
+
+      expect(context.more_snow_nearby(resort_with_snow, [{ next_7d: 8.0 }])).to eq({ next_7d: 8.0 })
+      expect(context.more_snow_nearby(resort_with_snow, [{ next_7d: 6.9 }])).to be_nil
+    end
+
+    it 'needs 3 inches more even when the resort has almost none' do
+      allow(context).to receive(:snow_summary).and_return(summary(0.5))
+
+      expect(context.more_snow_nearby(resort_with_snow, [{ next_7d: 2.0 }])).to be_nil
+      expect(context.more_snow_nearby(resort_with_snow, [])).to be_nil
+    end
+  end
+
+  describe '#terrain_runs' do
+    it 'orders runs from easiest to hardest with unknown kinds last' do
+      resort = FollowTheSnow::Resort.new(runs: { 'other' => {}, 'expert' => {}, 'easy' => {}, 'novice' => {} })
+
+      expect(context.terrain_runs(resort).map(&:first)).to eq(%w[Novice Easy Expert Other])
+    end
+  end
+
+  describe '#safe_url' do
+    it 'only allows http(s) links from OpenStreetMap data' do
+      expect(context.safe_url('https://www.steamboat.com/')).to eq('https://www.steamboat.com/')
+      expect(context.safe_url('javascript:alert(1)')).to be_nil
+      expect(context.safe_url(nil)).to be_nil
+    end
+  end
+
   describe '#day_callout' do
     it 'calls out the biggest day once it reaches snow-day size' do
       expect(context.day_callout(resort_with_snow)).to include(label: 'Snow day', inches: 5.5, date: 'Mon')

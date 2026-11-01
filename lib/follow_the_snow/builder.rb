@@ -64,8 +64,10 @@ module FollowTheSnow
               # Filter out resorts with names that don't generate valid slugs
               valid_resorts = resorts.reject { |r| r.name.to_url.empty? }
 
+              # Fetch everything first: pages read nearby resorts' forecasts, which must not bypass the limiter.
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 limiter.shift unless defined?(RSpec)
+                resort.timezone
 
                 resort_filename = build_filename.gsub('[resort]', resort.slug)
                 write_file(

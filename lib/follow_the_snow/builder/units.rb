@@ -36,10 +36,20 @@ module FollowTheSnow
         value_tag(kilometers.round(1), 'd', "#{(kilometers * 0.621371).round} mi")
       end
 
+      TIME_FORMATS = {
+        hour: ['hr', '%-l %p'],
+        day_hour: ['dh', '%a %-l %p'],
+        datetime: ['dt', '%a %b %-d, %-l:%M %p %Z']
+      }.freeze
+
       # Instant in UTC for the client; default text in the zone the time was built in.
       def time_value(time, format: :hour)
-        text = format == :hour ? time.strftime('%-l %p') : time.strftime('%a %b %-d, %-l:%M %p %Z')
-        %(<time datetime="#{time.getutc.iso8601}" data-k="#{format == :hour ? 'hr' : 'dt'}">#{ERB::Util.h(text)}</time>).html_safe
+        kind, pattern = TIME_FORMATS.fetch(format)
+        %(<time datetime="#{time.getutc.iso8601}" data-k="#{kind}">#{ERB::Util.h(time.strftime(pattern))}</time>).html_safe
+      end
+
+      def safe_url(url)
+        url if url.to_s.match?(%r{\Ahttps?://}i)
       end
 
       def snow_level(inches)

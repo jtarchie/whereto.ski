@@ -188,23 +188,6 @@ RSpec.describe('Building') do
                                                       "Row should have snow-cell or no-snow class: #{row.to_html}"
       end
     end
-
-    it 'adds snow-cell class to snowfall column in resort pages' do
-      resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-      expect(resort_files).not_to be_empty
-
-      # Find a resort page with snow
-      resort_with_snow = resort_files.find do |file|
-        content = File.read(file)
-        content.include?('snow-cell') || content.include?('Long Term Forecast')
-      end
-
-      if resort_with_snow
-        html = File.read(resort_with_snow)
-        # Check for either snow-cell styling or basic table structure
-        expect(html).to include('table')
-      end
-    end
   end
 
   describe 'navigation links' do

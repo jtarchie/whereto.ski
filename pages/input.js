@@ -52,6 +52,11 @@
       hour: "numeric",
       timeZone: zone,
     });
+    const dayHour = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      hour: "numeric",
+      timeZone: zone,
+    });
     const full = new Intl.DateTimeFormat(undefined, {
       weekday: "short",
       month: "short",
@@ -63,7 +68,8 @@
     });
     document.querySelectorAll("time[data-k]").forEach((el) => {
       const date = new Date(el.dateTime);
-      el.textContent = (el.dataset.k === "hr" ? hour : full).format(date);
+      const format = { hr: hour, dh: dayHour }[el.dataset.k] ?? full;
+      el.textContent = format.format(date);
     });
 
     const name = new Intl.DateTimeFormat(undefined, {
@@ -78,7 +84,9 @@
   function initTimezoneSelect() {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
     $tz.options[0].textContent = `Auto (${detected})`;
-    if (!resortZone()) $tz.options[1].textContent = "Resort local (on resort pages)";
+    if (!resortZone()) {
+      $tz.options[1].textContent = "Resort local (on resort pages)";
+    }
     (Intl.supportedValuesOf?.("timeZone") ?? []).forEach((zone) => {
       $tz.add(new Option(zone.replaceAll("_", " "), zone));
     });

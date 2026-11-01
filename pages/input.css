@@ -60,6 +60,10 @@
     @apply text-left text-xs font-medium tracking-wide text-ink-2 uppercase;
   }
 
+  tbody th {
+    @apply text-sm font-medium tracking-normal text-ink normal-case;
+  }
+
   th,
   td {
     @apply border-b px-2 py-2;

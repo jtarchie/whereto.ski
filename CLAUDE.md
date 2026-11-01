@@ -50,14 +50,13 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
   `content` as locals. Helpers templates call (scoring, formatting, rankings,
   snow totals) live in `builder/context.rb` — add template helpers there.
 - **Forecasts are lazy.** `Resort#forecasts` memoizes a `Forecast::OpenMeteo`
-  client; first template access triggers the HTTP call. Daily data is passed
-  through aggregator classes (`Forecast::Daily`) chained via `reduce`. So
-  rendering = network I/O.
+  client; `build!` fetches every resort first (rate-limited) because resort
+  pages read nearby resorts' forecasts. Daily data is passed through aggregator
+  classes (`Forecast::Daily`) chained via `reduce`. So rendering = network I/O.
 - **Rate limiting.** Resort pages render in parallel (50 threads) behind
   `Limiter::RateQueue` (25 resorts / 10s = 50 calls, base + summit each, half
-  Open-Meteo's limit); limiter is skipped
-  when `RSpec` is defined. Resorts render first so state/country pages hit
-  memoized forecasts.
+  Open-Meteo's limit); limiter is skipped when `RSpec` is defined. Resorts
+  render first so state/country pages hit memoized forecasts.
 - **Small countries** (`Context#small_country?`) get no state pages and no state
   entries in the search index — keep the builder and search index in agreement.
 - **Search index** `docs/assets/search-data.json` uses compact keys (`t` type
@@ -77,6 +76,6 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
 - ERB is linted/formatted by Herb (`.herb.yml`); run `rake fmt` before
   committing template changes.
 - Styling: Tailwind v4 with project tokens in `pages/tokens.css` (default
-  palette and type scale are reset; use `bg-canvas`, `text-ink-2`,
-  `bg-snow-N` …). No component library. Blue is reserved for snow amounts.
-  Design docs: `.design/redesign/`.
+  palette and type scale are reset; use `bg-canvas`, `text-ink-2`, `bg-snow-N`
+  …). No component library. Blue is reserved for snow amounts. Design docs:
+  `.design/redesign/`.

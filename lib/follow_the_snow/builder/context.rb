@@ -186,32 +186,6 @@ module FollowTheSnow
         [headers, rows]
       end
 
-      def table_for_longterm(resort)
-        headers = ['Date', 'Snowfall', 'Icon', 'Conditions', 'Temp', 'Feels Like', 'UV Index', 'Sunshine', 'Precip %', 'Wind Speed', 'Wind Gusts']
-
-        forecasts = resort.forecasts(
-          aggregates: [FollowTheSnow::Forecast::Daily]
-        )
-
-        rows = forecasts.map do |f|
-          [
-            f.name,
-            f.snow,
-            f.short_icon,
-            f.short,
-            f.temp,
-            f.apparent_temp,
-            f.uv_index,
-            f.sunshine_duration,
-            f.precipitation_probability,
-            f.wind_speed,
-            f.wind_gust
-          ]
-        end
-
-        [headers, rows]
-      end
-
       # Get current conditions for a resort
       def current_conditions_for(resort)
         resort.current_conditions
@@ -301,6 +275,29 @@ module FollowTheSnow
           km = distance_km(resort, other)
           { resort: other, km: km.round } if km <= NEARBY_KM
         end.sort_by { |n| n[:km] }.first(limit)
+      end
+
+      def nearby_by_snow(resort)
+        nearby_resorts(resort).map { |n| n.merge(next_7d: snow_summary(n[:resort])[:next_7d]) }
+                              .sort_by { |n| [-n[:next_7d], n[:km]] }
+      end
+
+      # Only worth a detour when the difference is both relative and absolute.
+      def more_snow_nearby(resort, nearby)
+        mine = snow_summary(resort)[:next_7d]
+        best = nearby.first
+        best if best && best[:next_7d] >= mine * 2 && best[:next_7d] - mine >= 3
+      end
+
+      RUN_ORDER = %w[novice easy intermediate advanced expert freeride extreme].freeze
+
+      def terrain_runs(resort)
+        (resort.runs || {}).sort_by { |type, _| RUN_ORDER.index(type) || RUN_ORDER.length }
+                           .map { |type, stat| [type.humanize, stat] }
+      end
+
+      def terrain_lifts(resort)
+        (resort.lifts || {}).sort_by { |_, stat| -stat[:count].to_i }.map { |type, stat| [type.humanize, stat] }
       end
 
       def distance_km(from, to)

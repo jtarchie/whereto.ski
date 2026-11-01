@@ -42,7 +42,7 @@ RSpec.describe('Unit and timezone preferences', :js, type: :feature) do
   end
 
   def first_text(selector)
-    find(selector, match: :first).text
+    find(selector, match: :first, visible: :all).text(:all)
   end
 
   it 'defaults to imperial for en-US browsers' do
@@ -64,10 +64,10 @@ RSpec.describe('Unit and timezone preferences', :js, type: :feature) do
   it 'shows hourly times in the chosen zone' do
     find('button[aria-label="Settings"]').click
     select 'Asia/Tokyo', from: 'tz-select'
-    expect(first_text('time[data-k="hr"]')).to eq('3 AM')
+    expect(first_text('time[data-k="dh"]')).to match(/\AWed,? 3 AM\z/)
     expect(first_text('[data-tz-label]')).to eq('GMT+9')
 
     select 'Resort local', from: 'tz-select'
-    expect(first_text('time[data-k="hr"]')).to eq('12 PM')
+    expect(first_text('time[data-k="dh"]')).to match(/\ATue,? 12 PM\z/)
   end
 end
