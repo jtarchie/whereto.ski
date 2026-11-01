@@ -357,13 +357,29 @@
           aria-label="Search for countries, regions, or resorts"
         >
 
-        <p id="search-loading" class="hidden py-6 text-center text-ink-2">
+        <p
+          id="search-loading"
+          role="status"
+          class="hidden py-6 text-center text-ink-2"
+        >
           Loading…
+        </p>
+
+        <p
+          id="search-error"
+          role="alert"
+          class="hidden py-6 text-center text-error"
+        >
+          Search couldn't load. Check your connection and try again.
         </p>
 
         <div id="search-results" class="min-h-0 overflow-y-auto"></div>
 
-        <p id="search-empty" class="hidden py-6 text-center text-ink-2">
+        <p
+          id="search-empty"
+          role="status"
+          class="hidden py-6 text-center text-ink-2"
+        >
           No matches. Try a town or region name.
         </p>
       </div>

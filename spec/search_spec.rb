@@ -2,9 +2,9 @@
 
 require 'spec_helper'
 require 'rack'
-require 'tmpdir'
+require 'json'
 
-RSpec.describe('Search Feature', :js, type: :feature) do
+RSpec.describe('Search', :js, type: :feature) do
   let(:build_dir) { @build_dir }
 
   before(:all) do
@@ -13,14 +13,12 @@ RSpec.describe('Search Feature', :js, type: :feature) do
     @build_dir      = SharedBuild.build_dir
     build_directory = @build_dir
     Capybara.app    = Rack::Builder.new do
-      # Serve static files from build directory
       use Rack::Static,
           urls: ['/'],
           root: build_directory,
           index: 'index.html',
           cascade: true
 
-      # Fallback to serve files directly
       run lambda { |env|
         path      = env['PATH_INFO']
         file_path = File.join(build_directory, path)
@@ -37,284 +35,129 @@ RSpec.describe('Search Feature', :js, type: :feature) do
     end
   end
 
-  describe 'search button visibility' do
-    it 'displays search button in navbar' do
-      visit '/'
-      expect(page).to have_css('button[aria-label="Search"]', visible: true)
-    end
+  def open_search
+    visit '/'
+    find('button[aria-label="Search"]').click
+    expect(page).to have_css('dialog#search-modal[open]')
+  end
 
-    it 'displays search icon SVG' do
-      visit '/'
-      within('button[aria-label="Search"]') do
-        expect(page).to have_css('svg')
-      end
+  def results
+    find_by_id('search-results')
+  end
+
+  describe 'index' do
+    let(:index) { JSON.parse(File.read(File.join(build_dir, 'assets', 'search-data.json'))) }
+
+    it 'carries location and 7-day snow for resorts' do
+      steamboat = index['d'].find { |item| item['u'] == '/resorts/steamboat-ski-resort' }
+
+      expect(steamboat['l']).to eq([40.455, -106.804])
+      expect(index['d'].count { |item| item['t'] == 'r' && item['w'] }).to be > 100
+      expect(index['d'].select { |item| item['w'] }.map { |item| item['w'] }).to all(be_positive)
     end
   end
 
-  describe 'search modal' do
-    it 'opens search modal when clicking search button' do
-      visit '/'
-      find('button[aria-label="Search"]').click
+  it 'opens with the button, Cmd/Ctrl+K and /, focusing the field' do
+    open_search
+    expect(page).to have_css('#search-input:focus')
 
-      expect(page).to have_css('dialog[open]', wait: 2)
-      expect(page).to have_field('search-input', visible: true)
+    page.send_keys(:escape)
+    find('body').send_keys('/')
+    expect(page).to have_css('dialog#search-modal[open] #search-input:focus')
+
+    page.send_keys(:escape)
+    find('body').send_keys([:control, 'k'])
+    expect(page).to have_css('dialog#search-modal[open]')
+  end
+
+  it 'lets / be typed inside a field' do
+    open_search
+    fill_in 'search-input', with: 'a/b'
+
+    expect(find_by_id('search-input').value).to eq('a/b')
+  end
+
+  it 'groups results, ranks name matches first and shows 7-day snow on resorts' do
+    open_search
+    fill_in 'search-input', with: 'Colorado'
+
+    within(results) do
+      expect(page).to have_css('h3', text: /regions/i)
+      expect(first('section a')).to have_text('Colorado')
     end
 
-    it 'focuses search input when modal opens' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-
-      # Check that search input has focus
-      active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
-      expect(active_label).to eq('Search for countries, regions, or resorts')
-    end
-
-    it 'closes modal when clicking backdrop' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      expect(page).to have_css('dialog[open]')
-
-      # Click outside the modal box (on the backdrop)
-      page.execute_script("document.querySelector('dialog[open]').close()")
-      expect(page).not_to have_css('dialog[open]')
+    fill_in 'search-input', with: 'Steamboat'
+    within(results) do
+      link = find('a[href="/resorts/steamboat-ski-resort"]')
+      expect(link).to have_text('Colorado · United States of America')
+      expect(link).to have_css('data[title="Next 7 days"]')
     end
   end
 
-  describe 'search data loading' do
-    it 'loads search data when modal is opened' do
-      visit '/'
-      find('button[aria-label="Search"]').click
+  it 'renders OpenStreetMap names as text, never markup' do
+    visit '/'
+    execute_script(<<~JS)
+      const index = { cl: ['Nowhere'], d: [{ t: 'r', n: '<img src=x onerror="window.pwned=1">Evil', c: 0, s: 'R', u: '/x', w: 3 }] };
+      window.fetch = () => Promise.resolve(new Response(JSON.stringify(index)));
+    JS
+    find('button[aria-label="Search"]').click
+    fill_in 'search-input', with: 'Evil'
 
-      # Wait for loading indicator to disappear (data loaded)
-      expect(page).not_to have_content('Loading search data...', wait: 5)
-    end
-
-    it 'has search data JSON file available' do
-      # Make a direct request to the JSON file
-      visit '/assets/search-data.json'
-      # Check for compressed format: "cl" array and "d" data array with type codes
-      expect(page).to have_content('"cl"')
-      expect(page).to have_content('"d"')
-      expect(page).to have_content('"t":"c"') # country type code
-      expect(page).to have_content('"t":"r"') # resort type code
-    end
+    within(results) { expect(page).to have_text('<img src=x onerror="window.pwned=1">Evil') }
+    expect(results).to have_no_css('img')
+    expect(evaluate_script('window.pwned')).to be_nil
   end
 
-  describe 'search functionality' do
-    before do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      # Wait for search data to load
-      sleep 1
-    end
+  it 'says so when nothing matches' do
+    open_search
+    fill_in 'search-input', with: 'xyzabc123notfound'
 
-    it 'displays results when searching for a country' do
-      fill_in 'search-input', with: 'United States'
-
-      # Wait for debounce and results
-      expect(page).to have_content('Countries', wait: 2)
-      expect(page).to have_link('United States')
-    end
-
-    it 'displays results when searching for a state' do
-      fill_in 'search-input', with: 'Colorado'
-
-      expect(page).to have_content('States / Regions', wait: 2)
-      expect(page).to have_link('Colorado')
-    end
-
-    it 'displays results when searching for a resort' do
-      fill_in 'search-input', with: 'Vail'
-
-      expect(page).to have_content('Ski Resorts', wait: 2)
-      expect(page).to have_link('Vail')
-    end
-
-    it 'shows "No matches. Try a town or region name." when search returns nothing' do
-      fill_in 'search-input', with: 'xyzabc123notfound'
-
-      expect(page).to have_content('No matches. Try a town or region name.', wait: 2)
-    end
-
-    it 'groups results by type' do
-      fill_in 'search-input', with: 'Japan'
-
-      # Should show country
-      expect(page).to have_content('Countries', wait: 2)
-
-      # Should show resorts
-      expect(page).to have_content('Ski Resorts')
-    end
-
-    it 'limits results to prevent overwhelming UI' do
-      # Search for something very common
-      fill_in 'search-input', with: 'a'
-
-      # Count total links in results (should be limited to 50)
-      within('dialog[open]') do
-        result_links = page.all('a')
-        expect(result_links.count).to be <= 50
-      end
-    end
-
-    it 'includes location information in resort results' do
-      fill_in 'search-input', with: 'Whistler'
-
-      # Resort results should show state and country
-      within('dialog[open]') do
-        # Look for the location info (state, country)
-        expect(page).to have_css('.text-xs.text-base-content\\/60', wait: 2)
-      end
-    end
+    expect(page).to have_content('No matches. Try a town or region name.')
   end
 
-  describe 'search result navigation' do
-    before do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      sleep 1 # Wait for search data to load
-    end
+  it 'caps results at 50' do
+    open_search
+    fill_in 'search-input', with: 'a'
 
-    it 'navigates to country page when clicking country result' do
-      fill_in 'search-input', with: 'Switzerland'
-
-      within('dialog[open]') do
-        click_link 'Switzerland', match: :first
-      end
-
-      expect(page).to have_current_path(%r{/countries/switzerland}, wait: 3)
-    end
-
-    it 'navigates to resort page when clicking resort result' do
-      fill_in 'search-input', with: 'Aspen'
-
-      within('dialog[open]') do
-        click_link 'Aspen', match: :first
-      end
-
-      expect(page).to have_current_path(%r{/resorts/}, wait: 3)
-    end
+    within(results) { expect(page).to have_css('a', minimum: 1) }
+    expect(results.all('a').length).to be <= 50
   end
 
-  describe 'keyboard shortcuts' do
-    it 'opens search with Cmd/Ctrl + K' do
-      visit '/'
+  it 'navigates to the result' do
+    open_search
+    fill_in 'search-input', with: 'Steamboat'
+    within(results) { click_on 'Steamboat Ski Resort' }
 
-      # Simulate Cmd+K (or Ctrl+K on Windows/Linux)
-      page.execute_script(<<~JS)
-        const event = new KeyboardEvent('keydown', {
-          key: 'k',
-          metaKey: true,
-          ctrlKey: false
-        });
-        document.dispatchEvent(event);
-      JS
-
-      expect(page).to have_css('dialog[open]', wait: 2)
-      # Check input is there by aria-label
-      expect(page).to have_css('input[aria-label="Search for countries, regions, or resorts"]')
-    end
-
-    it 'focuses search input after keyboard shortcut' do
-      visit '/'
-
-      page.execute_script(<<~JS)
-        const event = new KeyboardEvent('keydown', {
-          key: 'k',
-          metaKey: true
-        });
-        document.dispatchEvent(event);
-      JS
-
-      active_label = page.evaluate_script("document.activeElement.getAttribute('aria-label')")
-      expect(active_label).to eq('Search for countries, regions, or resorts')
-    end
+    expect(page).to have_current_path('/resorts/steamboat-ski-resort')
   end
 
-  describe 'search state management' do
-    it 'clears search input and results when modal closes' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      sleep 1
+  it 'clears the query and results on close' do
+    open_search
+    fill_in 'search-input', with: 'Vail'
+    within(results) { expect(page).to have_link('Vail') }
 
-      fill_in 'search-input', with: 'Colorado'
-      expect(page).to have_link('Colorado', wait: 2)
+    find('#search-modal button[aria-label="Close"]').click
+    find('button[aria-label="Search"]').click
 
-      # Close modal
-      page.execute_script("document.querySelector('dialog[open]').close()")
-
-      # Reopen modal
-      find('button[aria-label="Search"]').click
-
-      # Input should be empty
-      expect(find_field('search-input').value).to eq('')
-
-      # Results should be cleared - no links should be visible
-      within('dialog[open]') do
-        expect(page).not_to have_link('Colorado', wait: 1)
-      end
-    end
-
-    it 'maintains search data after first load' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      sleep 1
-
-      # Close and reopen
-      page.execute_script("document.querySelector('dialog[open]').close()")
-      find('button[aria-label="Search"]').click
-
-      # Search should work immediately without reloading data
-      fill_in 'search-input', with: 'Alaska'
-      expect(page).to have_link('Alaska', wait: 1)
-    end
+    expect(find_by_id('search-input').value).to eq('')
+    expect(page).to have_no_css('#search-results a')
   end
 
-  describe 'mobile responsiveness' do
-    it 'displays search button on mobile viewport' do
-      page.driver.browser.manage.window.resize_to(375, 667) # iPhone SE size
+  it 'shows an error when the index cannot load, and retries on the next open' do
+    visit '/'
+    execute_script(<<~JS)
+      window.__fetch = window.fetch;
+      window.fetch = () => Promise.reject(new Error('offline'));
+    JS
+    find('button[aria-label="Search"]').click
+    expect(page).to have_css('#search-error', text: "Search couldn't load")
 
-      visit '/'
-      expect(page).to have_css('button[aria-label="Search"]', visible: true)
-    end
+    page.send_keys(:escape)
+    execute_script('window.fetch = window.__fetch')
+    find('button[aria-label="Search"]').click
+    fill_in 'search-input', with: 'Vail'
 
-    it 'modal is responsive on mobile' do
-      page.driver.browser.manage.window.resize_to(375, 667)
-
-      visit '/'
-      find('button[aria-label="Search"]').click
-
-      expect(page).to have_css('dialog[open]')
-      expect(page).to have_css('.dialog-box')
-    end
-  end
-
-  describe 'performance' do
-    it 'loads search data file efficiently' do
-      visit '/'
-
-      start_time = Time.now
-      find('button[aria-label="Search"]').click
-      sleep 1 # Wait for data to load
-      end_time   = Time.now
-
-      # Loading should complete within reasonable time
-      expect(end_time - start_time).to be < 3
-    end
-
-    it 'debounces search input to avoid excessive filtering' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-      sleep 1
-
-      # Type quickly
-      fill_in 'search-input', with: 'C'
-      fill_in 'search-input', with: 'Co'
-      fill_in 'search-input', with: 'Col'
-      fill_in 'search-input', with: 'Colo'
-
-      # Should only show results after debounce period
-      expect(page).to have_link('Colorado', wait: 1)
-    end
+    expect(page).to have_no_css('#search-error')
+    within(results) { expect(page).to have_link('Vail') }
   end
 end

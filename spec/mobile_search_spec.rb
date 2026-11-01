@@ -73,16 +73,13 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
     it 'search results are scrollable on mobile' do
       visit '/'
       find('button[aria-label="Search"]').click
-      sleep 1 # Wait for data to load
-
       fill_in 'search-input', with: 'a'
 
-      # Wait for results and check scrollability
-      expect(page).to have_css('#search-results', wait: 2)
-
-      # Results container should have overflow-y-auto
-      results_container = find('#search-results')
-      expect(results_container['class']).to include('overflow-y-auto')
+      within('#search-results') { expect(page).to have_css('a', minimum: 10) }
+      overflow = evaluate_script("getComputedStyle(document.getElementById('search-results')).overflowY")
+      expect(overflow).to eq('auto')
+      bottom   = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().bottom")
+      expect(bottom).to be <= evaluate_script('window.innerHeight')
     end
 
     it 'fits the dialog within the viewport' do
@@ -96,8 +93,6 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
     it 'search still functions correctly on mobile viewport' do
       visit '/'
       find('button[aria-label="Search"]').click
-      sleep 1
-
       fill_in 'search-input', with: 'Colorado'
 
       expect(page).to have_link('Colorado', wait: 2)

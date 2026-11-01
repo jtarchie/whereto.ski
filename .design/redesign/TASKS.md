@@ -108,7 +108,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
 
 ## Interactions & States
 
-- [ ] **10. Search**: restyle dialog with tokens; build results with DOM APIs /
+- [x] **10. Search**: restyle dialog with tokens; build results with DOM APIs /
       `textContent` (no `innerHTML` with OSM names); add 7d snow to each resort
       result and lat/lon (3 dp) to the index; `/` shortcut besides Cmd/Ctrl+K;
       empty copy "No matches. Try a town or region name." Covers: loading, error

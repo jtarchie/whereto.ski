@@ -101,7 +101,7 @@
   }
 
   .input {
-    @apply h-(--size-hit) w-full rounded-md border border-line-strong
+    @apply h-(--size-hit) w-full shrink-0 rounded-md border border-line-strong
       bg-canvas px-3 text-base text-ink placeholder:text-ink-3;
   }
 

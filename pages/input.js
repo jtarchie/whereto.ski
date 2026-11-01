@@ -37,9 +37,9 @@
     }
   }
 
-  function formatAll() {
+  function formatAll(root = document) {
     const metric = isMetric();
-    document.querySelectorAll("data[data-k]").forEach((el) => {
+    root.querySelectorAll("data[data-k]").forEach((el) => {
       const convert = KINDS[el.dataset.k];
       if (!convert) return;
       const [n, unit] = convert(parseFloat(el.value), metric);
@@ -197,7 +197,7 @@
   }
 
   let searchData = null;
-  let isLoading = false;
+  let loading = null;
 
   const modal = document.getElementById("search-modal");
   const searchButton = document.getElementById("search-button");
@@ -205,112 +205,135 @@
   const searchResults = document.getElementById("search-results");
   const searchLoading = document.getElementById("search-loading");
   const searchEmpty = document.getElementById("search-empty");
+  const searchError = document.getElementById("search-error");
 
-  // Load search data lazily
-  async function loadSearchData() {
-    if (searchData || isLoading) return;
+  const show = (el, visible) => el.classList.toggle("hidden", !visible);
 
-    isLoading = true;
-    searchLoading.classList.remove("hidden");
-
-    try {
-      const response = await fetch("/assets/search-data.json");
-      const rawData = await response.json();
-
-      // Expand compressed format for easier searching
-      // Format: { cl: [countries], d: [{t,n,c,s,u},...] }
-      // t=type (c/s/r), n=name, c=country index, s=state, u=url
-      searchData = rawData.d.map((item) => ({
-        type: item.t === "c" ? "country" : item.t === "s" ? "state" : "resort",
-        name: item.n,
-        country: typeof item.c === "number" ? rawData.cl[item.c] : undefined,
-        state: item.s,
-        url: item.u,
-      }));
-    } catch (error) {
-      console.error("Failed to load search data:", error);
-      searchData = [];
-    } finally {
-      isLoading = false;
-      searchLoading.classList.add("hidden");
-    }
+  // Index format: { cl: [countries], d: [{t, n, c, s, u, l, w}] }; t = c/s/r, c = index into cl, l = [lat, lon], w = 7-day snow (omitted when 0).
+  function loadSearchData() {
+    if (searchData) return Promise.resolve();
+    loading ??= fetch("/assets/search-data.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((raw) => {
+        searchData = raw.d.map((item) => ({
+          type: item.t,
+          name: item.n,
+          country: typeof item.c === "number" ? raw.cl[item.c] : undefined,
+          region: item.s,
+          url: item.u,
+          snow: item.w ?? 0,
+        }));
+        show(searchError, false);
+      })
+      .catch(() => show(searchError, true))
+      .finally(() => {
+        loading = null;
+        show(searchLoading, false);
+        performSearch(searchInput.value);
+      });
+    show(searchLoading, true);
+    return loading;
   }
 
-  // Filter and display results
-  function performSearch(query) {
-    if (!searchData) return;
+  const SNOW_STEPS = [1, 2, 6, 12];
+  const snowLevel = (inches) =>
+    inches <= 0 ? 0 : SNOW_STEPS.filter((step) => inches >= step).length + 1;
 
-    const lowerQuery = query.toLowerCase().trim();
+  const GROUPS = [["c", "Countries"], ["s", "Regions"], ["r", "Resorts"]];
 
-    if (!lowerQuery) {
-      searchResults.innerHTML = "";
-      searchEmpty.classList.add("hidden");
-      return;
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function resultItem(item) {
+    const link = el(
+      "a",
+      "flex items-center gap-3 rounded-md px-2 py-2 no-underline hover:bg-inset",
+    );
+    link.href = item.url;
+    const text = el("span", "min-w-0 grow");
+    text.append(el("span", "block truncate font-medium", item.name));
+    const place = item.type === "r"
+      ? [item.region, item.country]
+      : [item.country];
+    const meta = place.filter(Boolean).join(" · ");
+    if (meta) {
+      text.append(el("span", "block truncate text-xs text-ink-2", meta));
+    }
+    link.append(text);
+
+    if (item.type === "r") {
+      const level = snowLevel(item.snow);
+      const snow = el(
+        "data",
+        level
+          ? `shrink-0 rounded-sm px-1.5 text-sm font-medium bg-snow-${level} text-on-snow-${level}`
+          : "shrink-0 px-1.5 text-sm text-ink-3",
+        "–",
+      );
+      snow.value = item.snow;
+      if (level) snow.dataset.k = "s";
+      snow.title = "Next 7 days";
+      link.append(snow);
     }
 
-    // Simple fuzzy search: matches if query appears anywhere in name, country, or state
+    const li = el("li");
+    li.append(link);
+    return li;
+  }
+
+  // Name matches outrank region/country matches; within a rank, snowier resorts first.
+  function performSearch(query) {
+    const q = query.toLowerCase().trim();
+    searchResults.replaceChildren();
+    show(searchEmpty, false);
+    if (!searchData || !q) return;
+
+    const rank = (item) => {
+      const name = item.name.toLowerCase();
+      if (name.startsWith(q)) return 0;
+      if (name.includes(q)) return 1;
+      return [item.region, item.country].some((p) =>
+          p?.toLowerCase().includes(q)
+        )
+        ? 2
+        : -1;
+    };
     const results = searchData
-      .filter((item) => {
-        const nameMatch = item.name.toLowerCase().includes(lowerQuery);
-        const countryMatch = item.country &&
-          item.country.toLowerCase().includes(lowerQuery);
-        const stateMatch = item.state &&
-          item.state.toLowerCase().includes(lowerQuery);
-        return nameMatch || countryMatch || stateMatch;
-      })
-      .slice(0, 50); // Limit to 50 results
+      .map((item) => ({ item, rank: rank(item) }))
+      .filter((r) => r.rank >= 0)
+      .sort((a, b) => a.rank - b.rank || b.item.snow - a.item.snow)
+      .slice(0, 50)
+      .map((r) => r.item);
 
     if (results.length === 0) {
-      searchResults.innerHTML = "";
-      searchEmpty.classList.remove("hidden");
+      show(searchEmpty, true);
       return;
     }
 
-    searchEmpty.classList.add("hidden");
-
-    // Group results by type for better UX
-    const grouped = {
-      country: results.filter((r) => r.type === "country"),
-      state: results.filter((r) => r.type === "state"),
-      resort: results.filter((r) => r.type === "resort"),
-    };
-
-    let html = "";
-
-    // Render countries
-    if (grouped.country.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Countries</h4><ul class="menu">';
-      grouped.country.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>🌍</span><span>${item.name}</span></a></li>`;
-      });
-      html += "</ul></div>";
-    }
-
-    // Render states
-    if (grouped.state.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">States / Regions</h4><ul class="menu">';
-      grouped.state.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>📍</span><span>${item.name}</span><span class="text-xs text-base-content/60">${item.country}</span></a></li>`;
-      });
-      html += "</ul></div>";
-    }
-
-    // Render resorts
-    if (grouped.resort.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Ski Resorts</h4><ul class="menu">';
-      grouped.resort.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>⛷️</span><div class="flex flex-col items-start"><span>${item.name}</span><span class="text-xs text-base-content/60">${item.state}, ${item.country}</span></div></a></li>`;
-      });
-      html += "</ul></div>";
-    }
-
-    searchResults.innerHTML = html;
+    GROUPS.forEach(([type, label]) => {
+      const items = results.filter((r) => r.type === type);
+      if (!items.length) return;
+      const section = el("section", "mb-4");
+      section.append(
+        el(
+          "h3",
+          "mb-1 px-2 text-xs font-medium tracking-wide text-ink-2 uppercase",
+          label,
+        ),
+      );
+      const list = el("ul");
+      items.forEach((item) => list.append(resultItem(item)));
+      section.append(list);
+      searchResults.append(section);
+    });
+    formatAll(searchResults);
   }
 
   // Debounce function to avoid searching on every keystroke
@@ -328,12 +351,14 @@
 
   const debouncedSearch = debounce(performSearch, 300);
 
-  // Open modal and load data
-  searchButton.addEventListener("click", () => {
+  function openSearch() {
+    if (modal.open) return;
     modal.showModal();
-    loadSearchData();
     searchInput.focus();
-  });
+    loadSearchData();
+  }
+
+  searchButton.addEventListener("click", openSearch);
 
   // Handle virtual keyboard on mobile
   function handleMobileKeyboard() {
@@ -370,8 +395,8 @@
   // Reset modal styles when closed
   modal.addEventListener("close", () => {
     searchInput.value = "";
-    searchResults.innerHTML = "";
-    searchEmpty.classList.add("hidden");
+    searchResults.replaceChildren();
+    show(searchEmpty, false);
     const modalBox = modal.querySelector(".dialog-box");
     if (modalBox) {
       modalBox.style.maxHeight = "";
@@ -386,13 +411,16 @@
     });
   });
 
-  // Keyboard shortcut: Cmd/Ctrl + K to open search
+  // Cmd/Ctrl+K anywhere; "/" only when the user isn't typing somewhere else.
   document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    const typing = e.target.closest?.(
+      "input, textarea, select, [contenteditable]",
+    );
+    if (
+      ((e.metaKey || e.ctrlKey) && e.key === "k") || (e.key === "/" && !typing)
+    ) {
       e.preventDefault();
-      modal.showModal();
-      loadSearchData();
-      searchInput.focus();
+      openSearch();
     }
   });
 })();

@@ -33,8 +33,6 @@ module FollowTheSnow
         FileUtils.mkdir_p(@build_dir)
         FileUtils.copy_entry(File.join(@source_dir, 'public'), @build_dir)
 
-        # Generate search index
-        generate_search_index
         generate_redirects
 
         layout_html = erb(File.join(@source_dir, '_layout.html.erb'))
@@ -118,6 +116,9 @@ module FollowTheSnow
             end
           end
         end
+
+        # After resort pages: the index carries 7-day snow, so forecasts must already be fetched under the limiter.
+        generate_search_index
       end
 
       private
@@ -170,13 +171,16 @@ module FollowTheSnow
         resorts.each do |resort|
           next if resort.slug.empty?
 
+          snow = @context.snow_summary(resort)[:next_7d].round(1)
           search_data[:d] << {
             t: 'r',
             n: resort.name,
             c: country_lookup[resort.country_name], # numeric index
             s: resort.region_name,
-            u: "/resorts/#{resort.slug}"
-          }
+            u: "/resorts/#{resort.slug}",
+            l: [resort.lat.round(3), resort.lon.round(3)],
+            w: (snow if snow.positive?)
+          }.compact
         end
 
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
