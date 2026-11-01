@@ -130,7 +130,12 @@
     @apply inline-flex h-8 items-center rounded-full border px-3;
   }
 
-  .chip[aria-current] {
+  /* While Near me is on, the page scope is no longer what's shown. */
+  nav:has([aria-pressed="true"]) .chip[aria-current] {
+    @apply border-line bg-transparent text-ink-2;
+  }
+
+  .chip[aria-current], .chip[aria-pressed="true"] {
     @apply border-ink bg-ink text-on-inverse;
   }
 
@@ -201,7 +206,7 @@
     }
 
     .num, td[data-s] {
-      @apply w-14 text-right md:w-20;
+      @apply w-14 text-right whitespace-nowrap md:w-20;
     }
 
     .next {

@@ -11,9 +11,7 @@
 
 <%= partial("scope_header", title: "Where's the snow", scope: "World", list: list, alternative: nil) %>
 
-<h2 class="mb-2">Top 25 resorts</h2>
-
-<%= partial("ranked_list", resorts: list.first(25), place: %i[region_name country_name]) %>
+<%= partial("ranked_list", heading: "Top 25 resorts", resorts: list.first(25), place: %i[region_name country_name]) %>
 
 <%= partial(
   "area_table",

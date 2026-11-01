@@ -1,113 +1,119 @@
 <% days = snow_days(resorts.first).map { |d| d[:date] }
   columns = [[:next_24h, "24h", "Next 24h", "24h"], [:past_72h, "past72h", "Past 72h", "72h"], [:next_7d, "7d", "Next 7 days", "7d"], [:next_16d, "16d", "16 days", "16d"]] %>
 
-<table class="ranked" data-ranked>
-  <caption class="sr-only">
-    Resorts ranked by snow. Sort buttons are in the column headers.
-  </caption>
+<section data-ranked-section>
+  <% if heading %>
+    <h2 class="mb-2"><%= heading %></h2>
+  <% end %>
 
-  <thead>
-    <tr>
-      <th scope="col" class="rank"><span class="sr-only">Rank</span></th>
+  <table class="ranked" data-ranked>
+    <caption class="sr-only">
+      Resorts ranked by snow. Sort buttons are in the column headers.
+    </caption>
 
-      <th
-        scope="col"
-        class="who"
-        data-s="day"
-        aria-sort="none"
-      >
-        <div class="who-row">
-          <span>Resort</span>
+    <thead>
+      <tr>
+        <th scope="col" class="rank"><span class="sr-only">Rank</span></th>
 
-          <div class="days">
-            <% days.each do |date| %>
-              <button
-                type="button"
-                data-sort="<%= date.iso8601 %>"
-                aria-label="Sort by snow on <%= date.strftime('%a %b %-d') %>"
-              >
-                <%= date.strftime("%a")[0] %>
-                <br>
-                <%= date.day %>
-              </button>
-            <% end %>
-          </div>
-        </div>
-      </th>
-
-      <% columns.each do |_, key, label, short| %>
         <th
           scope="col"
-          class="num"
-          data-s="<%= key %>"
-          aria-sort="<%= key == "7d" ? "descending" : "none" %>"
+          class="who"
+          data-s="day"
+          aria-sort="none"
         >
-          <button type="button" data-sort="<%= key %>">
-            <span class="md:hidden" aria-hidden="true"><%= short %></span><span class="max-md:sr-only"><%= label %></span>
-          </button>
-        </th>
-      <% end %>
-
-      <th scope="col" class="next">
-        Next<span class="max-md:sr-only"> snow</span>
-      </th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <% resorts.each_with_index do |resort, index| %>
-      <% summary = snow_summary(resort)
-        upcoming = next_snow_day(resort) %>
-
-      <tr data-has-snow="<%= summary[:next_16d].positive? %>">
-        <td class="rank"><%= index + 1 %></td>
-
-        <td class="who">
           <div class="who-row">
-            <div>
-              <a href="/resorts/<%= resort.slug %>"><%= h resort.name %></a>
+            <span>Resort</span>
 
-              <% line = place.map { |part| resort.public_send(part) }.compact.uniq %>
-
-              <% if line.any? %>
-                <span class="place"><%= h line.join(" · ") %></span>
-              <% end %>
-            </div>
-
-            <div class="strip" aria-hidden="true">
-              <% snow_days(resort).each_with_index do |day, column| %>
-                <% next unless day[:inches].positive? %>
-
-                <i
-                  data-v="<%= day[:inches].round(2) %>"
-                  class="bg-mark-<%= snow_level(day[:inches]) %>"
-                  style="grid-column:<%= column + 1 %>;height:<%= (day[:inches] / 12.0 * 100).round.clamp(8, 100) %>%"
-                ></i>
+            <div class="days">
+              <% days.each do |date| %>
+                <button
+                  type="button"
+                  data-sort="<%= date.iso8601 %>"
+                  aria-label="Sort by snow on <%= date.strftime('%a %b %-d') %>"
+                >
+                  <%= date.strftime("%a")[0] %>
+                  <br>
+                  <%= date.day %>
+                </button>
               <% end %>
             </div>
           </div>
-        </td>
+        </th>
 
-        <% columns.each do |field, key, _, _| %>
-          <% inches = summary[field]
-            level = snow_level(inches) %>
-
-          <td
+        <% columns.each do |_, key, label, short| %>
+          <th
+            scope="col"
+            class="num"
             data-s="<%= key %>"
-            class="<%= "bg-snow-#{level} text-on-snow-#{level}" unless level.zero? %>"
+            aria-sort="<%= key == "7d" ? "descending" : "none" %>"
           >
-            <% if level.zero? %>
-              –
-            <% else %>
-              <%= snow_value(inches) %>
-            <% end %>
-          </td>
+            <button type="button" data-sort="<%= key %>">
+              <span class="md:hidden" aria-hidden="true"><%= short %></span><span class="max-md:sr-only"><%= label %></span>
+            </button>
+          </th>
         <% end %>
 
-        <td class="next">
-          <%= upcoming ? day_name(upcoming[:date], days.index(upcoming[:date]) || 1) : "–" %>
-        </td>
+        <th scope="col" class="next">
+          Next<span class="max-md:sr-only"> snow</span>
+        </th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+
+    <tbody>
+      <% resorts.each_with_index do |resort, index| %>
+        <% summary = snow_summary(resort)
+        upcoming = next_snow_day(resort) %>
+
+        <tr data-has-snow="<%= summary[:next_16d].positive? %>">
+          <td class="rank"><%= index + 1 %></td>
+
+          <td class="who">
+            <div class="who-row">
+              <div>
+                <a href="/resorts/<%= resort.slug %>"><%= h resort.name %></a>
+
+                <% line = place.map { |part| resort.public_send(part) }.compact.uniq %>
+
+                <% if line.any? %>
+                  <span class="place"><%= h line.join(" · ") %></span>
+                <% end %>
+              </div>
+
+              <div class="strip" aria-hidden="true">
+                <% snow_days(resort).each_with_index do |day, column| %>
+                  <% next unless day[:inches].positive? %>
+
+                  <i
+                    data-v="<%= day[:inches].round(2) %>"
+                    class="bg-mark-<%= snow_level(day[:inches]) %>"
+                    style="grid-column:<%= column + 1 %>;height:<%= (day[:inches] / 12.0 * 100).round.clamp(8, 100) %>%"
+                  ></i>
+                <% end %>
+              </div>
+            </div>
+          </td>
+
+          <% columns.each do |field, key, _, _| %>
+            <% inches = summary[field]
+            level = snow_level(inches) %>
+
+            <td
+              data-s="<%= key %>"
+              class="<%= "bg-snow-#{level} text-on-snow-#{level}" unless level.zero? %>"
+            >
+              <% if level.zero? %>
+                –
+              <% else %>
+                <%= snow_value(inches) %>
+              <% end %>
+            </td>
+          <% end %>
+
+          <td class="next">
+            <%= upcoming ? day_name(upcoming[:date], days.index(upcoming[:date]) || 1) : "–" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

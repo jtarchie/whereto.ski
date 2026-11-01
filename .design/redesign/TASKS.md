@@ -125,7 +125,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       with "Map unavailable"), dark style. Done = core `main.js` still ≤10 KB
       gz. _New dep: `maplibre-gl`. New: map._
 
-- [ ] **12. Near me**: chip on home/country/region; on tap request geolocation
+- [x] **12. Near me**: chip on home/country/region; on tap request geolocation
       once, re-rank resorts within ~300 km by 7d snow from the search index,
       render with the ranked-list markup client-side. Covers: granted, denied
       (chip hides, no re-prompt), unavailable, no snow nearby (empty state).

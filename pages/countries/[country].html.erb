@@ -22,11 +22,7 @@
   alternative: other && [other, "/countries/#{other.to_url}"]
 ) %>
 
-<% unless small %>
-  <h2 class="mb-2">Top 25 resorts</h2>
-<% end %>
-
-<%= partial("ranked_list", resorts: list, place: small ? %i[locality region_name] : %i[region_name]) %>
+<%= partial("ranked_list", heading: (small ? nil : "Top 25 resorts"), resorts: list, place: small ? %i[locality region_name] : %i[region_name]) %>
 
 <% unless small %>
   <%= partial(
