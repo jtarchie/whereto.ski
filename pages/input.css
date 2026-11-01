@@ -79,6 +79,22 @@
   }
 }
 
+/* Grows the tap area to 44px without changing layout. */
+@utility hit {
+  position: relative;
+
+  /* ::before, because ::after carries the sort arrow on table headers. */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--size-hit));
+    height: max(100%, var(--size-hit));
+    translate: -50% -50%;
+  }
+}
+
 @layer components {
   /* Icon-only header buttons: 44px hit target, no chrome until hover. */
   .icon-button {
@@ -127,7 +143,7 @@
 
 @layer components {
   .chip {
-    @apply inline-flex h-8 items-center rounded-full border px-3;
+    @apply hit inline-flex h-8 items-center rounded-full border px-3;
   }
 
   /* While Near me is on, the page scope is no longer what's shown. */
@@ -206,7 +222,11 @@
     }
 
     .num, td[data-s] {
-      @apply w-14 text-right whitespace-nowrap md:w-20;
+      @apply w-14 text-right md:w-20;
+    }
+
+    td.num, td[data-s] {
+      @apply whitespace-nowrap;
     }
 
     .next {
@@ -218,7 +238,7 @@
     }
 
     th button {
-      @apply uppercase hover:text-ink;
+      @apply hit uppercase hover:text-ink;
     }
 
     th[aria-sort="descending"] > button, .days button[aria-pressed="true"] {

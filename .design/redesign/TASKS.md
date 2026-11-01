@@ -138,7 +138,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       "Our Mission"; update page `description`/`title` front matter to lead with
       snow numbers. _Modifies: `about.html.erb`, front matter._
 
-- [ ] **14. Responsive pass**: verify at 375 / 768 / 1024 / 1280, light + dark:
+- [x] **14. Responsive pass**: verify at 375 / 768 / 1024 / 1280, light + dark:
       no horizontal page scroll; list columns per IA; resort page two-column
       ≥1024; breadcrumbs scroll on mobile; 44px targets. Breakpoints: md, lg,
       xl.

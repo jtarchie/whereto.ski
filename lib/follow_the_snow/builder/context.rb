@@ -221,10 +221,10 @@ module FollowTheSnow
       def breadcrumbs(crumbs)
         items = crumbs.each_with_index.map do |(label, href), index|
           current = index == crumbs.length - 1
-          link    = current ? %(<span aria-current="page">#{h label}</span>) : %(<a href="#{h href}">#{h label}</a>)
+          link    = current ? %(<span aria-current="page">#{h label}</span>) : %(<a class="hit" href="#{h href}">#{h label}</a>)
           %(<li class="flex shrink-0 items-center gap-2">#{%(<span aria-hidden="true">/</span>) unless index.zero?}#{link}</li>)
         end
-        %(<nav aria-label="Breadcrumb" class="-mx-4 overflow-x-auto px-4 text-sm text-ink-2"><ol class="flex gap-2 whitespace-nowrap">#{items.join}</ol></nav>).html_safe
+        %(<nav aria-label="Breadcrumb" class="-mx-4 -my-3 overflow-x-auto px-4 py-3 text-sm text-ink-2"><ol class="flex gap-2 whitespace-nowrap">#{items.join}</ol></nav>).html_safe
       end
 
       # Renders pages/_name.html.erb with this context as self.
