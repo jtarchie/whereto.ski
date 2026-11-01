@@ -125,6 +125,93 @@
   }
 }
 
+@layer components {
+  .chip {
+    @apply inline-flex h-8 items-center rounded-full border px-3;
+  }
+
+  .chip[aria-current] {
+    @apply border-ink bg-ink text-on-inverse;
+  }
+
+  /* Ranked list: classes live here, not on each of ~100 rows, to keep region pages under budget. */
+  .ranked {
+    @apply table-fixed;
+
+    th, td {
+      @apply px-1.5 md:px-2;
+    }
+
+    .rank {
+      @apply w-7 text-right text-xs text-ink-3;
+    }
+
+    .who {
+      @apply w-auto;
+    }
+
+    .who a {
+      @apply font-medium no-underline hover:underline;
+    }
+
+    .place {
+      @apply block truncate text-xs text-ink-2;
+    }
+
+    .who-row > div:first-child {
+      @apply min-w-0;
+    }
+
+    .who-row {
+      @apply flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between lg:gap-4;
+    }
+
+    .strip, .days {
+      @apply grid shrink-0 grid-cols-16 lg:w-96;
+    }
+
+    .strip {
+      @apply h-3 items-end border-b lg:h-6;
+    }
+
+    .strip i {
+      @apply block rounded-t-[1px];
+    }
+
+    .days {
+      @apply hidden lg:grid;
+    }
+
+    .days button {
+      @apply rounded-sm py-0.5 text-center leading-tight normal-case hover:bg-inset;
+    }
+
+    .num, td[data-s] {
+      @apply w-14 text-right md:w-20;
+    }
+
+    .next {
+      @apply w-16 text-xs text-ink-2 md:w-20;
+    }
+
+    [data-s="past72h"], [data-s="16d"] {
+      @apply hidden md:table-cell;
+    }
+
+    th button {
+      @apply uppercase hover:text-ink;
+    }
+
+    th[aria-sort="descending"] > button, .days button[aria-pressed="true"] {
+      @apply text-ink underline underline-offset-4;
+    }
+
+    th.num[aria-sort="descending"] button::after {
+      content: " ↓";
+    }
+  }
+}
+
 body {
   &.filter-snow-only [data-has-snow="false"],
   &.filter-snow-only tr.no-snow {

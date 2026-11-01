@@ -18,7 +18,7 @@ module FollowTheSnow
     class Site
       def initialize(build_dir:, resorts:, source_dir:, logger_io: $stderr)
         @build_dir    = build_dir
-        @context      = Context.new(resorts: resorts)
+        @context      = Context.new(resorts: resorts, source_dir: source_dir)
         @logger       = Ougai::Logger.new(logger_io)
         @logger.level = Ougai::Logger::DEBUG
         @source_dir   = source_dir
@@ -218,7 +218,8 @@ module FollowTheSnow
         FileUtils.mkdir_p(File.dirname(build_filename))
         File.write(
           build_filename,
-          layout.render(@context, variables)
+          # Herb-formatted templates are mostly indentation; pages have no <pre>/<textarea>, so leading space is noise.
+          layout.render(@context, variables).gsub(/\n\s+/, "\n")
         )
       end
 

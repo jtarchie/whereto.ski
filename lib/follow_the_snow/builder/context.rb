@@ -2,6 +2,8 @@
 
 require 'active_support/time'
 require 'active_support/core_ext/string'
+require 'tilt'
+require 'tilt/erb'
 require_relative 'snow_helper'
 require_relative 'units'
 
@@ -27,8 +29,9 @@ module FollowTheSnow
 
       attr_reader :resorts
 
-      def initialize(resorts:)
-        @resorts = resorts.sort_by do |r|
+      def initialize(resorts:, source_dir: File.expand_path('../../../pages', __dir__))
+        @source_dir = source_dir
+        @resorts    = resorts.sort_by do |r|
           [r.country_code, r.region_code, r.name].join
         end
       end
@@ -160,30 +163,6 @@ module FollowTheSnow
       # Get all resorts for a country
       def resorts_for_country(country)
         resorts_by_countries.fetch(country)
-      end
-
-      def table_for_resorts(resorts)
-        max_days = resorts.map do |resort|
-          resort.forecasts.map(&:time_of_day)
-        end.max_by(&:length)
-
-        headers  = ['Location'] + max_days
-
-        rows = resorts.map do |resort|
-          snow_days = resort.forecasts.map do |f|
-            f.snow.to_s
-          end
-
-          row  = [%(<a href="/resorts/#{resort.slug}">#{resort.name}</a>).html_safe]
-          row += if snow_days.length == max_days.length
-                   snow_days
-                 else
-                   snow_days + ([''] * (max_days.length - snow_days.length))
-                 end
-          row
-        end
-
-        [headers, rows]
       end
 
       # Get current conditions for a resort
@@ -369,8 +348,39 @@ module FollowTheSnow
         %(<nav aria-label="Breadcrumb" class="-mx-4 overflow-x-auto px-4 text-sm text-ink-2"><ol class="flex gap-2 whitespace-nowrap">#{items.join}</ol></nav>).html_safe
       end
 
+      # Renders pages/_name.html.erb with this context as self.
+      def partial(name, **locals)
+        @partials       ||= {}
+        @partials[name] ||= Tilt::ERBTemplate.new(File.join(@source_dir, "_#{name}.html.erb"), trim: true)
+        @partials[name].render(self, locals).html_safe
+      end
+
+      # Default order: 7-day snow, then 16-day, then name for a stable tie-break.
+      def ranked(resorts)
+        resorts.sort_by do |resort|
+          summary = snow_summary(resort)
+          [-summary[:next_7d], -summary[:next_16d], resort.name]
+        end
+      end
+
+      def next_snow_day(resort)
+        snow_days(resort).find { |d| d[:inches] >= 1 }
+      end
+
+      # Empty-state link: the sibling region whose best resort has the most 16-day snow, if any has snow at all.
+      def snowiest_sibling_region(region, country)
+        states(country: country).reject { |s| s == region }.map do |state|
+          [state, resorts_for_country(country).select { |r| r.region_name == state }.map { |r| snow_summary(r)[:next_16d] }.max.to_f]
+        end.select { |_, inches| inches.positive? }.max_by(&:last)&.first
+      end
+
       # Forward totals start at the current hour so nothing already counted in past_72h repeats.
       def snow_summary(resort)
+        @summaries                                ||= {}
+        @summaries[resort.id || resort.object_id] ||= compute_snow_summary(resort)
+      end
+
+      def compute_snow_summary(resort)
         upcoming = resort.hourly_forecasts.map { |h| h.snowfall.to_f }
         {
           past_72h: resort.past_snowfall(hours: 72),
@@ -378,147 +388,6 @@ module FollowTheSnow
           next_7d: upcoming.take(24 * 7).sum.round(2),
           next_16d: upcoming.sum.round(2)
         }
-      end
-
-      # Calculate "Best Days to Ski" scores for a resort
-      # Returns array of hashes with date, score (0-100), and reasons
-      def best_ski_days(resort, limit: 7)
-        forecasts = raw_forecasts_for(resort)
-
-        scored_days = forecasts.map do |forecast|
-          score, reasons = calculate_ski_score(forecast)
-          {
-            date: forecast.time_of_day,
-            name: forecast.name,
-            score: score,
-            rating: score_to_rating(score),
-            reasons: reasons,
-            snow: snow_inches(forecast)
-          }
-        end
-
-        scored_days.take(limit)
-      end
-
-      # Get the single best day in the forecast
-      def best_day_to_ski(resort)
-        best_ski_days(resort, limit: 16).max_by { |day| day[:score] }
-      end
-
-      # Calculate "Best Days to Ski" aggregated across multiple resorts (for state/country pages)
-      # Returns array of day summaries with resort counts by rating
-      def best_ski_days_for_region(resorts_list, limit: 7)
-        # Collect all resort scores by day
-        day_data = Hash.new { |h, k| h[k] = { scores: [], snow_totals: [], resorts_with_snow: 0 } }
-
-        resorts_list.each do |resort|
-          best_ski_days(resort, limit: limit).each do |day|
-            day_data[day[:name]][:scores] << day[:score]
-            day_data[day[:name]][:snow_totals] << day[:snow]
-            day_data[day[:name]][:resorts_with_snow] += 1 if day[:snow].positive?
-            day_data[day[:name]][:date]             ||= day[:date]
-          end
-        end
-
-        # Calculate aggregated stats for each day
-        day_data.map do |name, data|
-          avg_score     = data[:scores].sum.to_f / data[:scores].size
-          total_resorts = data[:scores].size
-          epic_count    = data[:scores].count { |s| s >= 85 }
-          great_count   = data[:scores].count { |s| s >= 70 && s < 85 }
-          good_count    = data[:scores].count { |s| s >= 55 && s < 70 }
-
-          {
-            name: name,
-            date: data[:date],
-            avg_score: avg_score.round,
-            rating: score_to_rating(avg_score),
-            total_resorts: total_resorts,
-            resorts_with_snow: data[:resorts_with_snow],
-            epic_count: epic_count,
-            great_count: great_count,
-            good_count: good_count,
-            max_snow: data[:snow_totals].max || 0
-          }
-        end.sort_by { |d| d[:date] }.take(limit)
-      end
-
-      private
-
-      # Calculate ski score (0-100) based on conditions
-      def calculate_ski_score(forecast)
-        score   = 50 # Base score
-        reasons = []
-
-        # Fresh snow is the biggest factor (+0-40 points)
-        snow = snow_inches(forecast)
-        if snow >= 6
-          score += 40
-          reasons << "Deep powder day! (#{snow.round(1)}\")"
-        elsif snow >= 3
-          score += 30
-          reasons << "Great fresh snow (#{snow.round(1)}\")"
-        elsif snow >= 1
-          score += 20
-          reasons << "Fresh snow (#{snow.round(1)}\")"
-        elsif snow.positive?
-          score += 10
-          reasons << 'Light dusting'
-        end
-
-        # Wind penalty (-0-25 points)
-        max_wind = forecast.wind_speed&.end || 0
-        if max_wind > 40
-          score -= 25
-          reasons << 'High winds likely'
-        elsif max_wind > 25
-          score -= 15
-          reasons << 'Windy conditions'
-        elsif max_wind > 15
-          score -= 5
-        elsif max_wind < 10
-          score += 5
-          reasons << 'Calm winds'
-        end
-
-        # Temperature comfort (-10 to +10 points)
-        min_temp = forecast.temp&.begin || 32
-        if min_temp.negative?
-          score -= 10
-          reasons << 'Extremely cold'
-        elsif min_temp < 10
-          score -= 5
-          reasons << 'Very cold'
-        elsif min_temp.between?(20, 32)
-          score += 10
-          reasons << 'Ideal temps'
-        elsif min_temp > 40
-          score -= 5
-          reasons << 'Warm (possible slush)'
-        end
-
-        # Precipitation probability bonus for snow days
-        precip_prob = forecast.precipitation_probability || 0
-        if snow.positive? && precip_prob > 70
-          score += 5
-          reasons << 'Snowing during the day'
-        end
-
-        # Clamp score between 0-100
-        score = score.clamp(0, 100)
-
-        [score, reasons]
-      end
-
-      # Convert numeric score to rating label
-      def score_to_rating(score)
-        case score
-        when 85..100 then 'Epic'
-        when 70..84 then 'Great'
-        when 55..69 then 'Good'
-        when 40..54 then 'Fair'
-        else 'Poor'
-        end
       end
 
       # Filter resorts by country and/or state

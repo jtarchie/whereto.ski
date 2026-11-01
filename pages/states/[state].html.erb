@@ -1,153 +1,54 @@
+<% country = resorts.first.country_name
+  list = ranked(resorts)
+  snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
+  dry = list.none? { |r| snow_summary(r)[:next_16d].positive? }
+  sibling = dry && snowiest_sibling_region(state, country) %>
+
 <!--
   ---
-  title: 'Weekly forecast of snow for ski areas in <%= h state %>'
-  description: 'Weekly forecast of snow for ski areas in <%= h state %>. <%= state_snow_count(state) %> resorts with snow in the forecast.'
+  title: '<%= h state %> snow forecast'
+  description: 'Snow forecast for ski resorts in <%= h state %>, <%= h country %>: <%= snowing %> of <%= list.size %> <%= "resort".pluralize(list.size) %> with snow in the next 7 days.'
   page_url: '/states/<%= state.to_url %>'
   ---
 -->
 
-<div class="text-sm breadcrumbs mb-4">
-  <ul>
-    <li><a href="/">All</a></li>
+<%= breadcrumbs([["World", "/"], [country, "/countries/#{country.to_url}"], [state, nil]]) %>
 
-    <li>
-      <a href="/countries/<%= resorts.first.country_name.to_url %>">
-        <%= h resorts.first.country_name %>
-      </a>
-    </li>
+<header class="mt-4 mb-4">
+  <h1><%= h state %></h1>
 
-    <li><%= h state %></li>
-  </ul>
-</div>
+  <p class="mt-1 text-sm text-ink-2">
+    Snow in the next 7 days at <strong class="text-ink"><%= snowing %></strong>
+    of <%= list.size %> resorts · Updated <%= current_timestamp %>
+  </p>
+</header>
 
-<div class="mb-6">
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="text-3xl font-bold">
-      <%= h state %>
+<nav aria-label="Scope" class="mb-4 flex gap-2 text-sm">
+  <span aria-current="page" class="chip"><%= h state %></span>
 
-      <a
-        href="/states/<%= state.to_url %>-snow-now"
-        class="link link-primary text-sm whitespace-nowrap"
-      >
-        Snow Now
-      </a>
-    </h2>
-  </div>
-</div>
+  <button
+    type="button"
+    class="chip"
+    data-near-me
+    hidden
+  >
+    Near me
+  </button>
+</nav>
 
-<!-- Best Days to Ski for Region - Compact view -->
-<% region_days = best_ski_days_for_region(resorts, limit: 7) %>
-<% best = region_days.max_by { |d| d[:avg_score] } %>
+<% if dry %>
+  <p class="mb-4 border-l-4 py-1 pl-3">
+    No snow forecast in <%= h state %> through
+    <%= snow_days(list.first).last[:date].strftime("%a %b %-d") %>.
 
-<div class="mb-6">
-  <div class="flex items-center gap-2 mb-2">
-    <h3 class="text-lg font-bold">🎿 Best Days in <%= h state %></h3>
-
-    <% if best && best[:avg_score] >= 60 %>
-      <span class="badge badge-success badge-sm"><%= best[:name] %> best</span>
+    <% if sibling %>
+      Try <a href="/states/<%= sibling.to_url %>"><%= h sibling %></a> or
+    <% else %>
+      Try
     <% end %>
 
-    <span class="text-xs text-base-content/60">
-      (<%= resorts.size %> resorts)
-    </span>
-  </div>
+    <a href="/">the snowiest resorts worldwide</a>.
+  </p>
+<% end %>
 
-  <div class="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
-    <% region_days.each do |day| %>
-      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> px-2 py-1.5 rounded-md text-center shrink-0 min-w-16">
-        <div class="text-[10px] font-medium opacity-80 leading-tight">
-          <%= day[:name] %>
-        </div>
-
-        <div class="text-base font-black leading-tight">
-          <%= day[:avg_score] %>
-        </div>
-
-        <% if day[:resorts_with_snow] > 0 %>
-          <div class="text-[10px] leading-tight">
-            ❄️<%= day[:resorts_with_snow] %>
-          </div>
-        <% else %>
-          <div class="text-[10px] opacity-60 leading-tight">
-            <%= day[:rating] %>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
-</div>
-
-<h3 class="text-xl font-semibold mb-4">Forecast</h3>
-
-<p class="text-sm text-base-content/60 mb-2">
-  Click a date column to sort by snow depth
-</p>
-
-<% headers, rows=table_for_resorts(resorts) %>
-
-<div class="overflow-x-auto">
-  <table id="forecast-table" class="table w-full sticky">
-    <!-- Table header -->
-    <thead>
-      <tr>
-        <% headers.each_with_index do |header, index| %>
-          <% if index == 0 %>
-            <th><%= h header %></th>
-          <% else %>
-            <th
-              data-col-index="<%= index - 1 %>"
-              class="cursor-pointer hover:bg-base-200 select-none sortable-header"
-              title="Sort by <%= h header %>"
-            >
-              <%= h header %>
-              <span class="sort-indicator text-xs ml-1"></span>
-            </th>
-          <% end %>
-        <% end %>
-      </tr>
-    </thead>
-
-    <tbody id="forecast-body">
-      <% rows.each do |row| %>
-        <% has_snow = row.drop(1).any? { |cell| snow?(cell) } %>
-        <% snow_values = row.drop(1).map { |cell| snow_amount(cell) }.join(',') %>
-
-        <% if has_snow %>
-          <tr data-snow-values="<%= snow_values %>">
-            <% row.each_with_index do |cell, index| %>
-              <% if index == 0 %>
-                <!-- First column is the resort name/link -->
-                <td class="font-medium"><%= cell %></td>
-              <% elsif snow?(cell) %>
-                <!-- Highlight cells with snow -->
-                <td class="snow-cell">
-                  <span class="snow-value"><%= h cell %>❄️</span>
-                </td>
-              <% else %>
-                <!-- Regular cell -->
-                <td class="text-gray-400"><%= h cell %></td>
-              <% end %>
-            <% end %>
-          </tr>
-        <% else %>
-          <tr class="no-snow" data-snow-values="<%= snow_values %>">
-            <% row.each_with_index do |cell, index| %>
-              <% if index == 0 %>
-                <!-- First column is the resort name/link -->
-                <td class="font-medium"><%= cell %></td>
-              <% elsif snow?(cell) %>
-                <!-- Highlight cells with snow -->
-                <td class="snow-cell">
-                  <span class="snow-value"><%= h cell %>❄️</span>
-                </td>
-              <% else %>
-                <!-- Regular cell -->
-                <td class="text-gray-400"><%= h cell %></td>
-              <% end %>
-            <% end %>
-          </tr>
-        <% end %>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+<%= partial("ranked_list", resorts: list, place: %i[locality]) %>

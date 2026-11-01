@@ -86,7 +86,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       passes vnu; hourly table scrolls only inside its container on mobile.
       _Depends on: 3, 6._
 
-- [ ] **8. Ranked list + Region page**: shared ranked-list partial (rank, name +
+- [x] **8. Ranked list + Region page**: shared ranked-list partial (rank, name +
       place, 24h, 7d, next snow, mini strip; 72h-past and 16d from md up), sort
       headers as `<button>` with `aria-sort`, per-day sort on desktop via strip
       header, `?sort=` via `replaceState`, snow-only filter hook, status line,
