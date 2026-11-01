@@ -5,7 +5,14 @@ require 'json'
 
 module FollowTheSnow
   Forecast::OpenMeteo = Struct.new(:resort, keyword_init: true) do
-    API_URL = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
+    API_URL      = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
+    MAX_ATTEMPTS = 5
+
+    class ApiError < StandardError
+    end
+
+    class RetryableError < StandardError
+    end
 
     HOURLY_PARAMS = %w[
       temperature_2m
@@ -88,14 +95,31 @@ module FollowTheSnow
           apikey: ENV.fetch('OPEN_METEO_API_KEY', nil)
         }.compact
 
-        JSON.parse(
-          HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: params)
-        )
-      rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, KeyError => e
-        warn "[API ERROR] Resort ID #{resort&.id || 'N/A'}: #{e.class} - #{e.message}. Retrying after sleep..."
-        sleep(rand(5))
-        retry
+        attempts = 0
+        begin
+          attempts += 1
+          response  = HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: params)
+          payload   = JSON.parse(response.to_s)
+          check_error!(response.code, payload)
+          payload
+        rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, RetryableError => e
+          raise ApiError, "Resort ID #{resort&.id || 'N/A'}: gave up after #{attempts} attempts: #{e.message}" if attempts >= MAX_ATTEMPTS
+
+          warn "[API ERROR] Resort ID #{resort&.id || 'N/A'}: #{e.class} - #{e.message}. Retrying after sleep..."
+          sleep(rand(5))
+          retry
+        end
       end
+    end
+
+    # Invalid keys and bad params never recover, so only 429/5xx are retried.
+    def check_error!(status, payload)
+      return unless payload['error'] || !payload.key?('daily')
+
+      reason = payload['reason'] || "HTTP #{status}, no daily data"
+      raise RetryableError, reason if status == 429 || status >= 500
+
+      raise ApiError, "Resort ID #{resort&.id || 'N/A'}: Open-Meteo error: #{reason}"
     end
 
     def parse_daily_forecasts

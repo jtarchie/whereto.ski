@@ -324,6 +324,35 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
     end
   end
 
+  describe 'API errors' do
+    let(:error_body) { { 'error' => true, 'reason' => 'The supplied API key is invalid.' }.to_json }
+
+    let(:client) { described_class.new(resort: resort).tap { |c| allow(c).to receive(:sleep) } }
+
+    it 'fails fast with the reason on a non-retryable error' do
+      stub_request(:get, /api.open-meteo.com/).to_return(status: 400, body: error_body)
+
+      expect { client.forecasts }
+        .to raise_error(FollowTheSnow::ApiError, /API key is invalid/)
+      expect(a_request(:get, /api.open-meteo.com/)).to have_been_made.once
+    end
+
+    it 'retries rate limits then succeeds' do
+      stub_request(:get, /api.open-meteo.com/)
+        .to_return({ status: 429, body: { 'error' => true, 'reason' => 'Too many requests' }.to_json })
+        .then.to_return(status: 200, body: weather_api_body)
+
+      expect(client.forecasts.length).to eq(16)
+    end
+
+    it 'gives up after repeated server errors' do
+      stub_request(:get, /api.open-meteo.com/).to_return(status: 503, body: error_body)
+
+      expect { client.forecasts }
+        .to raise_error(FollowTheSnow::ApiError, /gave up after 5 attempts/)
+    end
+  end
+
   describe '#wind_direction' do
     before { stub_weather_api }
 

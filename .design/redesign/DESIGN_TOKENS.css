@@ -1,0 +1,261 @@
+/*
+  whereto.ski design tokens — Dieter Rams (functionalist)
+
+  Format: Tailwind v4 CSS-first. Phase 6 moves this to pages/tokens.css and
+  imports it from pages/input.css after `@import "tailwindcss"` (daisyUI
+  removed). Utilities come out as bg-canvas, text-ink-2, border-line,
+  bg-snow-3, text-on-snow-3, fill-mark-4, etc.
+
+  Rules
+  - Interface is neutral (cool grey, hue 250, near-zero chroma).
+  - Blue appears ONLY to encode snow. Links/actions are ink + underline,
+    never blue. Focus ring is ink, not blue.
+  - One warning hue (amber) = rain / warm risk. Error red for failures only.
+  - Borders over shadows; one shadow, for dialogs.
+
+  Snow scale (inches; metric display converts, thresholds don't move)
+    0      none   → no fill, text-ink-3 "0"
+    >0–<1  snow-1 trace
+    1–<2   snow-2
+    2–<6   snow-3 "Snow day" (IA glossary)
+    6–<12  snow-4 "Powder day"
+    ≥12    snow-5
+  snow-N    = cell/chip background, paired with on-snow-N text (≥4.5:1 both modes)
+  mark-N    = bar/map-dot fill on canvas (steps 3–5 ≥3:1 vs canvas, both modes;
+              trace is intentionally faint — the number is always shown)
+
+  Verified contrast (WCAG 2.x, computed from these exact OKLCH values):
+    light: ink 17.2, ink-2 7.2, ink-3 5.4 (4.7 on inset); on-snow 4.9–9.1;
+           line-strong 3.5 (inputs); warn 6.3
+    dark:  ink 15.3, ink-2 8.2, ink-3 5.8 (5.0 on inset); on-snow 6.0–11.8;
+           line-strong 3.4; warn 8.3
+*/
+
+@theme {
+  /* Drop Tailwind's default palette/type scale: one system, used strictly. */
+  --color-*: initial;
+  --text-*: initial;
+
+  /* ---------- Typography (system stack, no web fonts) ---------- */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* size / line-height pairs; 1.25 ratio-ish, rounded to 2px */
+  --text-xs: 0.75rem;   --text-xs--line-height: 1rem;      /* 12 labels, axis */
+  --text-sm: 0.875rem;  --text-sm--line-height: 1.25rem;   /* 14 secondary, table */
+  --text-base: 1rem;    --text-base--line-height: 1.5rem;  /* 16 body */
+  --text-md: 1.125rem;  --text-md--line-height: 1.625rem;  /* 18 list resort names */
+  --text-lg: 1.25rem;   --text-lg--line-height: 1.75rem;   /* 20 section heads */
+  --text-xl: 1.5rem;    --text-xl--line-height: 2rem;      /* 24 page title (mobile) */
+  --text-2xl: 1.875rem; --text-2xl--line-height: 2.25rem;  /* 30 page title */
+  --text-3xl: 2.25rem;  --text-3xl--line-height: 2.5rem;   /* 36 summary numbers (mobile) */
+  --text-4xl: 3rem;     --text-4xl--line-height: 1;        /* 48 summary numbers */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.015em;  /* titles, big numbers */
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;     /* uppercase micro-labels ("NEXT 7 DAYS") */
+
+  /* ---------- Spacing ----------
+     Tailwind v4 derives every spacing utility from one base:
+     p-1 = 4px, p-2 = 8px, p-3 = 12px, p-4 = 16px, p-6 = 24px, p-8 = 32px,
+     p-12 = 48px, p-16 = 64px. Use only these steps. */
+  --spacing: 0.25rem;
+
+  /* ---------- Layout ---------- */
+  --container-content: 42rem;  /* prose (About), ~70ch */
+  --container-wide: 64rem;     /* resort page main column */
+  --container-page: 75rem;     /* 1200px max page */
+
+  --radius-sm: 2px;    /* chips, snow cells */
+  --radius-md: 4px;    /* inputs, buttons */
+  --radius-lg: 8px;    /* dialogs, map */
+  --radius-full: 9999px;
+
+  --shadow-overlay: 0 8px 32px oklch(0% 0 0 / 0.16); /* dialogs only */
+
+  /* ---------- Motion (state changes only) ---------- */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* ---------- Breakpoints (Tailwind defaults kept: md 48rem, lg 64rem, xl 80rem) ---------- */
+
+  /* ---------- Component sizes ---------- */
+  --size-hit: 2.75rem;          /* 44px min touch target */
+  --size-strip-mini: 1.25rem;   /* list-row 16-day strip height */
+  --size-strip: 7.5rem;         /* resort page strip height */
+  --size-map: 22rem;            /* map + its pre-load placeholder (no CLS) */
+}
+
+/* Semantic colors resolve through runtime vars so dark mode swaps them. */
+@theme inline {
+  /* surfaces */
+  --color-canvas: var(--c-canvas);       /* page background */
+  --color-surface: var(--c-surface);     /* raised: header, dialog, sticky cols */
+  --color-inset: var(--c-inset);         /* wells, inputs, row hover */
+  --color-inverse: var(--c-inverse);     /* primary button bg */
+
+  /* text */
+  --color-ink: var(--c-ink);             /* primary text, links, focus ring */
+  --color-ink-2: var(--c-ink-2);         /* secondary text, place lines */
+  --color-ink-3: var(--c-ink-3);         /* tertiary: zero snow, captions */
+  --color-on-inverse: var(--c-on-inverse);
+
+  /* lines */
+  --color-line: var(--c-line);           /* hairline dividers (decorative) */
+  --color-line-strong: var(--c-line-strong); /* input/control borders (≥3:1) */
+
+  /* snow cells/chips: background + paired text */
+  --color-snow-1: var(--c-snow-1);  --color-on-snow-1: var(--c-on-snow-1);
+  --color-snow-2: var(--c-snow-2);  --color-on-snow-2: var(--c-on-snow-2);
+  --color-snow-3: var(--c-snow-3);  --color-on-snow-3: var(--c-on-snow-3);
+  --color-snow-4: var(--c-snow-4);  --color-on-snow-4: var(--c-on-snow-4);
+  --color-snow-5: var(--c-snow-5);  --color-on-snow-5: var(--c-on-snow-5);
+
+  /* snow marks: bars, map dots */
+  --color-mark-1: var(--c-mark-1);
+  --color-mark-2: var(--c-mark-2);
+  --color-mark-3: var(--c-mark-3);
+  --color-mark-4: var(--c-mark-4);
+  --color-mark-5: var(--c-mark-5);
+
+  /* status */
+  --color-warn: var(--c-warn);           /* rain / above-freezing text */
+  --color-warn-bg: var(--c-warn-bg);
+  --color-error: var(--c-error);
+
+  --color-backdrop: var(--c-backdrop);   /* dialog overlay */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+}
+
+/* ---------- Light (default) ---------- */
+:root {
+  color-scheme: light;
+
+  --c-canvas: oklch(99% 0.002 250);
+  --c-surface: oklch(97% 0.004 250);
+  --c-inset: oklch(94.5% 0.006 250);
+  --c-inverse: oklch(21% 0.012 250);
+
+  --c-ink: oklch(21% 0.012 250);
+  --c-ink-2: oklch(45% 0.012 250);
+  --c-ink-3: oklch(52% 0.01 250);
+  --c-on-inverse: oklch(99% 0.002 250);
+
+  --c-line: oklch(91% 0.006 250);
+  --c-line-strong: oklch(62% 0.01 250);
+
+  --c-snow-1: oklch(95% 0.03 240);   --c-on-snow-1: oklch(38% 0.12 250);
+  --c-snow-2: oklch(89% 0.06 240);   --c-on-snow-2: oklch(32% 0.12 250);
+  --c-snow-3: oklch(78% 0.11 245);   --c-on-snow-3: oklch(25% 0.10 255);
+  --c-snow-4: oklch(55% 0.16 255);   --c-on-snow-4: oklch(100% 0 0);
+  --c-snow-5: oklch(42% 0.17 265);   --c-on-snow-5: oklch(100% 0 0);
+
+  --c-mark-1: oklch(80% 0.08 240);
+  --c-mark-2: oklch(70% 0.12 245);
+  --c-mark-3: oklch(60% 0.15 250);
+  --c-mark-4: oklch(50% 0.17 258);
+  --c-mark-5: oklch(40% 0.17 265);
+
+  --c-warn: oklch(47% 0.12 55);
+  --c-warn-bg: oklch(96% 0.04 75);
+  --c-error: oklch(50% 0.18 27);
+
+  --c-backdrop: oklch(21% 0.012 250 / 0.4);
+}
+
+/* ---------- Dark ----------
+   Not an inversion: cool charcoal canvas, ink slightly off-white (less glare),
+   snow intensity grows *brighter* (light = more snow reads naturally on dark). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: oklch(18% 0.01 250);
+  --c-surface: oklch(21.5% 0.012 250);
+  --c-inset: oklch(25% 0.012 250);
+  --c-inverse: oklch(93% 0.006 250);
+
+  --c-ink: oklch(93% 0.006 250);
+  --c-ink-2: oklch(74% 0.01 250);
+  --c-ink-3: oklch(65% 0.01 250);
+  --c-on-inverse: oklch(18% 0.01 250);
+
+  --c-line: oklch(30% 0.012 250);
+  --c-line-strong: oklch(52% 0.012 250);
+
+  --c-snow-1: oklch(30% 0.05 250);   --c-on-snow-1: oklch(85% 0.08 240);
+  --c-snow-2: oklch(38% 0.08 250);   --c-on-snow-2: oklch(92% 0.05 240);
+  --c-snow-3: oklch(50% 0.12 250);   --c-on-snow-3: oklch(100% 0 0);
+  --c-snow-4: oklch(66% 0.14 245);   --c-on-snow-4: oklch(15% 0.02 250);
+  --c-snow-5: oklch(83% 0.11 235);   --c-on-snow-5: oklch(15% 0.02 250);
+
+  --c-mark-1: oklch(45% 0.08 250);
+  --c-mark-2: oklch(56% 0.11 248);
+  --c-mark-3: oklch(67% 0.13 245);
+  --c-mark-4: oklch(78% 0.12 240);
+  --c-mark-5: oklch(90% 0.07 235);
+
+  --c-warn: oklch(84% 0.12 75);
+  --c-warn-bg: oklch(30% 0.05 60);
+  --c-error: oklch(72% 0.15 27);
+
+  --c-backdrop: oklch(0% 0 0 / 0.6);
+}
+
+/* System dark unless user explicitly chose light. Same values as above;
+   ponytail: duplicated block — collapse with light-dark() if we drop the
+   data-theme override (no manual toggle is planned). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --c-canvas: oklch(18% 0.01 250);
+    --c-surface: oklch(21.5% 0.012 250);
+    --c-inset: oklch(25% 0.012 250);
+    --c-inverse: oklch(93% 0.006 250);
+
+    --c-ink: oklch(93% 0.006 250);
+    --c-ink-2: oklch(74% 0.01 250);
+    --c-ink-3: oklch(65% 0.01 250);
+    --c-on-inverse: oklch(18% 0.01 250);
+
+    --c-line: oklch(30% 0.012 250);
+    --c-line-strong: oklch(52% 0.012 250);
+
+    --c-snow-1: oklch(30% 0.05 250);   --c-on-snow-1: oklch(85% 0.08 240);
+    --c-snow-2: oklch(38% 0.08 250);   --c-on-snow-2: oklch(92% 0.05 240);
+    --c-snow-3: oklch(50% 0.12 250);   --c-on-snow-3: oklch(100% 0 0);
+    --c-snow-4: oklch(66% 0.14 245);   --c-on-snow-4: oklch(15% 0.02 250);
+    --c-snow-5: oklch(83% 0.11 235);   --c-on-snow-5: oklch(15% 0.02 250);
+
+    --c-mark-1: oklch(45% 0.08 250);
+    --c-mark-2: oklch(56% 0.11 248);
+    --c-mark-3: oklch(67% 0.13 245);
+    --c-mark-4: oklch(78% 0.12 240);
+    --c-mark-5: oklch(90% 0.07 235);
+
+    --c-warn: oklch(84% 0.12 75);
+    --c-warn-bg: oklch(30% 0.05 60);
+    --c-error: oklch(72% 0.15 27);
+
+    --c-backdrop: oklch(0% 0 0 / 0.6);
+  }
+}
+
+/* Focus ring (component token): ink, 2px, offset 2px — ≥15:1 both modes. */
+:root {
+  --focus-ring: 2px solid var(--c-ink);
+  --focus-offset: 2px;
+}
