@@ -162,8 +162,7 @@
 
     <% if current.wind_gust && current.wind_gust > current.wind_speed %>
       <div class="stat-desc">
-        Gusts: <span class="imperial"><%= current.wind_gust %> mph</span>
-        <span class="metric"><%= (current.wind_gust * 1.60934).round(1) %> kph</span>
+        Gusts: <%= speed_value(current.wind_gust) %>
       </div>
     <% end %>
   </div>
@@ -180,7 +179,10 @@
 <!-- Hourly Forecast Section -->
 <h2 class="text-3xl font-bold mb-4">Hourly Forecast</h2>
 
-<p class="text-base-content/70 mb-4">Next 48 hours of detailed weather data</p>
+<p class="text-base-content/70 mb-4">
+  Next 48 hours · Times in
+  <span data-tz-label data-resort-tz="<%= h resort.timezone %>"><%= h resort.timezone %></span>
+</p>
 
 <div class="overflow-x-auto mb-8">
   <table class="table table-xs w-full">
@@ -242,19 +244,11 @@
 
           <td>
             <%= hour.wind_direction %>
-            <span class="imperial"><%= hour.wind_speed %></span>
-
-            <span class="metric">
-              <%= (hour.wind_speed * 1.60934).round(1) %>
-            </span>
+            <%= speed_value(hour.wind_speed) %>
           </td>
 
           <td>
-            <span class="imperial"><%= hour.wind_gust %></span>
-
-            <span class="metric">
-              <%= (hour.wind_gust * 1.60934).round(1) %>
-            </span>
+            <%= speed_value(hour.wind_gust) %>
           </td>
 
           <td><%= hour.cloud_cover %>%</td>

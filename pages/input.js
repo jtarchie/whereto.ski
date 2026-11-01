@@ -1,37 +1,108 @@
 (function () {
-  var $toggle = document.getElementById("unit-toggle");
+  const $units = document.getElementById("unit-toggle");
+  const $tz = document.getElementById("tz-select");
 
-  function toggleUnits() {
-    var selected = $toggle.checked;
-    if (selected) {
-      document.body.classList.add("metric");
-    } else {
-      document.body.classList.remove("metric");
+  // Raw values are imperial (see lib/follow_the_snow/builder/units.rb).
+  const KINDS = {
+    s: (v, m) => (m ? [v * 2.54, " cm"] : [v, "″"]),
+    t: (v, m) => (m ? [((v - 32) * 5) / 9, "°C"] : [v, "°F"]),
+    w: (v, m) => (m ? [v * 1.60934, " km/h"] : [v, " mph"]),
+    h: (v, m) => (m ? [v * 0.3048, " m"] : [v, " ft"]),
+    d: (v, m) => (m ? [v, " km"] : [v * 0.621371, " mi"]),
+  };
+  const numberFormats = [0, 1].map((digits) =>
+    new Intl.NumberFormat(undefined, { maximumFractionDigits: digits })
+  );
+
+  const isMetric = () => {
+    const saved = localStorage.getItem("preferredUnits");
+    return saved ? saved === "metric" : navigator.language !== "en-US";
+  };
+
+  const resortZone = () =>
+    document.querySelector("[data-resort-tz]")?.dataset.resortTz;
+
+  function timeZone() {
+    const pref = localStorage.getItem("preferredTimezone") || "auto";
+    const zone = pref === "auto"
+      ? undefined
+      : pref === "resort"
+      ? resortZone()
+      : pref;
+    try {
+      new Intl.DateTimeFormat(undefined, { timeZone: zone });
+      return zone;
+    } catch {
+      return undefined;
     }
   }
 
-  $toggle.addEventListener("change", () => {
-    toggleUnits();
+  function formatAll() {
+    const metric = isMetric();
+    document.querySelectorAll("data[data-k]").forEach((el) => {
+      const convert = KINDS[el.dataset.k];
+      if (!convert) return;
+      const [n, unit] = convert(parseFloat(el.value), metric);
+      const digits = el.dataset.k === "s" && Math.abs(n) < 10 ? 1 : 0;
+      el.textContent = numberFormats[digits].format(n) + unit;
+    });
+
+    const zone = timeZone();
+    const hour = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      timeZone: zone,
+    });
+    const full = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: zone,
+    });
+    document.querySelectorAll("time[data-k]").forEach((el) => {
+      const date = new Date(el.dateTime);
+      el.textContent = (el.dataset.k === "hr" ? hour : full).format(date);
+    });
+
+    const name = new Intl.DateTimeFormat(undefined, {
+      timeZoneName: "short",
+      timeZone: zone,
+    }).formatToParts(new Date()).find((p) => p.type === "timeZoneName");
+    document.querySelectorAll("[data-tz-label]").forEach((el) => {
+      el.textContent = name?.value ?? "";
+    });
+  }
+
+  function initTimezoneSelect() {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    $tz.options[0].textContent = `Auto (${detected})`;
+    if (!resortZone()) $tz.options[1].textContent = "Resort local (on resort pages)";
+    (Intl.supportedValuesOf?.("timeZone") ?? []).forEach((zone) => {
+      $tz.add(new Option(zone.replaceAll("_", " "), zone));
+    });
+    $tz.value = localStorage.getItem("preferredTimezone") || "auto";
+    if (!$tz.value) $tz.value = "auto";
+  }
+
+  $units.addEventListener("change", () => {
     localStorage.setItem(
       "preferredUnits",
-      $toggle.checked ? "metric" : "imperial",
+      $units.checked ? "metric" : "imperial",
     );
+    formatAll();
   });
 
-  window.addEventListener("DOMContentLoaded", (event) => {
-    const userLang = navigator.language || navigator.userLanguage;
-    const preferredUnits = localStorage.getItem("preferredUnits");
+  $tz.addEventListener("change", () => {
+    localStorage.setItem("preferredTimezone", $tz.value);
+    formatAll();
+  });
 
-    if (preferredUnits) {
-      console.log("preferred units", preferredUnits);
-      $toggle.checked = preferredUnits === "metric";
-    } else if (userLang === "en-US") {
-      $toggle.checked = false;
-    } else {
-      $toggle.checked = true;
-    }
-
-    toggleUnits();
+  window.addEventListener("DOMContentLoaded", () => {
+    $units.checked = isMetric();
+    initTimezoneSelect();
+    formatAll();
 
     // Snow filter toggle functionality
     const filterSnowToggle = document.getElementById("filter-snow-toggle");

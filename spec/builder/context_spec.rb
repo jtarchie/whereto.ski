@@ -336,46 +336,14 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
   end
 
   describe '#format_snow_total' do
-    it 'formats zero with both units' do
-      result = context.format_snow_total(0)
-      expect(result).to include('<span class="imperial">0"</span>')
-      expect(result).to include('<span class="metric">0 cm</span>')
-      expect(result.html_safe?).to be(true)
-    end
-
-    it 'formats whole numbers with both units' do
-      result = context.format_snow_total(5)
-      expect(result).to include('<span class="imperial">5"</span>')
-      expect(result).to include('<span class="metric">12.7 cm</span>')
-      expect(result.html_safe?).to be(true)
-    end
-
-    it 'formats decimals correctly with both units' do
-      result = context.format_snow_total(12.5)
-      expect(result).to include('<span class="imperial">12.5"</span>')
-      expect(result).to include('<span class="metric">31.75 cm</span>')
-      expect(result.html_safe?).to be(true)
-    end
-
-    it 'rounds to one decimal place' do
-      result = context.format_snow_total(7.849)
-      expect(result).to include('<span class="imperial">7.8"</span>')
-      expect(result).to include('<span class="metric">19.94 cm</span>')
-      expect(result.html_safe?).to be(true)
-    end
-
-    it 'formats small amounts correctly with millimeters' do
-      result = context.format_snow_total(0.5)
-      expect(result).to include('<span class="imperial">0.5"</span>')
-      expect(result).to include('<span class="metric">1.27 cm</span>')
-      expect(result.html_safe?).to be(true)
-    end
-
-    it 'formats very small amounts with millimeters' do
-      result = context.format_snow_total(0.138)
-      expect(result).to include('<span class="imperial">0.1"</span>')
-      expect(result).to include('<span class="metric">3.51 mm</span>')
-      expect(result.html_safe?).to be(true)
+    {
+      0 => '0″', 5 => '5″', 12.5 => '13″', 7.849 => '7.8″', 0.5 => '0.5″', 0.138 => '0.1″'
+    }.each do |inches, text|
+      it "renders #{inches} in as a snow value reading #{text}" do
+        result = context.format_snow_total(inches)
+        expect(result).to eq(%(<data value="#{inches.to_f.round(2)}" data-k="s">#{text}</data>))
+        expect(result.html_safe?).to be(true)
+      end
     end
   end
 

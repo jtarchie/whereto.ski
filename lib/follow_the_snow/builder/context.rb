@@ -3,12 +3,14 @@
 require 'active_support/time'
 require 'active_support/core_ext/string'
 require_relative 'snow_helper'
+require_relative 'units'
 
 module FollowTheSnow
   module Builder
     class Context
       include ERB::Util
       include SnowHelper
+      include Units
 
       # Countries with this many or fewer resorts will show resorts directly
       # instead of states/regions, to simplify navigation
@@ -234,76 +236,38 @@ module FollowTheSnow
         end
       end
 
-      # Format temperature with imperial/metric toggle support
       def format_temperature(fahrenheit)
-        return '-' if fahrenheit.nil?
-
-        celsius = ((fahrenheit - 32) * 5.0 / 9.0).round(1)
-        %(<span class="imperial">#{fahrenheit}°F</span><span class="metric">#{celsius}°C</span>).html_safe
+        temp_value(fahrenheit)
       end
 
-      # Format wind speed with direction
       def format_wind(speed, direction, gust: nil)
-        return '-' if speed.nil?
+        return '–' if speed.nil?
 
-        kph    = (speed * 1.60934).round(1)
-        result = %(#{direction} <span class="imperial">#{speed} mph</span><span class="metric">#{kph} kph</span>)
-
-        if gust && gust > speed
-          gust_kph = (gust * 1.60934).round(1)
-          result  += %( (gusts <span class="imperial">#{gust} mph</span><span class="metric">#{gust_kph} kph</span>))
-        end
-
-        result.html_safe
+        result  = "#{direction} ".html_safe + speed_value(speed)
+        result += ' (gusts '.html_safe + speed_value(gust) + ')'.html_safe if gust && gust > speed
+        result
       end
 
-      # Format elevation/height in feet and meters
       def format_elevation(feet)
-        return '-' if feet.nil?
-
-        meters = (feet * 0.3048).round(0)
-        %(<span class="imperial">#{feet.to_i.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} ft</span><span class="metric">#{meters.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} m</span>).html_safe
+        height_value(feet)
       end
 
       def format_elevation_m(meters)
-        return '-' if meters.nil?
-
-        format_elevation(meters * 3.28084)
+        meters && height_value(meters * 3.28084)
       end
 
-      # Format visibility
-      def format_visibility(meters)
-        return '-' if meters.nil?
-
-        miles = (meters / 1609.34).round(1)
-        km    = (meters / 1000.0).round(1)
-        %(<span class="imperial">#{miles} mi</span><span class="metric">#{km} km</span>).html_safe
-      end
-
-      # Format precipitation amount
-      def format_precipitation(inches)
-        return '-' if inches.nil? || inches.zero?
-
-        mm = (inches * 25.4).round(1)
-        %(<span class="imperial">#{inches}"</span><span class="metric">#{mm} mm</span>).html_safe
-      end
-
-      # Format time for hourly display
       def format_hour(time)
-        time.strftime('%I %p').gsub(/^0/, '')
+        time_value(time, format: :hour)
       end
 
-      # Format snowfall for display
       def format_snowfall(inches)
-        return '-' if inches.nil? || inches.zero?
+        return '–' if inches.nil? || inches.zero?
 
-        cm = (inches * 2.54).round(1)
-        %(<span class="imperial">#{inches}"</span><span class="metric">#{cm} cm</span>).html_safe
+        snow_value(inches)
       end
 
       def current_timestamp
-        Time.zone = 'Eastern Time (US & Canada)'
-        Time.zone.now.strftime('%Y-%m-%d %l:%M%p %Z')
+        time_value(Time.now.utc, format: :datetime)
       end
 
       # Check if a resort has any snow in its forecast

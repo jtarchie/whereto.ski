@@ -121,11 +121,6 @@
 }
 
 body {
-  &.metric .imperial,
-  &:not(.metric) .metric {
-    display: none;
-  }
-
   &.filter-snow-only [data-has-snow="false"],
   &.filter-snow-only tr.no-snow {
     display: none;

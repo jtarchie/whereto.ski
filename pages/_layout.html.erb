@@ -249,7 +249,7 @@
           (ODbL).
         </p>
 
-        <p>Updated <%= h current_timestamp %></p>
+        <p>Updated <%= current_timestamp %></p>
       </div>
     </footer>
 
@@ -288,6 +288,24 @@
             </span>
 
             <input type="checkbox" id="unit-toggle" class="switch">
+          </label>
+
+          <label
+            for="tz-select"
+            class="
+              flex min-h-(--size-hit) items-center justify-between gap-4
+              py-2
+            "
+          >
+            <span>
+              Time zone
+              <span class="block text-sm text-ink-2"> For hourly forecasts and update times </span>
+            </span>
+
+            <select id="tz-select" class="input w-44 text-sm">
+              <option value="auto">Auto</option>
+              <option value="resort">Resort local</option>
+            </select>
           </label>
 
           <label

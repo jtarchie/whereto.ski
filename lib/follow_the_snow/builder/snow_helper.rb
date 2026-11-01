@@ -19,19 +19,8 @@ module FollowTheSnow
         end
       end
 
-      # Format snow total with both imperial and metric units (HTML safe)
       def format_snow_total(inches)
-        return %(<span class="imperial">0"</span><span class="metric">0 cm</span>).html_safe if inches.zero?
-
-        imperial = if inches >= 1
-                     "#{inches.round(1)}\""
-                   else
-                     "#{(inches * 10).round(0) / 10.0}\""
-                   end
-
-        metric = inches_to_metric(inches)
-
-        %(<span class="imperial">#{imperial}</span><span class="metric">#{metric}</span>).html_safe
+        snow_value(inches)
       end
 
       # Format snow total as plain text for meta descriptions (no HTML)
@@ -49,14 +38,13 @@ module FollowTheSnow
         "#{imperial} (#{metric})"
       end
 
-      # Check if a snow value should be highlighted
       def snow?(value)
-        value.to_s.gsub(/[^\d.-]/, '').to_f.positive?
+        snow_amount(value).positive?
       end
 
-      # Extract numeric snow amount from a cell value for sorting
+      # Cells are rendered snow tags; read the raw value, not the display text.
       def snow_amount(value)
-        value.to_s.gsub(/[^\d.-]/, '').to_f
+        (value.to_s[/value="(-?[\d.]+)"/, 1] || value.to_s.gsub(/[^\d.-]/, '')).to_f
       end
 
       # Extract numeric snow value from forecast

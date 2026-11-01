@@ -51,7 +51,7 @@ shorthand, `rake fmt` clean, Herb lint passes, specs updated in the same task
   daisyUI class remains in `pages/`, light + dark both readable. _New: tokens,
   shell. Removes: daisyUI._
 
-- [ ] **5. Formatter: units + timezone on the client**: ERB helpers emit one
+- [x] **5. Formatter: units + timezone on the client**: ERB helpers emit one
   value with raw data (`<data class="snow-3" value="4.2" data-u="in">4.2″</data>`,
   `<time datetime="…Z">`) instead of dual imperial/metric spans; `input.js`
   formats via `Intl.NumberFormat`/`DateTimeFormat` from prefs. Settings
