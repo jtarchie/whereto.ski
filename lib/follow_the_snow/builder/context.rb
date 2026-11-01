@@ -256,6 +256,15 @@ module FollowTheSnow
         resorts_for_country(country).group_by(&:region_name)
       end
 
+      # Meta description for a ranked scope; leads with the numbers a searcher wants. list must be ranked.
+      # where: "in Colorado", "worldwide".
+      def scope_description(list, where)
+        snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
+        text    = "#{snowing} of #{list.size} ski #{'resort'.pluralize(list.size)} #{where} #{snowing == 1 ? 'has' : 'have'} snow in the next 7 days"
+        text   += ". Most: #{list.first.name}, #{format_snow_total_plain(snow_summary(list.first)[:next_7d])}" if snowing.positive?
+        "#{text}. 16-day snow forecasts, updated daily."
+      end
+
       # Areas ranked like resorts: by their best resort's 7-day, then 16-day snow. Dry areas come back separately, A–Z.
       def area_rows(groups)
         rows         = groups.map do |name, list|

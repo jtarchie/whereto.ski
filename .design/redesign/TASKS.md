@@ -133,7 +133,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
 
 ## Responsive & Polish
 
-- [ ] **13. About + meta copy**: rewrite About (what, story, data & methodology
+- [x] **13. About + meta copy**: rewrite About (what, story, data & methodology
       incl. thresholds and model snow-depth caveat, license); remove duplicate
       "Our Mission"; update page `description`/`title` front matter to lead with
       snow numbers. _Modifies: `about.html.erb`, front matter._

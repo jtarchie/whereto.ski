@@ -1,83 +1,149 @@
 <!--
   ---
-  title: About Us
-  description: Learn why we created Where To Ski - your source for ski resort snow forecasts worldwide.
+  title: About Where To Ski
+  description: How Where To Ski ranks ski resorts by forecast snow, where the numbers come from, and how each one is calculated.
   page_url: '/about'
   ---
 -->
 
-<h2 class="text-3xl font-bold mb-6">About Where To Ski</h2>
+<article class="mx-auto max-w-content space-y-4 leading-relaxed">
+  <h1>About Where To Ski</h1>
 
-<p>
-  Finding the best skiing conditions shouldn't be a guessing game. Where To Ski
-  brings together real-time snow forecasts from ski resorts around the world in
-  one simple, fast-loading site.
-</p>
+  <p>
+    Where To Ski ranks every ski resort in the world by how much snow is
+    forecast to fall there. Pick the resort, region or country you care about
+    and the snowiest places come first, with the numbers right there. No ads, no
+    accounts.
+  </p>
 
-<h3 class="text-2xl font-semibold mt-8 mb-4">Our Story</h3>
+  <h2 class="pt-4">Why it exists</h2>
 
-<p>
-  It started with a simple decision on March 6th, 2022. While heading to Winter
-  Park, Colorado, we checked the forecasts and noticed better conditions at
-  Steamboat Springs. That spontaneous detour turned into an excellent day on the
-  slopes.
-</p>
+  <p>
+    On March 6, 2022, we were driving to Winter Park, Colorado, checked the
+    forecast, and saw Steamboat was getting more snow. We changed course and had
+    a great day. Where To Ski makes that check quick for any resort, anywhere.
+  </p>
 
-<p>
-  That experience sparked an idea: what if choosing where to ski could always be
-  this informed? Where To Ski was born from that practical need—a tool to help
-  skiers and snowboarders quickly find the best conditions without hunting
-  across multiple websites.
-</p>
+  <h2 class="pt-4">Where the numbers come from</h2>
 
-<h3 class="text-2xl font-semibold mt-8 mb-4">Our Mission</h3>
+  <ul class="list-disc space-y-1 pl-5">
+    <li>
+      <strong>Forecasts</strong> come from
+      <a href="https://open-meteo.com/">Open-Meteo</a>, using each resort's
+      location and elevation. The whole site is rebuilt once a day; the
+      "Updated" time on each page says when.
+    </li>
 
-<p>
-  We provide accurate, up-to-date snow forecasts for ski resorts worldwide. No
-  clutter, no ads, just the information you need to make the most of your time
-  on the mountain.
-</p>
+    <li>
+      <strong>Resorts</strong> (location, elevation, runs, lifts, website) come
+      from <a href="https://openskimap.org">OpenSkiMap</a>, which is built from
+      <a href="https://www.openstreetmap.org">OpenStreetMap</a>. Small hills
+      count too. Terrain numbers are only as complete as the map data.
+    </li>
+  </ul>
 
-<h3 class="text-2xl font-semibold mt-8 mb-4">Our Mission</h3>
+  <h2 class="pt-4">How each number is calculated</h2>
 
-<p>
-  We provide accurate, up-to-date snow forecasts for ski resorts worldwide. No
-  clutter, no ads, just the information you need to make the most of your time
-  on the mountain.
-</p>
+  <dl class="space-y-3">
+    <div>
+      <dt class="font-semibold">Past 72h</dt>
 
-<h3 class="text-2xl font-semibold mt-8 mb-4">Data &amp; Technology</h3>
+      <dd>
+        Snow the forecast model estimates fell over the last three days. It is
+        modeled, not measured at the resort.
+      </dd>
+    </div>
 
-<ul class="list-disc pl-6 space-y-2">
-  <li>
-    <a href="https://github.com/jtarchie/followthesnow">Open source</a> on
-    GitHub
-  </li>
+    <div>
+      <dt class="font-semibold">Next 24h, Next 7 days, 16 days</dt>
 
-  <li>
-    Built with <a href="https://www.ruby-lang.org/">Ruby</a> for reliability and
-    performance
-  </li>
+      <dd>
+        Forecast snowfall at the summit, added up hour by hour starting from the
+        current hour, so snow that already fell is never counted twice. Rankings
+        use the 7-day total, then the 16-day total.
+      </dd>
+    </div>
 
-  <li>
-    Snow forecasts powered by <a href="https://open-meteo.com/">Open-Meteo</a>
-  </li>
+    <div>
+      <dt class="font-semibold">Days</dt>
 
-  <li>
-    Resort data from Wikipedia and
-    <a href="https://openskimap.org" target="_blank">OpenSkiMap</a>
-  </li>
+      <dd>
+        Daily totals and day names use the resort's own calendar day. Hourly
+        times use your time zone, which you can change in Settings.
+      </dd>
+    </div>
 
-  <li>
-    Hosted on <a href="https://cloudflare.com">Cloudflare</a> for global speed
-  </li>
-</ul>
+    <div>
+      <dt class="font-semibold">Colors</dt>
 
-<h2 class="text-3xl font-bold mt-10 mb-4">License</h2>
+      <dd>
+        Blue always means snow, and deeper blue means more: under 1″, 1–2″,
+        2–6″, 6–12″ and 12″ or more. The number is always shown too. A
+        <strong>snow day</strong> is 2″ or more in a day; a
+        <strong>powder day</strong> is 6″ or more.
+      </dd>
+    </div>
 
-<p>
-  Map data ©
-  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.
-  Use is subject to the Open Database license. Attribution to OpenSkiMap.org and
-  OpenStreetMap is required.
-</p>
+    <div>
+      <dt class="font-semibold">Snow or rain?</dt>
+
+      <dd>
+        For the next three days we compare the freezing level, during the hours
+        it is actually precipitating, with the resort's base and summit. Below
+        the base means snow all the way down; between base and summit means rain
+        at the bottom; above the summit means rain everywhere. Snow usually
+        falls a few hundred meters below the freezing level, so these labels
+        lean cautious. Base temperatures come from a second forecast at the base
+        elevation.
+      </dd>
+    </div>
+
+    <div>
+      <dt class="font-semibold">More snow nearby and Near me</dt>
+
+      <dd>
+        "More snow nearby" appears when a resort within 150 km (93 mi) has at
+        least twice the 7-day snow and at least 3″ more. "Near me" ranks resorts
+        within 300 km (186 mi) of you. Your location stays in your browser.
+      </dd>
+    </div>
+
+    <div>
+      <dt class="font-semibold">Why there's no snow depth</dt>
+
+      <dd>
+        Forecast models estimate a snow depth, but it ignores grooming,
+        snowmaking and avalanche control, so it can be far from the real base.
+        Resorts publish their own snow reports; check those for depth.
+      </dd>
+    </div>
+  </dl>
+
+  <h2 class="pt-4">Credits and license</h2>
+
+  <ul class="list-disc space-y-1 pl-5">
+    <li>
+      Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a>,
+      licensed
+      <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+    </li>
+
+    <li>
+      Resort and map data ©
+      <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>,
+      available under the Open Database License, via
+      <a href="https://openskimap.org">OpenSkiMap</a>.
+    </li>
+
+    <li>
+      Map tiles by <a href="https://openfreemap.org">OpenFreeMap</a> and
+      <a href="https://openmaptiles.org">OpenMapTiles</a>.
+    </li>
+
+    <li>
+      The site is
+      <a href="https://github.com/jtarchie/followthesnow">open source</a> under
+      the MIT License, built with Ruby and hosted on Cloudflare.
+    </li>
+  </ul>
+</article>

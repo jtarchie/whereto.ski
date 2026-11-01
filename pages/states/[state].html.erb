@@ -6,7 +6,7 @@
 <!--
   ---
   title: '<%= h state %> snow forecast'
-  description: 'Snow forecast for ski resorts in <%= h state %>, <%= h country %>: <%= snowing %> of <%= list.size %> <%= "resort".pluralize(list.size) %> with snow in the next 7 days.'
+  description: '<%= h scope_description(list, "in #{state}") %>'
   page_url: '/states/<%= state.to_url %>'
   ---
 -->

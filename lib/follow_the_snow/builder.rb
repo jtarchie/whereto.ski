@@ -119,6 +119,7 @@ module FollowTheSnow
 
         # After resort pages: the index carries 7-day snow, so forecasts must already be fetched under the limiter.
         generate_search_index
+        generate_sitemap
       end
 
       private
@@ -186,6 +187,20 @@ module FollowTheSnow
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
         File.write(search_file, JSON.generate(search_data))
         @logger.info('generated search index', { file: search_file, entries: search_data[:d].length })
+      end
+
+      # Cloudflare Pages serves /foo.html at /foo, which is the canonical form every page declares.
+      def generate_sitemap
+        paths = Dir[File.join(@build_dir, '**', '*.html')].map { |f| f.delete_prefix(@build_dir).delete_suffix('.html') }
+        urls  = (paths - ['/404']).map { |path| path == '/index' ? '/' : path }.sort.map do |path|
+          "<url><loc>https://whereto.ski#{path}</loc></url>"
+        end
+        File.write(File.join(@build_dir, 'sitemap.xml'), <<~XML)
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          #{urls.join("\n")}
+          </urlset>
+        XML
       end
 
       # Snow Now pages were retired; send their old URLs to the parent scope. Small countries never had region pages.

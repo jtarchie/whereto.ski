@@ -63,6 +63,16 @@ RSpec.describe('Building') do
       end
     end
 
+    it 'lists every page in sitemap.xml at its canonical URL, and points robots.txt at it' do
+      sitemap = Nokogiri::XML(File.read(File.join(build_dir, 'sitemap.xml')))
+      locs    = sitemap.xpath('//xmlns:loc').map(&:text)
+
+      expect(locs).to include('https://whereto.ski/', 'https://whereto.ski/about', 'https://whereto.ski/resorts/steamboat-ski-resort')
+      expect(locs.length).to eq(Dir[File.join(build_dir, '**', '*.html')].length - 1)
+      expect(locs.grep(/404|\.html/)).to be_empty
+      expect(File.read(File.join(build_dir, 'robots.txt'))).to include('Sitemap: https://whereto.ski/sitemap.xml')
+    end
+
     it 'retires Snow Now pages with 301s to their parent scope' do
       expect(Dir[File.join(build_dir, '**', '*snow-now*')]).to be_empty
 
@@ -465,7 +475,7 @@ RSpec.describe('Building') do
         og_description = doc.at_xpath("//meta[@property='og:description']")['content']
 
         # Should mention resorts with snow
-        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
+        expect(og_description).to match(/\A\d+ of \d+ ski resorts? in .+ ha(s|ve) snow in the next 7 days/)
       end
 
       it 'includes snow count in state page descriptions' do
@@ -479,7 +489,7 @@ RSpec.describe('Building') do
         og_description = doc.at_xpath("//meta[@property='og:description']")['content']
 
         # Should mention resorts with snow
-        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
+        expect(og_description).to match(/\A\d+ of \d+ ski resorts? in .+ ha(s|ve) snow in the next 7 days/)
       end
 
       it 'includes correct URL for about page' do

@@ -143,6 +143,15 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
     end
   end
 
+  describe '#scope_description' do
+    it 'leads with the count and the snowiest resort' do
+      allow(context).to receive(:snow_summary) { |r| { next_7d: { 1 => 4.0, 2 => 0.0, 3 => 0.0 }.fetch(r.id) } }
+
+      expect(context.scope_description([resort_with_snow, resort_without_snow], 'in Colorado'))
+        .to eq('1 of 2 ski resorts in Colorado has snow in the next 7 days. Most: Snowy Resort, 4.0 inches (10.16 cm). 16-day snow forecasts, updated daily.')
+    end
+  end
+
   describe '#area_rows' do
     it 'ranks snowy areas by their best resort and lists dry ones alphabetically' do
       allow(context).to receive(:snow_summary) do |resort|
