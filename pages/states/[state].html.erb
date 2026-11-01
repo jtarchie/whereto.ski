@@ -22,3 +22,5 @@
 ) %>
 
 <%= partial("ranked_list", resorts: list, place: %i[locality]) %>
+
+<%= partial("map", kind: "overview", country: country, region: state, resort: nil) %>

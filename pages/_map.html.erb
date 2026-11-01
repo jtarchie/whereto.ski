@@ -1,0 +1,25 @@
+<section aria-labelledby="map-heading" class="mt-10 mb-8">
+  <h2 id="map-heading" class="mb-1">Map</h2>
+
+  <p class="mb-2 text-xs text-ink-2">
+    Dots show the next 7 days of snow; darker is deeper. The list has the same
+    resorts.
+  </p>
+
+  <div
+    class="relative h-(--size-map) overflow-hidden rounded-md border bg-inset"
+    data-map="<%= kind %>"
+    data-country="<%= h country %>"
+    data-region="<%= h region %>"
+    data-lat="<%= resort&.lat %>"
+    data-lon="<%= resort&.lon %>"
+    data-url="<%= resort && "/resorts/#{resort.slug}" %>"
+  >
+    <p
+      data-map-status
+      class="absolute inset-0 z-10 grid place-items-center text-sm text-ink-2"
+    >
+      Map
+    </p>
+  </div>
+</section>

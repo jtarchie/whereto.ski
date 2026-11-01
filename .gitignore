@@ -249,3 +249,5 @@ Brewfile.lock.json
 *.geojson
 pages/public/assets/main.js
 pages/public/assets/main.css
+pages/public/assets/map.js
+pages/public/assets/maplibre/

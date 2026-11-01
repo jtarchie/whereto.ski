@@ -19,7 +19,7 @@ Git LFS — needs `git lfs pull` or nothing builds.
 - `bundle exec rspec` — full suite (CI). Slow (~7 min): Capybara + headless
   Chrome.
 - `bundle exec rspec spec/forecasts/daily_spec.rb:42` — single file/example.
-- `rake assets` — Tailwind (`npm run build`) + esbuild →
+- `rake assets` — Tailwind (`npm run build`) + esbuild + MapLibre copy →
   `pages/public/assets/main.{css,js}` (gitignored; build before browser specs or
   a fresh build).
 - `rake fast` — full site build with stubbed weather (reuses `stub_weather_api`

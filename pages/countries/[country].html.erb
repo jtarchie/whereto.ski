@@ -38,3 +38,5 @@
     href: ->(name) { "/states/#{name.to_url}" }
   ) %>
 <% end %>
+
+<%= partial("map", kind: "overview", country: country, region: nil, resort: nil) %>

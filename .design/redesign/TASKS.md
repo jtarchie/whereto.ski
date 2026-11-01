@@ -116,7 +116,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       `mobile_search_spec.rb`. _Modifies: search dialog,
       `generate_search_index`._
 
-- [ ] **11. Map (MapLibre + OpenFreeMap, lazy)**: separate esbuild entry
+- [x] **11. Map (MapLibre + OpenFreeMap, lazy)**: separate esbuild entry
       `map.js` loaded on IntersectionObserver; fixed-height placeholder
       (`--size-map`, no layout shift); overview on home/country/region (dots in
       `mark-N` by 7d snow, click → resort, fitted to scope), locator on resort

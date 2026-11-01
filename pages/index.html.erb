@@ -23,3 +23,5 @@
   rows: area_rows(resorts_by_countries),
   href: ->(name) { "/countries/#{name.to_url}" }
 ) %>
+
+<%= partial("map", kind: "overview", country: nil, region: nil, resort: nil) %>
