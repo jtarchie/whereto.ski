@@ -5,9 +5,6 @@
       "axe",
       "htmlcs"
     ],
-    "ignore": [
-      "color-contrast"
-    ],
     "chromeLaunchConfig": {
       "args": [
         "--no-sandbox",

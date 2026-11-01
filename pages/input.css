@@ -1,8 +1,6 @@
 @import "tailwindcss" source(none);
 @import "./tokens.css";
 
-@source "./**/*.html";
-@source "./*.html";
 @source "./**/*.erb";
 @source "./*.erb";
 @source "./**/*.js";

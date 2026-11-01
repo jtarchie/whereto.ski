@@ -1,7 +1,7 @@
 <% days = snow_days(resorts.first).map { |d| d[:date] }
   columns = [[:next_24h, "24h", "Next 24h", "24h"], [:past_72h, "past72h", "Past 72h", "72h"], [:next_7d, "7d", "Next 7 days", "7d"], [:next_16d, "16d", "16 days", "16d"]] %>
 
-<section data-ranked-section>
+<div data-ranked-section>
   <% if heading %>
     <h2 class="mb-2"><%= heading %></h2>
   <% end %>
@@ -116,4 +116,4 @@
       <% end %>
     </tbody>
   </table>
-</section>
+</div>

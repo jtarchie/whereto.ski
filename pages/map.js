@@ -1,9 +1,7 @@
 import { Map, Popup } from "./maplibre/maplibre-gl.mjs";
 
 const root = document.documentElement;
-const dark = root.dataset.theme
-  ? root.dataset.theme === "dark"
-  : matchMedia("(prefers-color-scheme: dark)").matches;
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
 const STYLE = `https://tiles.openfreemap.org/styles/${
   dark ? "dark" : "positron"
 }`;

@@ -68,4 +68,11 @@ RSpec.describe('Map', :js, type: :feature) do
 
     expect(Zlib.gzip(main).bytesize).to be <= 10_000
   end
+
+  it 'keeps the stylesheet within 30 KB and loads no web fonts' do
+    css = File.read(File.join(build_dir, 'assets', 'main.css'))
+
+    expect(css.bytesize).to be <= 30_000
+    expect(css).not_to include('@font-face')
+  end
 end

@@ -28,9 +28,12 @@ Git LFS — needs `git lfs pull` or nothing builds.
   PATH). `limit` = first N resorts.
 - `rake fmt` — `deno fmt`, `rubocop -A`, Herb linter `--fix` + formatter on
   `pages/`.
-- `rake a11y` — vnu + pa11y-ci against an existing `docs/` (run a build first).
+- `rake a11y` — vnu + pa11y-ci (axe + htmlcs, WCAG2AA incl. contrast) against an
+  existing `docs/` (run a build first). If pa11y can't find Chrome, set
+  `PUPPETEER_EXECUTABLE_PATH` to a local Chrome.
 - `rake scrape` — rebuild `features.sqlite` from OpenSkiMap.
-- Preview: `ruby -run -ehttpd docs/ -p8000` (webrick is in the Gemfile; Ruby 4 no longer bundles it).
+- Preview: `ruby -run -ehttpd docs/ -p8000` (webrick is in the Gemfile; Ruby 4
+  no longer bundles it).
 
 CI (`ruby.yml`) runs rspec plus Herb lint (`--fail-level error`) and
 `herb formatter --check` on `pages/`. `build.yml` builds daily and deploys;

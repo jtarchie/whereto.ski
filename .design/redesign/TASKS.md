@@ -143,7 +143,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       ≥1024; breadcrumbs scroll on mobile; 44px targets. Breakpoints: md, lg,
       xl.
 
-- [ ] **15. Accessibility + performance pass**: re-enable `color-contrast` in
+- [x] **15. Accessibility + performance pass**: re-enable `color-contrast` in
       `.pa11yci`; `rake a11y` (vnu + pa11y) clean; keyboard-only run through
       storm-chaser and lookup flows; dialogs return focus; budgets measured on
       `rake fast` output: HTML ≤100 KB (Bayern, Tirol, Hokkaido), CSS ≤30 KB,

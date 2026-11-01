@@ -178,46 +178,8 @@
 /* ---------- Dark ----------
    Not an inversion: cool charcoal canvas, ink slightly off-white (less glare),
    snow intensity grows *brighter* (light = more snow reads naturally on dark). */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --c-canvas: oklch(18% 0.01 250);
-  --c-surface: oklch(21.5% 0.012 250);
-  --c-inset: oklch(25% 0.012 250);
-  --c-inverse: oklch(93% 0.006 250);
-
-  --c-ink: oklch(93% 0.006 250);
-  --c-ink-2: oklch(74% 0.01 250);
-  --c-ink-3: oklch(65% 0.01 250);
-  --c-on-inverse: oklch(18% 0.01 250);
-
-  --c-line: oklch(30% 0.012 250);
-  --c-line-strong: oklch(52% 0.012 250);
-
-  --c-snow-1: oklch(30% 0.05 250);   --c-on-snow-1: oklch(85% 0.08 240);
-  --c-snow-2: oklch(38% 0.08 250);   --c-on-snow-2: oklch(92% 0.05 240);
-  --c-snow-3: oklch(50% 0.12 250);   --c-on-snow-3: oklch(100% 0 0);
-  --c-snow-4: oklch(66% 0.14 245);   --c-on-snow-4: oklch(15% 0.02 250);
-  --c-snow-5: oklch(83% 0.11 235);   --c-on-snow-5: oklch(15% 0.02 250);
-
-  --c-mark-1: oklch(45% 0.08 250);
-  --c-mark-2: oklch(56% 0.11 248);
-  --c-mark-3: oklch(67% 0.13 245);
-  --c-mark-4: oklch(78% 0.12 240);
-  --c-mark-5: oklch(90% 0.07 235);
-
-  --c-warn: oklch(84% 0.12 75);
-  --c-warn-bg: oklch(30% 0.05 60);
-  --c-error: oklch(72% 0.15 27);
-
-  --c-backdrop: oklch(0% 0 0 / 0.6);
-}
-
-/* System dark unless user explicitly chose light. Same values as above;
-   ponytail: duplicated block — collapse with light-dark() if we drop the
-   data-theme override (no manual toggle is planned). */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root {
     color-scheme: dark;
 
     --c-canvas: oklch(18% 0.01 250);
