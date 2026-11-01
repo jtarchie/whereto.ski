@@ -110,14 +110,59 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
     end
   end
 
+  describe '#day_callout' do
+    it 'calls out the biggest day once it reaches snow-day size' do
+      expect(context.day_callout(resort_with_snow)).to include(label: 'Snow day', inches: 5.5, date: 'Mon')
+    end
+
+    it 'says nothing when no day reaches 2 inches' do
+      expect(context.day_callout(resort_without_snow)).to be_nil
+    end
+  end
+
+  describe '#precip_status' do
+    it 'classifies by freezing level against base and summit (ft)' do
+      expect(context.precip_status(0, 9000, 7000, 10_000)).to eq(:dry)
+      expect(context.precip_status(0.2, 6500, 7000, 10_000)).to eq(:snow)
+      expect(context.precip_status(0.2, 8500, 7000, 10_000)).to eq(:mixed)
+      expect(context.precip_status(0.2, 11_000, 7000, 10_000)).to eq(:rain)
+      expect(context.precip_status(0.2, 8500, nil, nil)).to eq(:unknown)
+    end
+  end
+
+  describe '#snow_or_rain' do
+    let(:day) { Date.new(2023, 3, 14) }
+    let(:mountain) do
+      FollowTheSnow::Resort.new(id: 9, name: 'Mountain', lat: 39.5, lon: -106.0, min_elevation: 2000, max_elevation: 3000)
+    end
+
+    before do
+      forecast = ->(temp) { FollowTheSnow::Forecast.new(time_of_day: day, snow: 0..1.0, precipitation: 0.3, temp: temp) }
+      hour     = lambda { |h, precip, level|
+        FollowTheSnow::HourlyForecast.new(time: Time.new(2023, 3, 14, h, 0, 0, -21_600), precipitation: precip, freezing_level: level)
+      }
+      allow(mountain).to receive_messages(
+        forecasts: [forecast.call(20.0..30.0)],
+        base_forecasts: [forecast.call(28.0..38.0)],
+        hourly_forecasts: [hour.call(3, 0.1, 6000), hour.call(15, 0.0, 9000)]
+      )
+    end
+
+    it 'uses the freezing level of the hours with precipitation' do
+      row = context.snow_or_rain(mountain).first
+
+      expect(row).to include(snow_level: 6000, status: :snow, summit_temp: 20.0..30.0, base_temp: 28.0..38.0)
+    end
+  end
+
   describe '#snow_summary' do
-    it 'combines past, 24h, 7d and 16d totals' do
+    it 'sums forward totals from hourly data so past snow is not counted twice' do
       allow(resort_with_snow).to receive_messages(
         past_snowfall: 1.25,
         hourly_forecasts: [FollowTheSnow::HourlyForecast.new(snowfall: 0.5), FollowTheSnow::HourlyForecast.new(snowfall: nil)]
       )
 
-      expect(context.snow_summary(resort_with_snow)).to eq(past_72h: 1.25, next_24h: 0.5, next_7d: 7.8, next_16d: 7.8)
+      expect(context.snow_summary(resort_with_snow)).to eq(past_72h: 1.25, next_24h: 0.5, next_7d: 0.5, next_16d: 0.5)
     end
   end
 

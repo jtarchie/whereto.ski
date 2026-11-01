@@ -65,7 +65,7 @@ shorthand, `rake fmt` clean, Herb lint passes, specs updated in the same task
 
 ## Core UI
 
-- [ ] **6. Resort page — decision block**: replace Best Days score and stat
+- [x] **6. Resort page — decision block**: replace Best Days score and stat
   cards with: header (name, town · region · country, elevation range,
   updated), snow summary (Past 72h · Next 24h · Next 7 days · 16 days, hero
   numbers), day callout only when ≥2″ ("Powder Sat · 9″"), 16-day snow strip

@@ -562,27 +562,22 @@ RSpec.describe('Building') do
     end
 
     describe 'resort page descriptions with forecast data' do
-      it 'includes forecast information in description when snow is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-        expect(resort_files).not_to be_empty
+      def resort_docs
+        Dir[File.join(build_dir, 'resorts', '*.html')].lazy.map { |f| Nokogiri::HTML(File.read(f)) }
+      end
 
-        # Find a resort with snow in forecast (from stubbed data)
-        resort_with_snow = resort_files.find do |file|
-          html = File.read(file)
-          html.include?('snow-cell') || html.include?('❄️')
-        end
+      def sixteen_day_total(doc)
+        doc.css('section[aria-labelledby="snow-heading"] dd data').last['value'].to_f
+      end
 
-        if resort_with_snow
-          resort_html = File.read(resort_with_snow)
-          doc         = Nokogiri::HTML(resort_html)
+      def og_description(doc)
+        doc.at_xpath("//meta[@property='og:description']")['content']
+      end
 
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+      it 'summarizes 7- and 16-day snow when snow is expected' do
+        doc = resort_docs.find { |d| sixteen_day_total(d).positive? }
 
-          # Should include location information
-          expect(og_description).to match(/in .+, .+/)
-          # Should mention either "Expecting" snow or "No significant snowfall"
-          expect(og_description).to match(/Expecting .+ of snow|No significant snowfall/)
-        end
+        expect(og_description(doc)).to match(/\d.* of snow in the next 7 days, \d.* over 16 days\./)
       end
 
       it 'includes location information in resort descriptions' do
@@ -597,44 +592,10 @@ RSpec.describe('Building') do
         expect(og_description).to match(/\sin\s.+,\s.+\./)
       end
 
-      it 'mentions snowfall amount when snow is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+      it 'says so when no snow is expected' do
+        doc = resort_docs.find { |d| sixteen_day_total(d).zero? }
 
-        # Find a resort with snow in forecast (from stubbed data)
-        resort_with_snow = resort_files.find do |file|
-          html = File.read(file)
-          html.include?('snow-cell') || html.include?('❄️')
-        end
-
-        if resort_with_snow
-          resort_html = File.read(resort_with_snow)
-          doc         = Nokogiri::HTML(resort_html)
-
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
-
-          # Should include snowfall measurement (inches or cm/mm)
-          expect(og_description).to match(/Expecting .+\d/)
-          expect(og_description).to include('of snow in the forecast period')
-        end
-      end
-
-      it 'mentions no snowfall when none is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-
-        # Find a resort without snow
-        resort_without_snow = resort_files.find do |file|
-          html = File.read(file)
-          !html.include?('snow-cell') && !html.include?('❄️')
-        end
-
-        if resort_without_snow
-          resort_html = File.read(resort_without_snow)
-          doc         = Nokogiri::HTML(resort_html)
-
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
-
-          expect(og_description).to include('No significant snowfall expected')
-        end
+        expect(og_description(doc)).to include('No snow in the 16-day forecast.')
       end
     end
 

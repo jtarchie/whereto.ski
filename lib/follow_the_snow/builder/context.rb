@@ -16,6 +16,14 @@ module FollowTheSnow
       # instead of states/regions, to simplify navigation
       SMALL_COUNTRY_THRESHOLD = 20
       NEARBY_KM               = 150
+      SNOW_DAY                = 2
+      POWDER_DAY              = 6
+      OUTLOOK_LABELS          = {
+        snow: ['Snow to base', false],
+        mixed: ['Rain at base', true],
+        rain: ['Rain to summit', true],
+        dry: ['Dry', false]
+      }.freeze
 
       attr_reader :resorts
 
@@ -303,13 +311,75 @@ module FollowTheSnow
         12_742 * Math.asin(Math.sqrt(h))
       end
 
+      def snow_days(resort)
+        raw_forecasts_for(resort).map { |f| { date: f.time_of_day, inches: snow_inches(f) } }
+      end
+
+      def day_callout(resort)
+        best = snow_days(resort).max_by { |d| d[:inches] }
+        return unless best && best[:inches] >= SNOW_DAY
+
+        best.merge(label: best[:inches] >= POWDER_DAY ? 'Powder day' : 'Snow day')
+      end
+
+      def day_name(date, index)
+        index.zero? ? 'Today' : date.strftime('%a %-d')
+      end
+
+      # Freezing level stands in for snow level, taken from the hours it's actually precipitating.
+      def snow_or_rain(resort, days: 3)
+        base_days = resort.base_forecasts
+        levels    = resort.hourly_forecasts.group_by { |h| h.time.to_date }.transform_values do |hours|
+          wet = hours.select { |h| h.precipitation.to_f.positive? }
+          (wet.empty? ? hours : wet).filter_map(&:freezing_level).max
+        end
+        base_ft   = resort.min_elevation && (resort.min_elevation * 3.28084)
+        summit_ft = resort.max_elevation && (resort.max_elevation * 3.28084)
+
+        raw_forecasts_for(resort).first(days).each_with_index.map do |day, index|
+          base   = base_days[index]
+          level  = levels[day.time_of_day]
+          precip = [day.precipitation.to_f, base&.precipitation.to_f].max
+
+          {
+            date: day.time_of_day,
+            snow_level: level,
+            base_temp: base_ft && base&.temp,
+            summit_temp: day.temp,
+            wind: day.wind_speed&.end,
+            gust: day.wind_gust&.end,
+            status: precip_status(precip, level, base_ft, summit_ft)
+          }
+        end
+      end
+
+      def precip_status(precip, level, base_ft, summit_ft)
+        return :dry if precip < 0.01
+        return :unknown if level.nil? || base_ft.nil?
+        return :snow if level <= base_ft
+        return :mixed if summit_ft.nil? || level < summit_ft
+
+        :rain
+      end
+
+      # crumbs: [[label, href], ...]; the last one is the current page.
+      def breadcrumbs(crumbs)
+        items = crumbs.each_with_index.map do |(label, href), index|
+          current = index == crumbs.length - 1
+          link    = current ? %(<span aria-current="page">#{h label}</span>) : %(<a href="#{h href}">#{h label}</a>)
+          %(<li class="flex shrink-0 items-center gap-2">#{%(<span aria-hidden="true">/</span>) unless index.zero?}#{link}</li>)
+        end
+        %(<nav aria-label="Breadcrumb" class="-mx-4 overflow-x-auto px-4 text-sm text-ink-2"><ol class="flex gap-2 whitespace-nowrap">#{items.join}</ol></nav>).html_safe
+      end
+
+      # Forward totals start at the current hour so nothing already counted in past_72h repeats.
       def snow_summary(resort)
-        daily = raw_forecasts_for(resort)
+        upcoming = resort.hourly_forecasts.map { |h| h.snowfall.to_f }
         {
           past_72h: resort.past_snowfall(hours: 72),
-          next_24h: resort.hourly_forecasts.take(24).sum { |h| h.snowfall.to_f }.round(2),
-          next_7d: daily.take(7).sum { |f| snow_inches(f) }.round(2),
-          next_16d: daily.sum { |f| snow_inches(f) }.round(2)
+          next_24h: upcoming.take(24).sum.round(2),
+          next_7d: upcoming.take(24 * 7).sum.round(2),
+          next_16d: upcoming.sum.round(2)
         }
       end
 

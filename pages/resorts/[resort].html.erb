@@ -1,180 +1,199 @@
-<%
-  # Generate forecast summary
-  total_snow = total_snow_for(resort)
-  forecast_summary = if total_snow > 0
-    "Expecting #{format_snow_total_plain(total_snow)} of snow in the forecast period."
-  else
-    "No significant snowfall expected in the current forecast period."
-  end
-
-  # Get the next snow day if available
-  next_snow_day = raw_forecasts_for(resort).find { |f| snow_inches(f) > 0 }
-  if next_snow_day
-    forecast_summary += " Next snow: #{next_snow_day.name}."
-  end
-
-  # Get current conditions and hourly forecasts
-  current = current_conditions_for(resort)
+<% summary = snow_summary(resort)
+  callout = day_callout(resort)
+  strip = snow_days(resort)
+  strip_max = [strip.map { |d| d[:inches] }.max.to_f, self.class::POWDER_DAY].max
+  outlook = snow_or_rain(resort)
   hourly = hourly_forecasts_for(resort, hours: 48)
-%>
+  place = [resort.locality, resort.region_name, resort.country_name].compact.uniq
+
+  forecast_summary = if summary[:next_16d] > 0
+    "#{format_snow_total_plain(summary[:next_7d])} of snow in the next 7 days, #{format_snow_total_plain(summary[:next_16d])} over 16 days."
+  else
+    "No snow in the 16-day forecast."
+  end
+  forecast_summary += " #{callout[:label]} #{callout[:date].strftime('%a %b %-d')}." if callout %>
+
 <!--
   ---
-  title: 'Weekly forecast of snow for <%= h resort.name %>'
-  description: '<%= h resort.name %> in <%= h resort.region_name %>, <%= h resort.country_name %>. <%= forecast_summary %>'
+  title: '<%= h resort.name %> snow forecast'
+  description: '<%= h resort.name %>, <%= h resort.region_name %>, <%= h resort.country_name %>. <%= forecast_summary %>'
   page_url: '/resorts/<%= resort.slug %>'
   ---
 -->
 
-<div class="text-sm breadcrumbs mb-4">
-  <ul>
-    <li><a href="/">All</a></li>
+<%= breadcrumbs(
+  [
+    ["World", "/"],
+    [resort.country_name, "/countries/#{resort.country_name.to_url}"],
+    (
+      if small_country?(resort.country_name)
+        nil
+      else
+        [resort.region_name, "/states/#{resort.region_name.to_url}"]
+      end
+    ),
+    [resort.name, nil]
+  ].compact
+) %>
 
-    <li>
-      <a href="/countries/<%= resort.country_name.to_url %>">
-        <%= h resort.country_name %>
-      </a>
-    </li>
+<header class="mt-4 mb-6">
+  <h1><%= h resort.name %></h1>
 
-    <li>
-      <a href="/states/<%= resort.region_name.to_url %>">
-        <%= h resort.region_name %>
-      </a>
-    </li>
+  <p class="mt-1 text-sm text-ink-2">
+    <%= h place.join(" · ") %>
 
-    <li>
-      <% if resort.url %>
-        <a href="<%= resort.url %>"><%= h resort.name %></a>
-      <% else %>
-        <%= h resort.name %>
-      <% end %>
-    </li>
-  </ul>
-</div>
-
-<!-- Resort Info Header -->
-<div class="mb-6">
-  <h1 class="text-4xl font-bold mb-2"><%= h resort.name %></h1>
-
-  <p class="text-base-content/70">
-    <%= h resort.region_name %>,<%= h resort.country_name %>
     <% if resort.min_elevation && resort.max_elevation %>
-      <span class="ml-2">
-        📍 <%= format_elevation_m(resort.min_elevation) %> -
-        <%= format_elevation_m(resort.max_elevation) %>
-      </span>
+      ·
+      <span class="whitespace-nowrap"><%= format_elevation_m(resort.min_elevation) %>–<%= format_elevation_m(resort.max_elevation) %></span>
     <% end %>
   </p>
-</div>
+</header>
 
-<!-- Snow Summary Card -->
-<% if total_snow > 0 %>
-  <div class="alert alert-info mb-6">
-    <div>
-      <span class="text-2xl">❄️</span>
+<section aria-labelledby="snow-heading" class="mb-8">
+  <h2 id="snow-heading" class="sr-only">Snowfall</h2>
 
-      <div>
-        <h3 class="font-bold">Snow in Forecast!</h3>
+  <dl class="grid grid-cols-2 gap-2 md:grid-cols-4">
+    <% [
+      ["Past 72h", summary[:past_72h]],
+      ["Next 24h", summary[:next_24h]],
+      ["Next 7 days", summary[:next_7d]],
+      ["16 days", summary[:next_16d]]
+    ].each do |label, inches| %>
+      <% level = snow_level(inches) %>
 
-        <p>
-          Expecting <%= format_snow_total(total_snow) %> total in the next 16
-          days
-        </p>
+      <div
+        class="
+          rounded-sm border p-3
+          <%= level.zero? ? 'text-ink-3' : "border-transparent bg-snow-#{level} text-on-snow-#{level}" %>
+        "
+      >
+        <dt class="text-xs font-medium tracking-wide uppercase">
+          <%= label %>
+        </dt>
+
+        <dd class="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+          <%= snow_value(inches) %>
+        </dd>
       </div>
-    </div>
-  </div>
-<% end %>
-
-<!-- Best Days to Ski - Compact view -->
-<% ski_days = best_ski_days(resort, limit: 7) %>
-<% best = best_day_to_ski(resort) %>
-
-<div class="mb-6">
-  <div class="flex items-center gap-2 mb-2">
-    <h2 class="text-lg font-bold">🎿 Best Days to Ski</h2>
-
-    <% if best && best[:score] >= 70 %>
-      <span class="badge badge-success badge-sm">
-        <%= best[:name] %> recommended
-      </span>
     <% end %>
+  </dl>
+
+  <% if callout %>
+    <p class="mt-3 border-l-4 py-1 pl-3 border-mark-<%= snow_level(callout[:inches]) %>">
+      <strong><%= callout[:label] %></strong>
+      <%= callout[:date] == strip.first[:date] ? "Today" : callout[:date].strftime("%a %b %-d") %>
+      · <%= snow_value(callout[:inches]) %>
+    </p>
+  <% end %>
+</section>
+
+<section aria-labelledby="strip-heading" class="mb-8">
+  <div class="mb-2 flex items-baseline justify-between gap-4">
+    <h2 id="strip-heading">Next 16 days</h2>
+    <p class="text-xs text-ink-2">Days in <%= h resort.name %> time</p>
   </div>
 
-  <div class="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
-    <% ski_days.each do |day| %>
-      <div class="ski-day-card ski-day-<%= day[:rating].downcase %> px-2 py-1.5 rounded-md text-center shrink-0 min-w-16">
-        <div class="text-[10px] font-medium opacity-80 leading-tight">
-          <%= day[:name] %>
+  <ol class="-mx-4 flex overflow-x-auto px-4 md:mx-0 md:px-0">
+    <% strip.each_with_index do |day, index| %>
+      <% level = snow_level(day[:inches]) %>
+
+      <li class="flex w-10 shrink-0 flex-col items-center md:w-auto md:flex-1">
+        <span class="h-5 text-xs whitespace-nowrap <%= level.zero? ? 'text-ink-3' : 'font-medium' %>">
+          <%= level.zero? ? "–" : snow_value(day[:inches]) %>
+        </span>
+
+        <span
+          aria-hidden="true"
+          class="flex h-(--size-strip) w-full items-end border-b px-0.5"
+        >
+          <% unless level.zero? %>
+            <span
+              class="block w-full rounded-t-sm bg-mark-<%= level %>"
+              style="height: <%= [(day[:inches] / strip_max * 100).round, 3].max %>%"
+            ></span>
+          <% end %>
+        </span>
+
+        <span class="mt-1 text-xs whitespace-nowrap text-ink-2">
+          <%= index.zero? ? "Today" : day[:date].strftime("%a") %>
+          <span class="block text-center"><%= day[:date].day %></span>
+        </span>
+      </li>
+    <% end %>
+  </ol>
+</section>
+
+<section aria-labelledby="outlook-heading" class="mb-8">
+  <h2 id="outlook-heading" class="mb-2">Snow or rain?</h2>
+
+  <ul class="divide-y border-y">
+    <% outlook.each_with_index do |day, index| %>
+      <li class="grid gap-1 py-3 md:grid-cols-[8rem_1fr] md:gap-4">
+        <div class="flex items-center justify-between md:block">
+          <span class="font-medium"><%= day_name(day[:date], index) %></span>
+
+          <% label, warn = self.class::OUTLOOK_LABELS[day[:status]] %>
+
+          <% if label %>
+            <span
+              class="
+                text-sm md:mt-0.5 md:block md:w-fit
+                <%= warn ? 'rounded-sm bg-warn-bg px-1.5 text-warn' : '' %>
+                <%= day[:status] == :dry ? 'text-ink-2' : '' %>
+              "
+            >
+              <%= label %>
+            </span>
+          <% end %>
         </div>
 
-        <div class="text-base font-black leading-tight"><%= day[:score] %></div>
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
+          <div>
+            <dt class="text-ink-2" title="Approximated by the freezing level">
+              Snow level
+            </dt>
 
-        <% if day[:snow] > 0 %>
-          <div class="text-[10px] leading-tight">
-            ❄️<%= day[:snow].round(1) %>"
+            <dd><%= format_elevation(day[:snow_level]) %></dd>
           </div>
-        <% else %>
-          <div class="text-[10px] opacity-60 leading-tight">
-            <%= day[:rating] %>
+
+          <% if day[:base_temp] %>
+            <div>
+              <dt class="text-ink-2">Base</dt>
+
+              <dd>
+                <%= temp_value(day[:base_temp].end) %> /
+                <%= temp_value(day[:base_temp].begin) %>
+              </dd>
+            </div>
+          <% end %>
+
+          <div>
+            <dt class="text-ink-2">
+              <%= day[:base_temp] ? "Summit" : "Temp" %>
+            </dt>
+
+            <dd>
+              <%= temp_value(day[:summit_temp]&.end) %> /
+              <%= temp_value(day[:summit_temp]&.begin) %>
+            </dd>
           </div>
-        <% end %>
-      </div>
+
+          <div>
+            <dt class="text-ink-2">Wind</dt>
+
+            <dd>
+              <%= speed_value(day[:wind]) %>
+
+              <span class="text-ink-2">
+                gusts <%= speed_value(day[:gust]) %>
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </li>
     <% end %>
-  </div>
-</div>
-
-<!-- Current Conditions & Quick Stats -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-  <!-- Current Temperature -->
-  <div class="stat bg-base-200 rounded-lg">
-    <div class="stat-figure text-3xl">
-      <%= weather_icon(current.weather_code, is_day: current.is_day) %>
-    </div>
-
-    <div class="stat-title">Right Now</div>
-
-    <div class="stat-value text-2xl">
-      <%= format_temperature(current.temperature) %>
-    </div>
-
-    <div class="stat-desc"><%= h current.weather_description %></div>
-  </div>
-
-  <!-- Feels Like -->
-  <div class="stat bg-base-200 rounded-lg">
-    <div class="stat-figure text-3xl">🌡️</div>
-    <div class="stat-title">Feels Like</div>
-
-    <div class="stat-value text-2xl">
-      <%= format_temperature(current.apparent_temperature) %>
-    </div>
-
-    <div class="stat-desc">Humidity: <%= current.humidity %>%</div>
-  </div>
-
-  <!-- Wind -->
-  <div class="stat bg-base-200 rounded-lg">
-    <div class="stat-figure text-3xl">💨</div>
-    <div class="stat-title">Wind</div>
-
-    <div class="stat-value text-xl">
-      <%= format_wind(current.wind_speed, current.wind_direction) %>
-    </div>
-
-    <% if current.wind_gust && current.wind_gust > current.wind_speed %>
-      <div class="stat-desc">
-        Gusts: <%= speed_value(current.wind_gust) %>
-      </div>
-    <% end %>
-  </div>
-
-  <!-- Cloud Cover -->
-  <div class="stat bg-base-200 rounded-lg">
-    <div class="stat-figure text-3xl">☁️</div>
-    <div class="stat-title">Cloud Cover</div>
-    <div class="stat-value text-2xl"><%= current.cloud_cover %>%</div>
-    <div class="stat-desc"><%= current.is_day ? 'Daytime' : 'Nighttime' %></div>
-  </div>
-</div>
+  </ul>
+</section>
 
 <!-- Hourly Forecast Section -->
 <h2 class="text-3xl font-bold mb-4">Hourly Forecast</h2>
