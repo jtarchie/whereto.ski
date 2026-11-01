@@ -96,7 +96,7 @@ builds the whole site once via `SharedBuild`). Verify visually with
       Bayern page ≤100 KB HTML and sortable by keyboard. _New: ranked list,
       status line, scope chips, empty state. Depends on: 4, 5._
 
-- [ ] **9. Country + Home pages, retire Snow Now**: large countries = top 25 +
+- [x] **9. Country + Home pages, retire Snow Now**: large countries = top 25 +
       regions ranked table; small countries (≤20) = all resorts; home = global
       top 25 + countries ranked + dry-countries list. Delete the three
       `*snow-now` templates; generate `docs/_redirects` (301 to parent) from the

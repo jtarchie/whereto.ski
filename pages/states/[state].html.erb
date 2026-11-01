@@ -1,8 +1,7 @@
 <% country = resorts.first.country_name
   list = ranked(resorts)
   snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
-  dry = list.none? { |r| snow_summary(r)[:next_16d].positive? }
-  sibling = dry && snowiest_sibling_region(state, country) %>
+  sibling = snowiest_area(regions_of(country), except: state) %>
 
 <!--
   ---
@@ -14,41 +13,12 @@
 
 <%= breadcrumbs([["World", "/"], [country, "/countries/#{country.to_url}"], [state, nil]]) %>
 
-<header class="mt-4 mb-4">
-  <h1><%= h state %></h1>
-
-  <p class="mt-1 text-sm text-ink-2">
-    Snow in the next 7 days at <strong class="text-ink"><%= snowing %></strong>
-    of <%= list.size %> resorts · Updated <%= current_timestamp %>
-  </p>
-</header>
-
-<nav aria-label="Scope" class="mb-4 flex gap-2 text-sm">
-  <span aria-current="page" class="chip"><%= h state %></span>
-
-  <button
-    type="button"
-    class="chip"
-    data-near-me
-    hidden
-  >
-    Near me
-  </button>
-</nav>
-
-<% if dry %>
-  <p class="mb-4 border-l-4 py-1 pl-3">
-    No snow forecast in <%= h state %> through
-    <%= snow_days(list.first).last[:date].strftime("%a %b %-d") %>.
-
-    <% if sibling %>
-      Try <a href="/states/<%= sibling.to_url %>"><%= h sibling %></a> or
-    <% else %>
-      Try
-    <% end %>
-
-    <a href="/">the snowiest resorts worldwide</a>.
-  </p>
-<% end %>
+<%= partial(
+  "scope_header",
+  title: state,
+  scope: state,
+  list: list,
+  alternative: sibling && [sibling, "/states/#{sibling.to_url}"]
+) %>
 
 <%= partial("ranked_list", resorts: list, place: %i[locality]) %>

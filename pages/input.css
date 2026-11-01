@@ -134,6 +134,20 @@
     @apply border-ink bg-ink text-on-inverse;
   }
 
+  .areas {
+    .place {
+      @apply block truncate text-xs text-ink-2;
+    }
+
+    td a {
+      @apply font-medium no-underline hover:underline;
+    }
+
+    .num {
+      @apply w-24 text-right md:w-32;
+    }
+  }
+
   /* Ranked list: classes live here, not on each of ~100 rows, to keep region pages under budget. */
   .ranked {
     @apply table-fixed;

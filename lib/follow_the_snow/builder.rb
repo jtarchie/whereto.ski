@@ -35,6 +35,7 @@ module FollowTheSnow
 
         # Generate search index
         generate_search_index
+        generate_redirects
 
         layout_html = erb(File.join(@source_dir, '_layout.html.erb'))
 
@@ -181,6 +182,15 @@ module FollowTheSnow
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
         File.write(search_file, JSON.generate(search_data))
         @logger.info('generated search index', { file: search_file, entries: search_data[:d].length })
+      end
+
+      # Snow Now pages were retired; send their old URLs to the parent scope. Small countries never had region pages.
+      def generate_redirects
+        lines  = ['/snow-now / 301']
+        lines += countries.map { |c| "/countries/#{c.to_url}-snow-now /countries/#{c.to_url} 301" }
+        lines += states.reject { |s| @context.small_country?(resorts_by_state(s).first.country_name) }
+                       .map { |s| "/states/#{s.to_url}-snow-now /states/#{s.to_url} 301" }
+        File.write(File.join(@build_dir, '_redirects'), "#{lines.join("\n")}\n")
       end
 
       def resorts_by_state(state)

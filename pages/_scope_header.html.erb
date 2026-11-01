@@ -1,0 +1,40 @@
+<% snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
+  dry = list.none? { |r| snow_summary(r)[:next_16d].positive? } %>
+
+<header class="mt-4 mb-4">
+  <h1><%= h title %></h1>
+
+  <p class="mt-1 text-sm text-ink-2">
+    Snow in the next 7 days at <strong class="text-ink"><%= snowing %></strong>
+    of <%= list.size %> resorts<%= " worldwide" if scope == "World" %> ·
+    Updated <%= current_timestamp %>
+  </p>
+</header>
+
+<nav aria-label="Scope" class="mb-4 flex gap-2 text-sm">
+  <span aria-current="page" class="chip"><%= h scope %></span>
+
+  <button
+    type="button"
+    class="chip"
+    data-near-me
+    hidden
+  >
+    Near me
+  </button>
+</nav>
+
+<% if dry %>
+  <p class="mb-4 border-l-4 py-1 pl-3">
+    No snow forecast <%= scope == "World" ? "worldwide" : "in #{h scope}" %>
+    through <%= snow_days(list.first).last[:date].strftime("%a %b %-d") %>.
+
+    <% if alternative %>
+      Try <a href="<%= alternative[1] %>"><%= h alternative[0] %></a> or
+    <% else %>
+      Try
+    <% end %>
+
+    <a href="/">the snowiest resorts worldwide</a>.
+  </p>
+<% end %>

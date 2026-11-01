@@ -72,32 +72,14 @@ end
 desc 'Run accessibility and HTML validation checks'
 task :a11y do
   puts '🔍 Running HTML validation with vnu...'
-  sh('vnu --skip-non-html docs/index.html docs/about.html docs/snow-now.html docs/countries/united-states-of-america.html docs/states/colorado.html docs/resorts/wolf-creek-ski-area docs/404.html')
+  sh('vnu --skip-non-html docs/index.html docs/about.html docs/countries/united-states-of-america.html docs/countries/andorra.html docs/states/colorado.html docs/resorts/wolf-creek-ski-area.html docs/404.html')
 
   puts "\n✅ HTML validation passed!"
 
   puts "\n📊 Starting local server for pa11y tests..."
-  # Start a simple HTTP server in the background
-  server_pid = spawn('ruby -run -ehttpd docs/ -p8000', out: '/dev/null', err: '/dev/null')
-
-  # Wait for server to be ready
-  max_attempts = 20
-  server_ready = false
-  max_attempts.times do |_i|
-    sleep 0.5
-    begin
-      require 'net/http'
-      response = Net::HTTP.get_response(URI('http://localhost:8000/'))
-      if response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
-        server_ready = true
-        break
-      end
-    rescue Errno::ECONNREFUSED, Errno::ECONNRESET
-      # Server not ready yet, continue waiting
-    end
-  end
-
-  raise 'Server failed to start' unless server_ready
+  require 'webrick'
+  server = WEBrick::HTTPServer.new(Port: 8000, DocumentRoot: 'docs', Logger: WEBrick::Log.new(File::NULL), AccessLog: [])
+  thread = Thread.new { server.start }
 
   begin
     puts '🔍 Running pa11y-ci accessibility tests...'
@@ -105,8 +87,8 @@ task :a11y do
     puts "\n✅ Accessibility tests passed!"
   ensure
     puts "\n🛑 Stopping server..."
-    Process.kill('TERM', server_pid)
-    Process.wait(server_pid)
+    server.shutdown
+    thread.join
   end
 end
 

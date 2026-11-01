@@ -30,7 +30,7 @@ Git LFS — needs `git lfs pull` or nothing builds.
   `pages/`.
 - `rake a11y` — vnu + pa11y-ci against an existing `docs/` (run a build first).
 - `rake scrape` — rebuild `features.sqlite` from OpenSkiMap.
-- Preview: `python3 -m http.server 8000 -d docs` (Ruby 4 dropped webrick).
+- Preview: `ruby -run -ehttpd docs/ -p8000` (webrick is in the Gemfile; Ruby 4 no longer bundles it).
 
 CI (`ruby.yml`) runs rspec plus Herb lint (`--fail-level error`) and
 `herb formatter --check` on `pages/`. `build.yml` builds daily and deploys;

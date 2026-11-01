@@ -1,36 +1,25 @@
+<% list = ranked(resorts)
+  snowing = list.count { |r| snow_summary(r)[:next_7d].positive? } %>
+
 <!--
   ---
-  title: List by countries
-  description: Find snow forecasts for ski resorts worldwide. Live snow reports and weekly forecasts updated daily.
+  title: Where To Ski — snow forecasts for ski resorts worldwide
+  description: 'Snow forecasts for <%= list.size %> ski resorts worldwide: <%= snowing %> with snow in the next 7 days. Updated daily.'
   page_url: '/'
   ---
 -->
 
-<p>Please select a country to see the available regions in that area.</p>
+<%= partial("scope_header", title: "Where's the snow", scope: "World", list: list, alternative: nil) %>
 
-<div class="flex justify-between items-center mb-4">
-  <h2 class="text-3xl font-bold">
-    Regions
-    <a href="/snow-now" class="link link-primary text-sm whitespace-nowrap">Snow Now</a>
-  </h2>
-</div>
+<h2 class="mb-2">Top 25 resorts</h2>
 
-<ul class="list-disc pl-5 space-y-2">
-  <% countries.each do |country| %>
-    <li
-      class="flex items-center gap-2"
-      data-has-snow="<%= country_has_snow?(country) %>"
-    >
-      <a href="/countries/<%= country.to_url %>" class="flex-grow">
-        <%= h country %>
-      </a>
+<%= partial("ranked_list", resorts: list.first(25), place: %i[region_name country_name]) %>
 
-      <% if country_has_snow?(country) %>
-        <span class="snow-badge">
-          <%= country_snow_count(country) %> resorts
-          (<%= format_snow_total(total_snow_for_country(country)) %>)
-        </span>
-      <% end %>
-    </li>
-  <% end %>
-</ul>
+<%= partial(
+  "area_table",
+  id: "countries-heading",
+  heading: "Countries",
+  noun: "Country",
+  rows: area_rows(resorts_by_countries),
+  href: ->(name) { "/countries/#{name.to_url}" }
+) %>
