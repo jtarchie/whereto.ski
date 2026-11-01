@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'json'
 require 'sqlite3'
 require 'stringex'
 require 'active_support/core_ext/module/delegation'
@@ -17,19 +18,48 @@ module FollowTheSnow
     :url,
     :min_elevation,
     :max_elevation,
+    :locality,
+    :runs,
+    :lifts,
     keyword_init: true
   ) do
     def self.from_sqlite(filename)
       db      = SQLite3::Database.new filename
-      rows    = db.prepare('SELECT * FROM resorts').execute
+      rows    = db.prepare(<<~SQL).execute
+        SELECT
+          resorts.*,
+          payload->>'$.properties.places[0].localized.en.locality' AS locality,
+          payload->'$.properties.statistics.runs.byActivity.downhill.byDifficulty' AS runs,
+          payload->'$.properties.statistics.lifts.byType' AS lifts
+        FROM resorts
+        JOIN features ON features.id = resorts.id
+      SQL
       results = []
       rows.each_hash do |payload|
+        payload['runs']  = parse_stats(payload['runs'])
+        payload['lifts'] = parse_stats(payload['lifts'])
         results.push Resort.new(payload)
       end
       results.uniq(&:name)
       rows.close
 
       results
+    end
+
+    # OpenSkiMap stats: { "advanced" => { count:, km: } }, empty when unmapped.
+    def self.parse_stats(json)
+      return {} if json.nil?
+
+      JSON.parse(json).transform_values do |stat|
+        { count: stat['count'].to_i, km: stat['lengthInKm'].to_f.round(1) }
+      end
+    end
+
+    # OpenSkiMap elevations are meters.
+    def vertical
+      return nil unless min_elevation && max_elevation
+
+      (max_elevation - min_elevation).round
     end
 
     def slug

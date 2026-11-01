@@ -13,6 +13,21 @@ RSpec.describe('Resort') do
     end
   end
 
+  describe 'terrain data' do
+    let(:steamboat) do
+      FollowTheSnow::Resort.from_sqlite(File.join(__dir__, '..', 'data', 'features.sqlite'))
+                           .find { |r| r.name == 'Steamboat Ski Resort' }
+    end
+
+    it 'loads locality, runs, lifts and vertical from OpenSkiMap' do
+      expect(steamboat.locality).to eq('Steamboat Springs')
+      expect(steamboat.runs.sum { |_, r| r[:count] }).to eq(199)
+      expect(steamboat.runs['advanced']).to eq(count: 80, km: 50.0)
+      expect(steamboat.lifts.sum { |_, l| l[:count] }).to eq(20)
+      expect(steamboat.vertical).to eq(1103)
+    end
+  end
+
   describe '#slug' do
     it 'generates URL-friendly slugs from resort names' do
       resort = FollowTheSnow::Resort.new(name: 'Vail Resort')

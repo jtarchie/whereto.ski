@@ -29,7 +29,7 @@ shorthand, `rake fmt` clean, Herb lint passes, specs updated in the same task
   resort-local day bucketing, freezing level in ft. _Modifies: `open_meteo.rb`,
   `forecast.rb`, `resort.rb`, `context.rb`, `spec_helper.rb`._
 
-- [ ] **3. Resort terrain + geography data**: extend the SQLite `resorts` view
+- [x] **3. Resort terrain + geography data**: extend the SQLite `resorts` view
   with locality, runs by difficulty (count, km), lifts by type, vertical;
   treat OpenSkiMap elevations as meters (fix "2,105 ft" mislabel); compute
   nearby resorts (haversine, ≤150 km, top 8) once at build start. Done =

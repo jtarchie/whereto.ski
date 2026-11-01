@@ -13,6 +13,7 @@ module FollowTheSnow
       # Countries with this many or fewer resorts will show resorts directly
       # instead of states/regions, to simplify navigation
       SMALL_COUNTRY_THRESHOLD = 20
+      NEARBY_KM               = 150
 
       attr_reader :resorts
 
@@ -264,6 +265,12 @@ module FollowTheSnow
         %(<span class="imperial">#{feet.to_i.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} ft</span><span class="metric">#{meters.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} m</span>).html_safe
       end
 
+      def format_elevation_m(meters)
+        return '-' if meters.nil?
+
+        format_elevation(meters * 3.28084)
+      end
+
       # Format visibility
       def format_visibility(meters)
         return '-' if meters.nil?
@@ -311,6 +318,25 @@ module FollowTheSnow
         raw_forecasts_for(resort).sum do |forecast|
           snow_inches(forecast)
         end
+      end
+
+      # Latitude prefilter (1.4° ≈ 155 km) skips haversine for almost every pair.
+      def nearby_resorts(resort, limit: 8)
+        @nearby                                ||= {}
+        @nearby[resort.id || resort.object_id] ||= @resorts.filter_map do |other|
+          next if other.equal?(resort) || (other.lat - resort.lat).abs > 1.4
+
+          km = distance_km(resort, other)
+          { resort: other, km: km.round } if km <= NEARBY_KM
+        end.sort_by { |n| n[:km] }.first(limit)
+      end
+
+      def distance_km(from, to)
+        rad  = Math::PI / 180
+        dlat = (to.lat - from.lat) * rad
+        dlon = (to.lon - from.lon) * rad
+        h    = (Math.sin(dlat / 2)**2) + (Math.cos(from.lat * rad) * Math.cos(to.lat * rad) * (Math.sin(dlon / 2)**2))
+        12_742 * Math.asin(Math.sqrt(h))
       end
 
       def snow_summary(resort)

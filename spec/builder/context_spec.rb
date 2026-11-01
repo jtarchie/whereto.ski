@@ -99,6 +99,17 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
                                                               ])
   end
 
+  describe '#nearby_resorts' do
+    let(:neighbor) do
+      FollowTheSnow::Resort.new(id: 4, name: 'Neighbor', country_name: 'United States of America', region_name: 'Colorado', lat: 39.6, lon: -106.1)
+    end
+    let(:resorts) { [resort_with_snow, resort_without_snow, resort_in_canada, neighbor] }
+
+    it 'returns resorts within 150 km, nearest first, excluding itself' do
+      expect(context.nearby_resorts(resort_with_snow)).to eq([{ resort: neighbor, km: 14 }])
+    end
+  end
+
   describe '#snow_summary' do
     it 'combines past, 24h, 7d and 16d totals' do
       allow(resort_with_snow).to receive_messages(

@@ -59,8 +59,8 @@
     <%= h resort.region_name %>,<%= h resort.country_name %>
     <% if resort.min_elevation && resort.max_elevation %>
       <span class="ml-2">
-        📍 <%= format_elevation(resort.min_elevation) %> -
-        <%= format_elevation(resort.max_elevation) %>
+        📍 <%= format_elevation_m(resort.min_elevation) %> -
+        <%= format_elevation_m(resort.max_elevation) %>
       </span>
     <% end %>
   </p>
