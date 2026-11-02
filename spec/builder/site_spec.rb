@@ -101,4 +101,28 @@ RSpec.describe(FollowTheSnow::Builder::Site) do
 
     expect { builder.send(:buildable_states) }.to raise_error(/Limburg.*spans countries: Belgium, Netherlands/)
   end
+
+  it 'swaps a finished build over the old output, dropping stale pages' do
+    stub_weather_api
+    File.write(File.join(build_dir, 'stale.html'), 'old')
+
+    site.build!
+
+    expect(File).not_to exist(File.join(build_dir, 'stale.html'))
+    expect(Dir[File.join(build_dir, 'resorts', '*.html')].length).to eq(4)
+    expect(File).not_to exist("#{build_dir}.building")
+  end
+
+  it 'leaves the previous output untouched when a build fails midway' do
+    stub_weather_api
+    File.write(File.join(build_dir, 'old.html'), 'keep me')
+    builder = site
+    allow(builder).to receive(:generate_search_index).and_raise('boom')
+
+    expect { builder.build! }.to raise_error('boom')
+
+    expect(File.read(File.join(build_dir, 'old.html'))).to eq('keep me')
+    expect(Dir[File.join(build_dir, '**', '*.html')].length).to eq(1)
+    expect(File).not_to exist("#{build_dir}.building")
+  end
 end

@@ -6,10 +6,8 @@ require 'fileutils'
 sqlite_file = File.join(__dir__, 'data', 'features.sqlite')
 
 def build!(resorts, logger_io: $stderr, minify: true, limiter: nil)
-  build_dir = File.join(__dir__, 'docs')
-  FileUtils.rm_rf(build_dir)
-  builder   = FollowTheSnow::Builder::Site.new(
-    build_dir: build_dir,
+  builder = FollowTheSnow::Builder::Site.new(
+    build_dir: File.join(__dir__, 'docs'),
     resorts: resorts,
     source_dir: File.join(__dir__, 'pages'),
     logger_io: logger_io,

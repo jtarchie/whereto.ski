@@ -39,8 +39,24 @@ module FollowTheSnow
         @context.resorts
       end
 
+      # Renders into a sibling temp dir and swaps it in on success, so a failed build leaves the previous output
+      # untouched and pages from renamed slugs don't linger.
       def build!
         assert_unique_slugs!
+        final      = @build_dir
+        @build_dir = "#{final}.building"
+        FileUtils.rm_rf(@build_dir)
+        render_site!
+        FileUtils.rm_rf(final)
+        FileUtils.mv(@build_dir, final)
+      ensure
+        FileUtils.rm_rf(@build_dir) if final && File.exist?(@build_dir)
+        @build_dir = final if final
+      end
+
+      private
+
+      def render_site!
         FileUtils.mkdir_p(@build_dir)
         FileUtils.copy_entry(File.join(@source_dir, 'public'), @build_dir)
 
@@ -124,8 +140,6 @@ module FollowTheSnow
         generate_search_index
         generate_sitemap
       end
-
-      private
 
       def fetch_all(resorts, limiter)
         Parallel.each(resorts, in_threads: @num_threads * 10) do |resort|
