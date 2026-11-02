@@ -5,6 +5,12 @@ require 'json'
 
 module FollowTheSnow
   Forecast::OpenMeteo = Struct.new(:resort, keyword_init: true) do
+    # Guards the lazy fetch: pages render on many threads sharing one client.
+    def initialize(**)
+      super
+      @fetch_mutex = Mutex.new
+    end
+
     API_URL       = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
     # Built once: these run for every hour of every resort.
     WEATHER_CODES = {
@@ -216,27 +222,32 @@ module FollowTheSnow
     end
 
     def fetch_data
-      @fetch_data ||= begin
-        attempts = 0
-        begin
-          attempts += 1
-          response  = HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: request_params)
-          payload   = JSON.parse(response.to_s)
-          locations = payload.is_a?(Array) ? payload : [payload]
-          locations.each { |location| check_error!(response.code, location) }
-          locations
-        rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, RetryableError => e
-          raise ApiError, "Resort ID #{resort&.id || 'N/A'}: gave up after #{attempts} attempts: #{e.message}" if attempts >= MAX_ATTEMPTS
+      @fetch_mutex.synchronize { @fetch_data ||= fetch_data_uncached }
+    end
 
-          warn "[API ERROR] Resort ID #{resort&.id || 'N/A'}: #{e.class} - #{e.message}. Retrying after sleep..."
-          sleep(rand(5))
-          retry
-        end
+    def fetch_data_uncached
+      attempts = 0
+      begin
+        attempts += 1
+        response  = HTTP.timeout(10).get("#{API_URL}/v1/forecast", params: request_params)
+        payload   = JSON.parse(response.to_s)
+        locations = payload.is_a?(Array) ? payload : [payload]
+        locations.each { |location| check_error!(response.code, location) }
+        locations
+      rescue JSON::ParserError, OpenSSL::SSL::SSLError, HTTP::Error, RetryableError => e
+        raise ApiError, "Resort ID #{resort&.id || 'N/A'}: gave up after #{attempts} attempts: #{e.message}" if attempts >= MAX_ATTEMPTS
+
+        warn "[API ERROR] Resort ID #{resort&.id || 'N/A'}: #{e.class} - #{e.message}. Retrying after sleep..."
+        sleep((2**attempts) + rand) # exponential backoff + jitter
+        retry
       end
     end
 
     # Invalid keys and bad params never recover, so only 429/5xx are retried.
     def check_error!(status, payload)
+      # Non-object payload (null, string, number) is a proxy/CDN glitch: retry like a 5xx.
+      raise RetryableError, "unexpected payload: #{payload.inspect[0, 80]}" unless payload.is_a?(Hash)
+
       return unless payload['error'] || !payload.key?('daily')
 
       reason = payload['reason'] || "HTTP #{status}, no daily data"
@@ -256,8 +267,8 @@ module FollowTheSnow
         wind_gust_range       = 0..(daily.fetch('wind_gusts_10m_max')[index]&.round(2) || 0)
         wind_speed_range      = 0..(daily.fetch('wind_speed_10m_max')[index]&.round(2) || 0)
         uv_max                = daily.fetch('uv_index_max')[index]&.round(1)
-        sunshine_secs         = daily.fetch('sunshine_duration')[index].to_i
-        precip_prob           = daily.fetch('precipitation_probability_max')[index].to_i
+        sunshine_secs         = daily.fetch('sunshine_duration')[index]&.to_i
+        precip_prob           = daily.fetch('precipitation_probability_max')[index]&.to_i
         precip_sum            = daily.fetch('precipitation_sum')[index].to_f.round(2)
         rain_sum              = daily.fetch('rain_sum')[index].to_f.round(2)
 
@@ -294,13 +305,13 @@ module FollowTheSnow
           snow_depth: snow_depth[i],
           temperature: col['temperature_2m'][i]&.round(1),
           apparent_temperature: col['apparent_temperature'][i]&.round(1),
-          humidity: col['relative_humidity_2m'][i].to_i,
-          precipitation_probability: col['precipitation_probability'][i].to_i,
+          humidity: col['relative_humidity_2m'][i]&.to_i,
+          precipitation_probability: col['precipitation_probability'][i]&.to_i,
           precipitation: col['precipitation'][i]&.round(2),
           snowfall: col['snowfall'][i]&.round(2),
           weather_code: col['weather_code'][i],
           weather_description: weather_codes(col['weather_code'][i]),
-          cloud_cover: col['cloud_cover'][i].to_i,
+          cloud_cover: col['cloud_cover'][i]&.to_i,
           wind_speed: col['wind_speed_10m'][i]&.round(1),
           wind_direction: wind_direction(col['wind_direction_10m'][i]),
           wind_gust: col['wind_gusts_10m'][i]&.round(1),
@@ -317,10 +328,10 @@ module FollowTheSnow
       CurrentConditions.new(
         temperature: current.fetch('temperature_2m')&.round(1),
         apparent_temperature: current.fetch('apparent_temperature')&.round(1),
-        humidity: current.fetch('relative_humidity_2m').to_i,
+        humidity: current.fetch('relative_humidity_2m')&.to_i,
         weather_code: current.fetch('weather_code'),
         weather_description: weather_codes(current.fetch('weather_code')),
-        cloud_cover: current.fetch('cloud_cover').to_i,
+        cloud_cover: current.fetch('cloud_cover')&.to_i,
         wind_speed: current.fetch('wind_speed_10m')&.round(1),
         wind_direction: wind_direction(current.fetch('wind_direction_10m')),
         wind_gust: current.fetch('wind_gusts_10m')&.round(1),

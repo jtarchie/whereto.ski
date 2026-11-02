@@ -199,7 +199,7 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
         )
         daily    = described_class.new(forecasts: [forecast])
         delegate = daily.forecasts.first
-        expect(delegate.sunshine_duration).to eq('0m')
+        expect(delegate.sunshine_duration).to eq('--')
       end
     end
 

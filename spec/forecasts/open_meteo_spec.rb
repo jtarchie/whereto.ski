@@ -115,6 +115,15 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
         expect(forecasts[2].temp).to eq(23.7..50.7)
       end
 
+      it 'keeps nil (not 0) for missing precipitation probability and sunshine' do
+        forecasts = described_class.new(resort: resort).forecasts
+
+        expect(forecasts[0].precipitation_probability).to eq(5)
+        expect(forecasts[1].precipitation_probability).to be_nil
+        expect(forecasts[1].sunshine_duration).to be_nil
+        expect(forecasts[2].sunshine_duration).to eq(7200)
+      end
+
       it 'handles nil apparent temperature values gracefully' do
         open_meteo = described_class.new(resort: resort)
         forecasts  = open_meteo.forecasts
@@ -231,11 +240,11 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
         # First hour has nil values
         expect(hourly[0].temperature).to be_nil
         expect(hourly[0].apparent_temperature).to be_nil
-        expect(hourly[0].humidity).to eq(0) # nil.to_i returns 0
-        expect(hourly[0].precipitation_probability).to eq(0)
+        expect(hourly[0].humidity).to be_nil
+        expect(hourly[0].precipitation_probability).to be_nil
         expect(hourly[0].precipitation).to be_nil
         expect(hourly[0].snowfall).to be_nil
-        expect(hourly[0].cloud_cover).to eq(0)
+        expect(hourly[0].cloud_cover).to be_nil
         expect(hourly[0].wind_speed).to be_nil
         expect(hourly[0].wind_gust).to be_nil
         expect(hourly[0].freezing_level).to be_nil
@@ -315,9 +324,9 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
 
         expect(current.temperature).to be_nil
         expect(current.apparent_temperature).to be_nil
-        expect(current.humidity).to eq(0) # nil.to_i returns 0
+        expect(current.humidity).to be_nil
         expect(current.precipitation).to be_nil
-        expect(current.cloud_cover).to eq(0)
+        expect(current.cloud_cover).to be_nil
         expect(current.wind_speed).to be_nil
         expect(current.wind_gust).to be_nil
         expect(current.wind_direction).to eq(:N) # defaults to :N for nil
@@ -389,6 +398,41 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
         .then.to_return(status: 200, body: weather_api_body)
 
       expect(client.forecasts.length).to eq(16)
+    end
+
+    it 'backs off exponentially with jitter between retries' do
+      stub_request(:get, /api.open-meteo.com/).to_return(status: 503, body: error_body)
+      delays = []
+      allow(client).to receive(:sleep) { |d| delays << d }
+
+      expect { client.forecasts }.to raise_error(FollowTheSnow::ApiError)
+      expect(delays.length).to eq(4)
+      expect(delays).to all(be_positive)
+      delays.each_cons(2) { |a, b| expect(b).to be > a }
+    end
+
+    [['null', 'null'], ['an array of non-hashes', '[1]'], ['a string', '"oops"']].each do |label, body|
+      it "raises ApiError, not NoMethodError, when the payload is #{label}" do
+        stub_request(:get, /api.open-meteo.com/).to_return(status: 200, body: body)
+
+        expect { client.forecasts }.to raise_error(FollowTheSnow::ApiError, /unexpected payload/)
+      end
+    end
+
+    it 'makes a single request when many threads hit one client concurrently' do
+      n       = 8
+      release = Queue.new
+      stub_request(:get, /api.open-meteo.com/).to_return do
+        release.pop # hold every in-flight request until all threads are parked
+        { status: 200, body: weather_api_body }
+      end
+      workers = Array.new(n) { Thread.new { client.forecasts } }
+      # Parked = blocked in the stubbed response (unguarded) or on the mutex (guarded).
+      Thread.pass until workers.all? { |t| t.status == 'sleep' }
+      n.times { release << true }
+      workers.each(&:join)
+
+      expect(a_request(:get, /api.open-meteo.com/)).to have_been_made.once
     end
 
     it 'gives up after repeated server errors' do

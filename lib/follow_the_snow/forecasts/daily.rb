@@ -59,7 +59,9 @@ module FollowTheSnow
 
       def sunshine_duration
         # Convert seconds to hours and minutes for display
-        total_seconds = __getobj__.sunshine_duration || 0
+        total_seconds = __getobj__.sunshine_duration
+        return '--' if total_seconds.nil?
+
         hours         = total_seconds / 3600
         minutes       = (total_seconds % 3600) / 60
 
