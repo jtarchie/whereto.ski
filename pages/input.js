@@ -17,7 +17,11 @@ const safely = (init) => {
 const firstFormat = safely(initUnits);
 safely(initSearch);
 
-window.addEventListener("DOMContentLoaded", () => {
+// Rocket Loader can run this after DOMContentLoaded already fired.
+const ready = () => {
   safely(firstFormat);
   [initSnowFilter, initRankedLists, initMapLoader, initNearMe].forEach(safely);
-});
+};
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", ready);
+} else ready();
