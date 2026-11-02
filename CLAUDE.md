@@ -60,7 +60,8 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
 - **Rate limiting.** Resort pages render in parallel (50 threads) behind
   `Limiter::RateQueue` (25 resorts / 10s = 50 calls, base + summit each, half
   Open-Meteo's limit). `Site.new(limiter:)` injects the limiter (any object with
-  `#shift`); default is the `RateQueue`, specs pass a no-op. Fetch is its own
+  `#shift`); default is the `RateQueue`, specs and `rake fast` pass
+  `Builder::Unlimited` (stubbed weather). Fetch is its own
   pass before render, so every forecast is memoized (and rate-limited) before
   any page reads a neighbour's.
 - **Small countries** (`Context#small_country?`) get no state pages and no state

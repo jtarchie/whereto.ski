@@ -5,14 +5,15 @@ require 'fileutils'
 
 sqlite_file = File.join(__dir__, 'data', 'features.sqlite')
 
-def build!(resorts, logger_io: $stderr, minify: true)
+def build!(resorts, logger_io: $stderr, minify: true, limiter: nil)
   build_dir = File.join(__dir__, 'docs')
   FileUtils.rm_rf(build_dir)
   builder   = FollowTheSnow::Builder::Site.new(
     build_dir: build_dir,
     resorts: resorts,
     source_dir: File.join(__dir__, 'pages'),
-    logger_io: logger_io
+    logger_io: logger_io,
+    limiter: limiter
   )
 
   builder.build!
@@ -39,7 +40,7 @@ task fast: [:assets] do
   stub_weather_api
 
   resorts = FollowTheSnow::Resort.from_sqlite(sqlite_file)
-  build!(resorts, minify: false)
+  build!(resorts, minify: false, limiter: FollowTheSnow::Builder::Unlimited)
 end
 
 desc 'Build the CSS and JS files'

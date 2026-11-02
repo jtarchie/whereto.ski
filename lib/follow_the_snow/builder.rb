@@ -16,6 +16,11 @@ require_relative 'builder/search_index'
 
 module FollowTheSnow
   module Builder
+    # Stands in for the rate limiter where forecasts are stubbed (specs, rake fast).
+    module Unlimited
+      def self.shift; end
+    end
+
     # builds the entire site
     class Site
       def initialize(build_dir:, resorts:, source_dir:, logger_io: $stderr, limiter: nil)
@@ -64,15 +69,13 @@ module FollowTheSnow
             case filename
             when /\[resort\]/
               # Open-Meteo allows 600 calls/min; each resort is 2 (base + summit), halved for safety
-              limiter  = @limiter || Limiter::RateQueue.new(25, interval: 10, balanced: true)
-              # specs build every resort against stubbed weather; only the default limiter is skipped there
-              throttle = @limiter || !defined?(RSpec)
+              limiter = @limiter || Limiter::RateQueue.new(25, interval: 10, balanced: true)
 
               # Filter out resorts with names that don't generate valid slugs
               valid_resorts = resorts.reject { |r| r.name.to_url.empty? }
 
               # Pass 1, fetch everything first: pages read nearby resorts' forecasts, which must not bypass the limiter.
-              fetch_all(valid_resorts, limiter, throttle)
+              fetch_all(valid_resorts, limiter)
 
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 resort_filename = build_filename.gsub('[resort]', resort.slug)
@@ -124,9 +127,9 @@ module FollowTheSnow
 
       private
 
-      def fetch_all(resorts, limiter, throttle)
+      def fetch_all(resorts, limiter)
         Parallel.each(resorts, in_threads: @num_threads * 10) do |resort|
-          limiter.shift if throttle
+          limiter.shift
           resort.timezone
         end
       end

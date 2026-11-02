@@ -39,7 +39,8 @@ RSpec.describe(FollowTheSnow::Builder::Site, '#build! escaping') do
   before do
     stub_weather_api
     described_class.new(
-      build_dir: build_dir, resorts: resorts, source_dir: pages_dir, logger_io: File.open(File::NULL, 'w')
+      build_dir: build_dir, resorts: resorts, source_dir: pages_dir, logger_io: File.open(File::NULL, 'w'),
+      limiter: FollowTheSnow::Builder::Unlimited
     ).build!
   end
 

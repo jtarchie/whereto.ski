@@ -26,7 +26,7 @@ RSpec.describe(FollowTheSnow::Builder::Site) do
     FileUtils.rm_rf([source_dir, build_dir])
   end
 
-  def site(limiter: nil)
+  def site(limiter: FollowTheSnow::Builder::Unlimited)
     described_class.new(
       build_dir: build_dir, resorts: resorts, source_dir: source_dir, limiter: limiter,
       logger_io: File.open(File::NULL, 'w')

@@ -44,7 +44,8 @@ module SharedBuild
         build_dir: @build_dir,
         resorts: resorts,
         source_dir: pages_dir,
-        logger_io: File.open(File::NULL, 'w')
+        logger_io: File.open(File::NULL, 'w'),
+        limiter: FollowTheSnow::Builder::Unlimited
       )
       builder.build!
     end
