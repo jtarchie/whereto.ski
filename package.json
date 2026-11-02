@@ -3,7 +3,7 @@
     "@herb-tools/formatter": "^0.10.3",
     "@herb-tools/linter": "^0.10.3",
     "@tailwindcss/cli": "^4.1.18",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.28.2",
     "maplibre-gl": "^6.16.0",
     "tailwindcss": "^4.0.14"
   },
@@ -11,6 +11,6 @@
     "build": "npx @tailwindcss/cli --optimize -m -i ./pages/input.css -o ./pages/public/assets/main.css"
   },
   "allowScripts": {
-    "esbuild@0.27.7": true
+    "esbuild@0.28.2": true
   }
 }
