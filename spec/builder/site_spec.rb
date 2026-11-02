@@ -78,4 +78,16 @@ RSpec.describe(FollowTheSnow::Builder::Site) do
     expect(log.count { |e| e.first == :write }).to eq(4)
     expect(log.rindex { |e| e.first == :fetch }).to be < log.index { |e| e.first == :write }
   end
+
+  it 'parses each template once, however many pages render it' do
+    template = File.join(source_dir, 'page.html.erb')
+    File.write(template, 'hi')
+    allow(Tilt::ERBTemplate).to receive(:new).and_call_original
+
+    builder   = site
+    templates = Array.new(20) { Thread.new { builder.send(:erb, template) } }.map(&:value)
+
+    expect(templates.uniq.length).to eq(1)
+    expect(Tilt::ERBTemplate).to have_received(:new).once
+  end
 end

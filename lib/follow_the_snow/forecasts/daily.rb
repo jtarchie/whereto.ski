@@ -32,19 +32,6 @@ module FollowTheSnow
         snow_value(__getobj__.snow&.end)
       end
 
-      def short_icon
-        case short
-        when /Snow/i
-          '❄️'
-        when /Sunny/i
-          '☀️'
-        when /Cloud/i
-          '☁️'
-        else
-          '⛅️'
-        end
-      end
-
       def temp
         temp_value(__getobj__.temp&.end)
       end

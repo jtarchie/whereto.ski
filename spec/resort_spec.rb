@@ -198,6 +198,24 @@ RSpec.describe('Resort') do
       resort = FollowTheSnow::Resort.new(name: 'Trysil')
       expect(resort.slug).to eq('trysil')
     end
+
+    it 'transliterates the name once, but still tracks suffix and name changes' do
+      name   = +'Crystal Mountain'
+      resort = FollowTheSnow::Resort.new(name: name)
+      allow(name).to receive(:to_url).and_call_original
+
+      3.times { expect(resort.slug).to eq('crystal-mountain') }
+
+      resort.slug_suffix = 'michigan'
+      expect(resort.slug).to eq('crystal-mountain-michigan')
+
+      resort.slug_suffix = nil
+      expect(resort.slug).to eq('crystal-mountain')
+
+      resort.name = 'Vail'
+      expect(resort.slug).to eq('vail')
+      expect(name).to have_received(:to_url).once
+    end
   end
 
   describe 'from_sqlite hardening' do

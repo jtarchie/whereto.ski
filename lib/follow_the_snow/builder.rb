@@ -24,6 +24,8 @@ module FollowTheSnow
         @source_dir   = source_dir
         @num_threads  = 5
         @limiter      = limiter
+        @cache        = {}
+        @cache_lock   = Mutex.new
       end
 
       def resorts
@@ -82,14 +84,7 @@ module FollowTheSnow
                 )
               end
             when /\[state\]/
-              # Skip state pages for countries with few resorts
-              states_to_build = states.reject do |state|
-                # Find which country this state belongs to
-                sample_resort = resorts_by_state(state).first
-                @context.small_country?(sample_resort.country_name)
-              end
-
-              Parallel.each(states_to_build, in_threads: @num_threads) do |state|
+              Parallel.each(buildable_states, in_threads: @num_threads) do |state|
                 state_filename = build_filename.gsub('[state]', state.to_url)
                 write_file(
                   layout_html,
@@ -144,12 +139,7 @@ module FollowTheSnow
         require 'json'
 
         # Build lookup tables for repeated strings
-        country_list = countries
-        states.reject do |state|
-          sample_resort = resorts_by_state(state).first
-          @context.small_country?(sample_resort.country_name)
-        end
-
+        country_list   = countries
         # Create numeric lookup for countries (most repeated)
         country_lookup = country_list.each_with_index.to_h
 
@@ -172,10 +162,8 @@ module FollowTheSnow
         end
 
         # Add states (skip for small countries)
-        states.each do |state|
+        buildable_states.each do |state|
           sample_resort = resorts_by_state(state).first
-          next if @context.small_country?(sample_resort.country_name)
-
           search_data[:d] << {
             t: 's',
             n: state,
@@ -223,8 +211,7 @@ module FollowTheSnow
       def generate_redirects
         lines  = ['/snow-now / 301']
         lines += countries.map { |c| "/countries/#{c.to_url}-snow-now /countries/#{c.to_url} 301" }
-        lines += states.reject { |s| @context.small_country?(resorts_by_state(s).first.country_name) }
-                       .map { |s| "/states/#{s.to_url}-snow-now /states/#{s.to_url} 301" }
+        lines += buildable_states.map { |s| "/states/#{s.to_url}-snow-now /states/#{s.to_url} 301" }
         File.write(File.join(@build_dir, '_redirects'), "#{lines.join("\n")}\n")
       end
 
@@ -235,6 +222,11 @@ module FollowTheSnow
 
       def states
         @states ||= resorts.map(&:region_name).uniq.sort
+      end
+
+      # States get pages and search entries unless their country is small (its resorts are listed directly).
+      def buildable_states
+        @buildable_states ||= states.reject { |state| @context.small_country?(resorts_by_state(state).first.country_name) }
       end
 
       def resorts_by_country(country)
@@ -269,8 +261,7 @@ module FollowTheSnow
       end
 
       def erb(filename)
-        @cache ||= {}
-        @cache.fetch(filename, Tilt::ERBTemplate.new(filename, trim: true))
+        @cache_lock.synchronize { @cache[filename] ||= Tilt::ERBTemplate.new(filename, trim: true) }
       end
     end
   end

@@ -106,7 +106,9 @@ module FollowTheSnow
       # - Greek: Καλαβρυτα → kalabruta
       # - Turkish, German, etc.: Gölcük → golcuk, Palandöken → palandoken
       # - Special characters: rock & roll → rock-and-roll, $12 → 12-dollars
-      [name.to_url, slug_suffix].compact.join('-')
+      # Memoized per name (to_url is slow, slug is read many times per page); the suffix is applied fresh each call.
+      @slug_base = [name, name.to_url] unless @slug_base&.first == name
+      [@slug_base.last, slug_suffix].compact.join('-')
     end
 
     def forecasts(aggregates: [
