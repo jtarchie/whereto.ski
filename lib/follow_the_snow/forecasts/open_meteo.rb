@@ -4,7 +4,7 @@ require 'http'
 require 'json'
 
 module FollowTheSnow
-  Forecast::OpenMeteo = Struct.new(:resort, keyword_init: true) do
+  class Forecast::OpenMeteo < Struct.new(:resort, keyword_init: true)
     # Guards the lazy fetch: pages render on many threads sharing one client.
     def initialize(**)
       super

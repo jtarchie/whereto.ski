@@ -388,7 +388,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       stub_request(:get, /api.open-meteo.com/).to_return(status: 400, body: error_body)
 
       expect { client.forecasts }
-        .to raise_error(FollowTheSnow::ApiError, /API key is invalid/)
+        .to raise_error(FollowTheSnow::Forecast::OpenMeteo::ApiError, /API key is invalid/)
       expect(a_request(:get, /api.open-meteo.com/)).to have_been_made.once
     end
 
@@ -405,7 +405,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       delays = []
       allow(client).to receive(:sleep) { |d| delays << d }
 
-      expect { client.forecasts }.to raise_error(FollowTheSnow::ApiError)
+      expect { client.forecasts }.to raise_error(FollowTheSnow::Forecast::OpenMeteo::ApiError)
       expect(delays.length).to eq(4)
       expect(delays).to all(be_positive)
       delays.each_cons(2) { |a, b| expect(b).to be > a }
@@ -415,7 +415,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       it "raises ApiError, not NoMethodError, when the payload is #{label}" do
         stub_request(:get, /api.open-meteo.com/).to_return(status: 200, body: body)
 
-        expect { client.forecasts }.to raise_error(FollowTheSnow::ApiError, /unexpected payload/)
+        expect { client.forecasts }.to raise_error(FollowTheSnow::Forecast::OpenMeteo::ApiError, /unexpected payload/)
       end
     end
 
@@ -439,7 +439,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       stub_request(:get, /api.open-meteo.com/).to_return(status: 503, body: error_body)
 
       expect { client.forecasts }
-        .to raise_error(FollowTheSnow::ApiError, /gave up after 5 attempts/)
+        .to raise_error(FollowTheSnow::Forecast::OpenMeteo::ApiError, /gave up after 5 attempts/)
     end
   end
 

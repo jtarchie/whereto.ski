@@ -5,7 +5,7 @@ require 'active_support/core_ext/string'
 require_relative '../builder/units'
 
 module FollowTheSnow
-  Forecast::Daily = Struct.new(:forecasts, keyword_init: true) do
+  class Forecast::Daily < Struct.new(:forecasts, keyword_init: true)
     class ForecastDelegate < SimpleDelegator
       include Builder::Units
 
