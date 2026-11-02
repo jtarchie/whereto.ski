@@ -183,6 +183,13 @@ module FollowTheSnow
       # States get pages and search entries unless their country is small (its resorts are listed directly).
       def buildable_states
         @buildable_states ||= states.reject { |state| @context.small_country?(resorts_by_state(state).first.country_name) }
+                                    .each { |state| assert_single_country!(state) }
+      end
+
+      # States are keyed by region name alone, so a page-bearing state spanning two countries would merge them.
+      def assert_single_country!(state)
+        countries = resorts_by_state(state).map(&:country_name).uniq
+        raise "state #{state.inspect} spans countries: #{countries.join(', ')}" if countries.size > 1
       end
 
       def resorts_by_country(country)

@@ -90,4 +90,15 @@ RSpec.describe(FollowTheSnow::Builder::Site) do
     expect(templates.uniq.length).to eq(1)
     expect(Tilt::ERBTemplate).to have_received(:new).once
   end
+
+  it 'refuses to give a state page to a region name shared by two countries' do
+    resorts = [
+      FollowTheSnow::Resort.new(id: 1, name: 'Alpha', lat: 50.0, lon: 5.0, region_name: 'Limburg', country_name: 'Belgium'),
+      FollowTheSnow::Resort.new(id: 2, name: 'Beta', lat: 51.0, lon: 5.5, region_name: 'Limburg', country_name: 'Netherlands')
+    ]
+    builder = described_class.new(build_dir: build_dir, resorts: resorts, source_dir: source_dir, logger_io: File.open(File::NULL, 'w'))
+    allow(builder.instance_variable_get(:@context)).to receive(:small_country?).and_return(false)
+
+    expect { builder.send(:buildable_states) }.to raise_error(/Limburg.*spans countries: Belgium, Netherlands/)
+  end
 end
