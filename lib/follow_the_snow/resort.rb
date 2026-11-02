@@ -26,6 +26,7 @@ module FollowTheSnow
   ) do
     def self.from_sqlite(filename)
       db      = SQLite3::Database.new filename
+      results = []
       rows    = db.prepare(<<~SQL).execute
         SELECT
           resorts.*,
@@ -34,8 +35,9 @@ module FollowTheSnow
           payload->'$.properties.statistics.lifts.byType' AS lifts
         FROM resorts
         JOIN features ON features.id = resorts.id
+        WHERE resorts.name IS NOT NULL AND resorts.name != ''
+          AND resorts.lat IS NOT NULL AND resorts.lon IS NOT NULL
       SQL
-      results = []
       rows.each_hash do |payload|
         payload['runs']  = parse_stats(payload['runs'])
         payload['lifts'] = parse_stats(payload['lifts'])
@@ -44,6 +46,8 @@ module FollowTheSnow
       rows.close
 
       disambiguate(dedupe(results))
+    ensure
+      db&.close
     end
 
     # OpenSkiMap sometimes lists one resort twice, split across a region border or spelled two ways ("Эльбрус"/"Elbrus"):

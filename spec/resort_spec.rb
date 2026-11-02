@@ -127,4 +127,61 @@ RSpec.describe('Resort') do
       expect(resort.slug).to eq('trysil')
     end
   end
+
+  describe 'from_sqlite hardening' do
+    def feature(name:, coords:)
+      props        = { status: 'operating', activities: ['downhill'], location: { 'iso3166_1Alpha2' => 'us', 'iso3166_2' => 'us-co' } }
+      props[:name] = name unless name.nil?
+      { type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: coords } }.to_json
+    end
+
+    let(:path) { File.join(Dir.mktmpdir, 'test.sqlite') }
+
+    before do
+      db = SQLite3::Database.new(path)
+      db.execute_batch(<<~SQL)
+        CREATE TABLE countries(id TEXT, alpha2 TEXT, alpha3 TEXT, name TEXT);
+        CREATE TABLE subdivisions(country TEXT, code TEXT, name TEXT);
+        CREATE TABLE features (id INTEGER PRIMARY KEY, payload BLOB) STRICT;
+        INSERT INTO countries VALUES ('1', 'US', 'USA', 'United States');
+        INSERT INTO subdivisions VALUES ('US', 'US-CO', 'Colorado');
+        CREATE VIEW resorts AS SELECT
+          features.id,
+          payload->>'$.properties.name' AS name,
+          payload->>'$.geometry.coordinates[0]' AS lon,
+          payload->>'$.geometry.coordinates[1]' AS lat,
+          payload->>'$.properties.websites[0]' AS url,
+          payload->>'$.properties.statistics.minElevation' AS min_elevation,
+          payload->>'$.properties.statistics.maxElevation' AS max_elevation,
+          UPPER(payload->>'$.properties.location.iso3166_1Alpha2') AS country_code,
+          UPPER(payload->>'$.properties.location.iso3166_2') AS region_code,
+          subdivisions.name AS region_name,
+          countries.name AS country_name
+        FROM features
+        JOIN subdivisions, countries
+        ON UPPER(subdivisions.code) = region_code AND UPPER(subdivisions.country) = country_code AND UPPER(countries.alpha2) = country_code;
+      SQL
+      [
+        feature(name: 'Good Peak', coords: [-106.0, 39.0]),
+        feature(name: nil, coords: [-105.0, 38.0]),
+        feature(name: '', coords: [-104.0, 37.0]),
+        feature(name: 'No Coords', coords: [])
+      ].each_with_index { |json, i| db.execute('INSERT INTO features VALUES (?, ?)', [i + 1, SQLite3::Blob.new(json)]) }
+      db.close
+    end
+
+    it 'skips rows with NULL/empty name or missing coordinates' do
+      expect(FollowTheSnow::Resort.from_sqlite(path).map(&:name)).to eq(['Good Peak'])
+    end
+
+    it 'closes the database handle' do
+      handles = []
+      allow(SQLite3::Database).to(receive(:new).and_wrap_original { |m, *a| m.call(*a).tap { |d| handles << d } })
+
+      FollowTheSnow::Resort.from_sqlite(path)
+
+      expect(handles).not_to be_empty
+      expect(handles).to all(be_closed)
+    end
+  end
 end
