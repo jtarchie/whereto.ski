@@ -23,11 +23,12 @@ Git LFS — needs `git lfs pull` or nothing builds.
   `pages/public/assets/main.{css,js}` (gitignored; build before browser specs or
   a fresh build).
 - `rake fast` — full site build with stubbed weather (reuses `stub_weather_api`
-  from `spec/spec_helper.rb`). No network, no `minify`.
+  from `spec/spec_helper.rb`). No network; `build!(minify: false)` skips
+  `minify`.
 - `rake build[limit]` — real build with live API, then `minify` (must be on
   PATH). `limit` = first N resorts.
-- `rake fmt` — `deno fmt`, `rubocop -A`, Herb linter `--fix` + formatter on
-  `pages/`.
+- `rake fmt` — `rubocop -A`, Herb linter `--fix` + formatter on `pages/`.
+  (JS/CSS/Markdown are not auto-formatted.)
 - `rake a11y` — vnu + pa11y-ci (axe + htmlcs, WCAG2AA incl. contrast) against an
   existing `docs/` (run a build first). If pa11y can't find Chrome, set
   `PUPPETEER_EXECUTABLE_PATH` to a local Chrome.
@@ -58,8 +59,10 @@ Pipeline: `Resort.from_sqlite` → `Builder::Site#build!` → `docs/`.
   classes (`Forecast::Daily`) chained via `reduce`. So rendering = network I/O.
 - **Rate limiting.** Resort pages render in parallel (50 threads) behind
   `Limiter::RateQueue` (25 resorts / 10s = 50 calls, base + summit each, half
-  Open-Meteo's limit); limiter is skipped when `RSpec` is defined. Resorts
-  render first so state/country pages hit memoized forecasts.
+  Open-Meteo's limit). `Site.new(limiter:)` injects the limiter (any object with
+  `#shift`); default is the `RateQueue`, specs pass a no-op. Fetch is its own
+  pass before render, so every forecast is memoized (and rate-limited) before
+  any page reads a neighbour's.
 - **Small countries** (`Context#small_country?`) get no state pages and no state
   entries in the search index — keep the builder and search index in agreement.
 - **Search index** `docs/assets/search-data.json` uses compact keys (`t` type

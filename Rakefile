@@ -5,7 +5,7 @@ require 'fileutils'
 
 sqlite_file = File.join(__dir__, 'data', 'features.sqlite')
 
-def build!(resorts, logger_io: $stderr)
+def build!(resorts, logger_io: $stderr, minify: true)
   build_dir = File.join(__dir__, 'docs')
   FileUtils.rm_rf(build_dir)
   builder   = FollowTheSnow::Builder::Site.new(
@@ -16,7 +16,7 @@ def build!(resorts, logger_io: $stderr)
   )
 
   builder.build!
-  sh('minify docs/ --all --recursive -o docs/')
+  sh('minify docs/ --all --recursive -o docs/') if minify
 end
 
 desc 'Build the site with the latest data from the SQLite database'
@@ -39,8 +39,7 @@ task fast: [:assets] do
   stub_weather_api
 
   resorts = FollowTheSnow::Resort.from_sqlite(sqlite_file)
-  # Suppress logging for faster builds
-  build!(resorts)
+  build!(resorts, minify: false)
 end
 
 desc 'Build the CSS and JS files'
@@ -56,7 +55,6 @@ end
 
 desc 'Format the codebase'
 task :fmt do
-  sh('deno fmt .')
   sh('rubocop -A')
   sh('npx --no-install @herb-tools/linter pages/ --fix')
   sh('npx --no-install @herb-tools/formatter pages/')
