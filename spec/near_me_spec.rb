@@ -110,4 +110,11 @@ RSpec.describe('Near me', :js, type: :feature) do
     expect(page).to have_content('No snow forecast in the next 7 days within')
     expect(page).to have_css('#near-me tbody tr', text: 'Dry Hill')
   end
+
+  it 'still initializes when ?sort= is not a valid selector fragment' do
+    visit '/states/colorado?sort=%22%5D'
+
+    expect(page).to have_css('button[data-near-me]')
+    expect(page).to have_css('[data-ranked-section] table')
+  end
 end

@@ -143,6 +143,25 @@ RSpec.describe('Search', :js, type: :feature) do
     expect(page).to have_no_css('#search-results a')
   end
 
+  it 'drops a pending search when the dialog closes' do
+    open_search
+    fill_in 'search-input', with: 'Vail'
+    within(results) { expect(page).to have_link('Vail') }
+
+    # Type and close in one tick so the debounce is still pending; a later
+    # timer (queued after the 300ms one) flags that the delay has elapsed.
+    execute_script(<<~JS)
+      const input = document.getElementById('search-input');
+      input.value = 'Steamboat';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      document.getElementById('search-modal').close();
+      setTimeout(() => { document.documentElement.dataset.debounced = '1' }, 400);
+    JS
+    expect(page).to have_css('html[data-debounced]', visible: :all)
+
+    expect(page).to have_no_css('#search-results a', visible: :all)
+  end
+
   it 'shows an error when the index cannot load, and retries on the next open' do
     visit '/'
     execute_script(<<~JS)

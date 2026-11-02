@@ -23,8 +23,17 @@ const SNOW_STEPS = [1, 2, 6, 12];
 const snowLevel = (inches) =>
   inches <= 0 ? 0 : SNOW_STEPS.filter((step) => inches >= step).length + 1;
 
+// Storage throws when blocked (Safari, cookies off).
+const pref = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
 // Same preference and default as main.js.
-const metric = (localStorage.getItem("preferredUnits") ??
+const metric = (pref("preferredUnits") ??
   (navigator.language === "en-US" ? "imperial" : "metric")) === "metric";
 const amount = (inches) =>
   metric

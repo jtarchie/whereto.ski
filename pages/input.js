@@ -1,4 +1,17 @@
 (function () {
+  // Storage throws when blocked (Safari, cookies off); never let that break the page.
+  // Falls back to memory so toggles still work for the current page view.
+  const memory = new Map();
+  function pref(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, value);
+    } catch {
+      if (value === undefined) return memory.get(key) ?? null;
+      memory.set(key, String(value));
+    }
+  }
+
   const $units = document.getElementById("unit-toggle");
   const $tz = document.getElementById("tz-select");
 
@@ -15,7 +28,7 @@
   );
 
   const isMetric = () => {
-    const saved = localStorage.getItem("preferredUnits");
+    const saved = pref("preferredUnits");
     return saved ? saved === "metric" : navigator.language !== "en-US";
   };
 
@@ -23,12 +36,12 @@
     document.querySelector("[data-resort-tz]")?.dataset.resortTz;
 
   function timeZone() {
-    const pref = localStorage.getItem("preferredTimezone") || "auto";
-    const zone = pref === "auto"
+    const saved = pref("preferredTimezone") || "auto";
+    const zone = saved === "auto"
       ? undefined
-      : pref === "resort"
+      : saved === "resort"
       ? resortZone()
-      : pref;
+      : saved;
     try {
       new Intl.DateTimeFormat(undefined, { timeZone: zone });
       return zone;
@@ -90,12 +103,12 @@
     (Intl.supportedValuesOf?.("timeZone") ?? []).forEach((zone) => {
       $tz.add(new Option(zone.replaceAll("_", " "), zone));
     });
-    $tz.value = localStorage.getItem("preferredTimezone") || "auto";
+    $tz.value = pref("preferredTimezone") || "auto";
     if (!$tz.value) $tz.value = "auto";
   }
 
   $units.addEventListener("change", () => {
-    localStorage.setItem(
+    pref(
       "preferredUnits",
       $units.checked ? "metric" : "imperial",
     );
@@ -103,7 +116,7 @@
   });
 
   $tz.addEventListener("change", () => {
-    localStorage.setItem("preferredTimezone", $tz.value);
+    pref("preferredTimezone", $tz.value);
     formatAll();
   });
 
@@ -116,7 +129,7 @@
     const filterSnowToggle = document.getElementById("filter-snow-toggle");
     if (filterSnowToggle) {
       // Load saved filter preference
-      const filterSnowOnly = localStorage.getItem("filterSnowOnly") === "true";
+      const filterSnowOnly = pref("filterSnowOnly") === "true";
       filterSnowToggle.checked = filterSnowOnly;
       if (filterSnowOnly) {
         document.body.classList.add("filter-snow-only");
@@ -130,13 +143,17 @@
         } else {
           document.body.classList.remove("filter-snow-only");
         }
-        localStorage.setItem("filterSnowOnly", isChecked);
+        pref("filterSnowOnly", isChecked);
       });
     }
 
-    initRankedLists();
-    initMapLoader();
-    initNearMe();
+    [initRankedLists, initMapLoader, initNearMe].forEach((init) => {
+      try {
+        init();
+      } catch (error) {
+        console.error(error);
+      }
+    });
   });
 
   // MapLibre is ~400 KB gz, so it loads only when a map placeholder nears the viewport.
@@ -217,7 +234,12 @@
     });
 
     const requested = new URLSearchParams(location.search).get("sort");
-    if (requested && table.querySelector(`button[data-sort="${requested}"]`)) {
+    if (
+      requested &&
+      [...table.querySelectorAll("thead button[data-sort]")].some((b) =>
+        b.dataset.sort === requested
+      )
+    ) {
       apply(requested);
     }
   }
@@ -424,7 +446,7 @@
     const chip = document.querySelector("[data-near-me]");
     const list = document.querySelector("[data-ranked-section]");
     if (!chip || !list || !navigator.geolocation) return;
-    if (localStorage.getItem("nearMeDenied")) return;
+    if (pref("nearMeDenied")) return;
     chip.hidden = false;
     chip.setAttribute("aria-pressed", "false");
 
@@ -501,7 +523,7 @@
         (error) => {
           done();
           if (error.code === error.PERMISSION_DENIED) {
-            localStorage.setItem("nearMeDenied", "1");
+            pref("nearMeDenied", "1");
             chip.hidden = true;
             reset();
           } else {
@@ -526,14 +548,16 @@
   // Debounce function to avoid searching on every keystroke
   function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
+    executedFunction.cancel = () => clearTimeout(timeout);
+    return executedFunction;
+    function executedFunction(...args) {
       const later = () => {
         clearTimeout(timeout);
         func(...args);
       };
       clearTimeout(timeout);
       timeout = setTimeout(later, wait);
-    };
+    }
   }
 
   const debouncedSearch = debounce(performSearch, 300);
@@ -581,6 +605,7 @@
 
   // Reset modal styles when closed
   modal.addEventListener("close", () => {
+    debouncedSearch.cancel();
     searchInput.value = "";
     searchResults.replaceChildren();
     show(searchEmpty, false);
