@@ -51,23 +51,36 @@ module FollowTheSnow
     end
 
     # OpenSkiMap sometimes lists one resort twice, split across a region border or spelled two ways ("Эльбрус"/"Elbrus"):
-    # same URL slug within ~10 km.
+    # same URL slug within ~10 km. The lowest id survives (the order rows already arrive in), so the result doesn't
+    # depend on query order. Survivors keep their input order.
     def self.dedupe(resorts)
-      resorts.group_by(&:slug).values.flat_map do |same|
-        same.each_with_object([]) do |resort, kept|
-          kept << resort unless kept.any? { |k| (k.lat - resort.lat).abs < 0.1 && (k.lon - resort.lon).abs < 0.1 }
+      kept = resorts.group_by(&:slug).values.flat_map do |same|
+        same.sort_by(&:id).each_with_object([]) do |resort, winners|
+          winners << resort unless winners.any? { |k| (k.lat - resort.lat).abs < 0.1 && (k.lon - resort.lon).abs < 0.1 }
         end
-      end
+      end.to_set(&:object_id)
+
+      resorts.select { |resort| kept.include?(resort.object_id) }
     end
 
     # Different resorts can share a URL (two Crystal Mountains); the one with the most runs keeps it, the rest get
-    # their region appended.
+    # their region appended. Same-name resorts in one region still collide, so the id is the last-resort suffix.
     def self.disambiguate(resorts)
-      resorts.group_by(&:slug).except('').each_value do |same|
-        by_size                                            = same.sort_by { |resort| -(resort.runs || {}).sum { |_, stat| stat[:count] } }
-        by_size.drop(1).each { |resort| resort.slug_suffix = resort.region_name.to_url }
-      end
+      named = resorts.reject { |resort| resort.slug.empty? }
+      suffix_losers(named) { |resort| resort.region_name.to_url }
+      suffix_losers(named) { |resort| [resort.slug_suffix, resort.id].compact.join('-') }
       resorts
+    end
+
+    # Within each group sharing a slug, everyone but the biggest (most runs, then lowest id) gets a new suffix.
+    def self.suffix_losers(resorts)
+      resorts.group_by(&:slug).each_value do |same|
+        same.sort_by { |resort| [-run_count(resort), resort.id] }.drop(1).each { |resort| resort.slug_suffix = yield(resort) }
+      end
+    end
+
+    def self.run_count(resort)
+      (resort.runs || {}).sum { |_, stat| stat[:count] }
     end
 
     # OpenSkiMap stats: { "advanced" => { count:, km: } }, empty when unmapped.
@@ -117,12 +130,17 @@ module FollowTheSnow
     delegate :base_forecasts, :base_hourly_forecasts, :past_snowfall, :snow_depth, :timezone,
              to: :forecast_client
 
+    FORECAST_CLIENT_LOCK = Mutex.new
+
     private
 
+    # Resort pages render on many threads; without the lock two could each build (and fetch with) their own client.
     def forecast_client
-      @forecast_client ||= Forecast::OpenMeteo.new(
-        resort: self
-      )
+      @forecast_client || FORECAST_CLIENT_LOCK.synchronize do
+        @forecast_client ||= Forecast::OpenMeteo.new(
+          resort: self
+        )
+      end
     end
   end
 end

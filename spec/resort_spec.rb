@@ -36,6 +36,78 @@ RSpec.describe('Resort') do
     end
   end
 
+  describe '.dedupe' do
+    def resort(id:, runs: {}, lat: 46.0, lon: 7.0, name: 'Twin Peaks')
+      FollowTheSnow::Resort.new(id: id, name: name, lat: lat, lon: lon, runs: runs, region_name: 'Valais')
+    end
+
+    let(:mapped)   { resort(id: 9, runs: { 'easy' => { count: 20, km: 10.0 } }, lat: 46.05) }
+    let(:unmapped) { resort(id: 5) }
+
+    it 'keeps the lowest id whatever order rows arrive in' do
+      expect(FollowTheSnow::Resort.dedupe([unmapped, mapped])).to eq([unmapped])
+      expect(FollowTheSnow::Resort.dedupe([mapped, unmapped])).to eq([unmapped])
+    end
+
+    it 'keeps same-name resorts that are far apart, in input order' do
+      far = resort(id: 1, lat: 50.0)
+
+      expect(FollowTheSnow::Resort.dedupe([unmapped, far, mapped])).to eq([unmapped, far])
+    end
+  end
+
+  describe '.disambiguate' do
+    def resort(id:, region:, lat:, runs: {})
+      FollowTheSnow::Resort.new(id: id, name: 'Crystal Mountain', region_name: region, lat: lat, lon: 0.0, runs: runs)
+    end
+
+    it 'suffixes the region on the smaller resort and leaves the largest URL alone' do
+      big   = resort(id: 1, region: 'Washington', lat: 46.0, runs: { 'easy' => { count: 9, km: 1.0 } })
+      small = resort(id: 2, region: 'Michigan', lat: 44.0)
+
+      FollowTheSnow::Resort.disambiguate([small, big])
+
+      expect([big.slug, small.slug]).to eq(%w[crystal-mountain crystal-mountain-michigan])
+    end
+
+    it 'falls back to the id when same-name resorts share a region and stay apart' do
+      big    = resort(id: 1, region: 'Washington', lat: 46.0, runs: { 'easy' => { count: 9, km: 1.0 } })
+      second = resort(id: 2, region: 'Michigan', lat: 44.0)
+      third  = resort(id: 3, region: 'Michigan', lat: 40.0)
+
+      FollowTheSnow::Resort.disambiguate([third, second, big])
+
+      expect([big, second, third].map(&:slug))
+        .to eq(%w[crystal-mountain crystal-mountain-michigan crystal-mountain-michigan-3])
+    end
+
+    it 'is independent of input order' do
+      resorts = [resort(id: 2, region: 'Michigan', lat: 44.0), resort(id: 3, region: 'Michigan', lat: 40.0)]
+      slugs   = ->(list) { FollowTheSnow::Resort.disambiguate(list.map(&:dup)).to_h { |r| [r.id, r.slug] } }
+
+      expect(slugs.call(resorts)).to eq(slugs.call(resorts.reverse))
+    end
+  end
+
+  describe '#forecast_client' do
+    it 'builds one client even when threads race to ask for it' do
+      resort  = FollowTheSnow::Resort.new(id: 1, name: 'Racy')
+      created = Queue.new
+      go      = Queue.new
+      allow(FollowTheSnow::Forecast::OpenMeteo).to receive(:new) do
+        created << true
+        Thread.pass
+        double(timezone: 'UTC')
+      end
+
+      threads = Array.new(20) { Thread.new { go.pop && resort.timezone } }
+      20.times { go << true }
+      threads.each(&:join)
+
+      expect(created.size).to eq(1)
+    end
+  end
+
   describe 'terrain data' do
     let(:steamboat) do
       FollowTheSnow::Resort.from_sqlite(File.join(__dir__, '..', 'data', 'features.sqlite'))

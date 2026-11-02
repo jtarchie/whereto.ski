@@ -16,13 +16,14 @@ module FollowTheSnow
   module Builder
     # builds the entire site
     class Site
-      def initialize(build_dir:, resorts:, source_dir:, logger_io: $stderr)
+      def initialize(build_dir:, resorts:, source_dir:, logger_io: $stderr, limiter: nil)
         @build_dir    = build_dir
         @context      = Context.new(resorts: resorts, source_dir: source_dir)
         @logger       = Ougai::Logger.new(logger_io)
         @logger.level = Ougai::Logger::DEBUG
         @source_dir   = source_dir
         @num_threads  = 5
+        @limiter      = limiter
       end
 
       def resorts
@@ -30,6 +31,7 @@ module FollowTheSnow
       end
 
       def build!
+        assert_unique_slugs!
         FileUtils.mkdir_p(@build_dir)
         FileUtils.copy_entry(File.join(@source_dir, 'public'), @build_dir)
 
@@ -58,16 +60,17 @@ module FollowTheSnow
             case filename
             when /\[resort\]/
               # Open-Meteo allows 600 calls/min; each resort is 2 (base + summit), halved for safety
-              limiter = Limiter::RateQueue.new(25, interval: 10, balanced: true)
+              limiter  = @limiter || Limiter::RateQueue.new(25, interval: 10, balanced: true)
+              # specs build every resort against stubbed weather; only the default limiter is skipped there
+              throttle = @limiter || !defined?(RSpec)
 
               # Filter out resorts with names that don't generate valid slugs
               valid_resorts = resorts.reject { |r| r.name.to_url.empty? }
 
-              # Fetch everything first: pages read nearby resorts' forecasts, which must not bypass the limiter.
-              Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
-                limiter.shift unless defined?(RSpec)
-                resort.timezone
+              # Pass 1, fetch everything first: pages read nearby resorts' forecasts, which must not bypass the limiter.
+              fetch_all(valid_resorts, limiter, throttle)
 
+              Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 resort_filename = build_filename.gsub('[resort]', resort.slug)
                 write_file(
                   layout_html,
@@ -123,6 +126,19 @@ module FollowTheSnow
       end
 
       private
+
+      def fetch_all(resorts, limiter, throttle)
+        Parallel.each(resorts, in_threads: @num_threads * 10) do |resort|
+          limiter.shift if throttle
+          resort.timezone
+        end
+      end
+
+      # Two resorts on one slug would silently overwrite each other's page; Resort.disambiguate should make this impossible.
+      def assert_unique_slugs!
+        dupes = resorts.map(&:slug).reject(&:empty?).tally.select { |_, count| count > 1 }.keys
+        raise "duplicate resort slug(s): #{dupes.join(', ')}" unless dupes.empty?
+      end
 
       def generate_search_index
         require 'json'
