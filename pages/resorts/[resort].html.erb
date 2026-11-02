@@ -67,14 +67,7 @@
       ["Next 7 days", summary[:next_7d]],
       ["16 days", summary[:next_16d]]
     ].each do |label, inches| %>
-          <% level = snow_level(inches) %>
-
-          <div
-            class="
-              rounded-sm border p-3
-              <%= level.zero? ? 'text-ink-3' : "border-transparent bg-snow-#{level} text-on-snow-#{level}" %>
-            "
-          >
+          <div class="rounded-sm border p-3 <%= snow_cell_class(inches, border: true) %>">
             <dt class="text-xs font-medium tracking-wide uppercase">
               <%= label %>
             </dt>
@@ -223,8 +216,6 @@
 
         <ol class="divide-y border-y text-sm">
           <% nearby.each do |n| %>
-            <% level = snow_level(n[:next_7d]) %>
-
             <li class="flex items-baseline gap-3 py-3">
               <a
                 href="/resorts/<%= n[:resort].slug %>"
@@ -238,7 +229,7 @@
               <span
                 class="
                   w-14 shrink-0 rounded-sm px-1.5 text-right font-medium
-                  <%= level.zero? ? 'text-ink-3' : "bg-snow-#{level} text-on-snow-#{level}" %>
+                  <%= snow_cell_class(n[:next_7d]) %>
                 "
               >
                 <%= snow_value(n[:next_7d]) %>
@@ -373,7 +364,7 @@
                   <%= weather_icon(hour.weather_code, is_day: hour.is_day) %>
                 </td>
 
-                <td class="<%= level.zero? ? 'text-ink-3' : "bg-snow-#{level} font-medium text-on-snow-#{level}" %>">
+                <td class="<%= snow_cell_class(hour.snowfall, bold: true) %>">
                   <%= level.zero? ? "–" : snow_value(hour.snowfall) %>
                 </td>
 
@@ -426,7 +417,7 @@
                   <%= day_name(day.time_of_day, index) %>
                 </th>
 
-                <td class="<%= level.zero? ? 'text-ink-3' : "bg-snow-#{level} font-medium text-on-snow-#{level}" %>">
+                <td class="<%= snow_cell_class(inches, bold: true) %>">
                   <%= level.zero? ? "–" : snow_value(inches) %>
                 </td>
 

@@ -99,7 +99,7 @@
 
             <td
               data-s="<%= key %>"
-              class="<%= "bg-snow-#{level} text-on-snow-#{level}" unless level.zero? %>"
+              class="<%= snow_cell_class(inches, zero: nil) %>"
             >
               <% if level.zero? %>
                 –

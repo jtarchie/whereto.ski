@@ -39,9 +39,9 @@ linter:
     html-require-script-nonce:
       enabled: false
 
-    # Intentional pattern: `ski-day-<%= rating %>` maps to project-defined
-    # semantic classes in pages/input.css (.ski-day-epic / .ski-day-good / ...),
-    # which are real CSS classes, not dynamically-built Tailwind utilities.
+    # Intentional pattern: `bg-snow-<%= level %>` etc. are built dynamically;
+    # the `@source inline` safelist in pages/input.css keeps Tailwind from
+    # purging them.
     erb-no-interpolated-class-names:
       enabled: false
 

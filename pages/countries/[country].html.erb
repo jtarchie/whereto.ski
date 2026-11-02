@@ -1,7 +1,6 @@
 <% all = ranked(resorts_for_country(country))
   small = small_country?(country)
   list = small ? all : all.first(25)
-  snowing = all.count { |r| snow_summary(r)[:next_7d].positive? }
   other = snowiest_area(resorts_by_countries, except: country) %>
 
 <!--

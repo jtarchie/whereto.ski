@@ -15,8 +15,6 @@
 
       <tbody>
         <% snowing.each do |row| %>
-          <% level = snow_level(row[:summary][:next_7d]) %>
-
           <tr>
             <td>
               <a href="<%= href.call(row[:name]) %>"><%= h row[:name] %></a>
@@ -26,7 +24,7 @@
 
             <td class="num"><%= row[:snowing] %> / <%= row[:total] %></td>
 
-            <td class="num bg-snow-<%= level %> text-on-snow-<%= level %>">
+            <td class="num <%= snow_cell_class(row[:summary][:next_7d]) %>">
               <%= snow_value(row[:summary][:next_7d]) %>
             </td>
           </tr>

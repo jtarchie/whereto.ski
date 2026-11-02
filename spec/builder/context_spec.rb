@@ -237,6 +237,26 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
     end
   end
 
+  describe '#snow_cell_class' do
+    it 'returns the muted class for zero snow' do
+      expect(context.snow_cell_class(0)).to eq('text-ink-3')
+    end
+
+    it 'returns nil for zero snow when zero: nil' do
+      expect(context.snow_cell_class(0, zero: nil)).to be_nil
+    end
+
+    it 'returns the level background and text classes' do
+      expect(context.snow_cell_class(0.5)).to eq('bg-snow-1 text-on-snow-1')
+      expect(context.snow_cell_class(7)).to eq('bg-snow-4 text-on-snow-4')
+    end
+
+    it 'supports bold and border variants in the original class order' do
+      expect(context.snow_cell_class(3, bold: true)).to eq('bg-snow-3 font-medium text-on-snow-3')
+      expect(context.snow_cell_class(3, border: true)).to eq('border-transparent bg-snow-3 text-on-snow-3')
+    end
+  end
+
   describe '#format_snow_total' do
     {
       0 => '0″', 5 => '5″', 12.5 => '13″', 7.849 => '7.8″', 0.5 => '0.5″', 0.138 => '0.1″'

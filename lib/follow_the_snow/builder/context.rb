@@ -58,11 +58,6 @@ module FollowTheSnow
         resorts_by_countries.fetch(country)
       end
 
-      # Get current conditions for a resort
-      def current_conditions_for(resort)
-        resort.current_conditions
-      end
-
       # Get hourly forecasts for a resort (next 48 hours by default)
       def hourly_forecasts_for(resort, hours: 48)
         resort.hourly_forecasts.take(hours)
@@ -90,16 +85,12 @@ module FollowTheSnow
         end
       end
 
-      def format_temperature(fahrenheit)
-        temp_value(fahrenheit)
-      end
+      # Class string for a snow-amount cell; `zero` is returned when there is no snow.
+      def snow_cell_class(inches, bold: false, border: false, zero: 'text-ink-3')
+        level = snow_level(inches)
+        return zero if level.zero?
 
-      def format_wind(speed, direction, gust: nil)
-        return '–' if speed.nil?
-
-        result  = "#{direction} ".html_safe + speed_value(speed)
-        result += ' (gusts '.html_safe + speed_value(gust) + ')'.html_safe if gust && gust > speed
-        result
+        [('border-transparent' if border), "bg-snow-#{level}", ('font-medium' if bold), "text-on-snow-#{level}"].compact.join(' ')
       end
 
       def format_elevation(feet)
@@ -108,16 +99,6 @@ module FollowTheSnow
 
       def format_elevation_m(meters)
         meters && height_value(meters * 3.28084)
-      end
-
-      def format_hour(time)
-        time_value(time, format: :hour)
-      end
-
-      def format_snowfall(inches)
-        return '–' if inches.nil? || inches.zero?
-
-        snow_value(inches)
       end
 
       def current_timestamp

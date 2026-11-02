@@ -5,6 +5,8 @@
 @source "./*.erb";
 @source "./**/*.js";
 @source inline("bg-snow-{1,2,3,4,5} text-on-snow-{1,2,3,4,5} bg-mark-{1,2,3,4,5} border-mark-{1,2,3,4,5}");
+/* Context#snow_cell_class emits these from Ruby, which Tailwind does not scan. */
+@source inline("border-transparent font-medium text-ink-3");
 
 @layer base {
   html {

@@ -1,6 +1,5 @@
 <% country = resorts.first.country_name
   list = ranked(resorts)
-  snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
   sibling = snowiest_area(regions_of(country), except: state) %>
 
 <!--
