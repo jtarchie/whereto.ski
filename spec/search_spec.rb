@@ -74,7 +74,7 @@ RSpec.describe('Search', :js, type: :feature) do
   it 'renders OpenStreetMap names as text, never markup' do
     visit '/'
     execute_script(<<~JS)
-      const index = { cl: ['Nowhere'], d: [{ t: 'r', n: '<img src=x onerror="window.pwned=1">Evil', c: 0, s: 'R', u: '/x', w: 3 }] };
+      const index = { steps: [1, 2, 6, 12], cl: ['Nowhere'], d: [{ t: 'r', n: '<img src=x onerror="window.pwned=1">Evil', c: 0, s: 'R', u: '/x', w: 3 }] };
       window.fetch = () => Promise.resolve(new Response(JSON.stringify(index)));
     JS
     find('button[aria-label="Search"]').click

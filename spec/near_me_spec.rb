@@ -78,7 +78,7 @@ RSpec.describe('Near me', :js, type: :feature) do
 
   it 'lists the nearest resorts when none nearby has snow' do
     execute_script(<<~JS)
-      const index = { cl: ['Nowhere'], d: [{ t: 'r', n: 'Dry Hill', c: 0, s: 'Flat', u: '/x', l: [10, 10] }] };
+      const index = { steps: [1, 2, 6, 12], cl: ['Nowhere'], d: [{ t: 'r', n: 'Dry Hill', c: 0, s: 'Flat', u: '/x', l: [10, 10] }] };
       window.fetch = () => Promise.resolve(new Response(JSON.stringify(index)));
     JS
     locate(lat: 10.1, lon: 10.1)

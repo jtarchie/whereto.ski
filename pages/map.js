@@ -1,4 +1,5 @@
 import { Map, Popup } from "./maplibre/maplibre-gl.mjs";
+import { isMetric, km, loadIndex, snowLevel } from "./lib/shared.js";
 
 const root = document.documentElement;
 const dark = matchMedia("(prefers-color-scheme: dark)").matches;
@@ -19,34 +20,11 @@ function rgb(name) {
   return `rgb(${r},${g},${b})`;
 }
 
-const SNOW_STEPS = [1, 2, 6, 12];
-const snowLevel = (inches) =>
-  inches <= 0 ? 0 : SNOW_STEPS.filter((step) => inches >= step).length + 1;
-
-// Storage throws when blocked (Safari, cookies off).
-const pref = (key) => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-
-// Same preference and default as main.js.
-const metric = (pref("preferredUnits") ??
-  (navigator.language === "en-US" ? "imperial" : "metric")) === "metric";
+const metric = isMetric();
 const amount = (inches) =>
   metric
     ? `${Math.round(inches * 2.54)} cm`
     : `${Math.round(inches * 10) / 10}″`;
-
-function km([lat1, lon1], [lat2, lon2]) {
-  const rad = Math.PI / 180;
-  const h = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
-    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-      Math.sin(((lon2 - lon1) * rad) / 2) ** 2;
-  return 12742 * Math.asin(Math.sqrt(h));
-}
 
 function unavailable(el) {
   el.querySelector(".maplibregl-canvas-container")?.remove();
@@ -55,15 +33,8 @@ function unavailable(el) {
   status.textContent = "Map unavailable";
 }
 
-function resortsFor(el, index) {
-  const all = index.d.filter((d) => d.t === "r" && d.l).map((d) => ({
-    name: d.n,
-    url: d.u,
-    country: index.cl[d.c],
-    region: d.s,
-    at: d.l,
-    snow: d.w ?? 0,
-  }));
+function resortsFor(el, entries) {
+  const all = entries.filter((d) => d.type === "r" && d.at);
   const { country, region, lat, lon } = el.dataset;
   if (lat) {
     const center = [parseFloat(lat), parseFloat(lon)];
@@ -74,7 +45,7 @@ function resortsFor(el, index) {
   );
 }
 
-function draw(el, resorts) {
+function draw(el, resorts, steps) {
   const here = el.dataset.url;
   const features = resorts.map((r) => ({
     type: "Feature",
@@ -83,7 +54,7 @@ function draw(el, resorts) {
       name: r.name,
       url: r.url,
       snow: r.snow,
-      level: snowLevel(r.snow),
+      level: snowLevel(r.snow, steps),
       here: r.url === here,
     },
   }));
@@ -166,15 +137,11 @@ function draw(el, resorts) {
 }
 
 const maps = document.querySelectorAll("[data-map]");
-fetch("/assets/search-data.json")
-  .then((response) => {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
-  })
-  .then((index) =>
+loadIndex()
+  .then(({ entries, steps }) =>
     maps.forEach((el) => {
-      const resorts = resortsFor(el, index);
-      resorts.length ? draw(el, resorts) : unavailable(el);
+      const resorts = resortsFor(el, entries);
+      resorts.length ? draw(el, resorts, steps) : unavailable(el);
     })
   )
   .catch(() => maps.forEach(unavailable));

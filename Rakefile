@@ -46,8 +46,8 @@ desc 'Build the CSS and JS files'
 task :assets do
   sh('npm run build')
   sh('npx esbuild pages/input.js --bundle --minify --outfile=pages/public/assets/main.js')
-  # map.js stays an ES module importing MapLibre's own files, which locate their worker relative to themselves.
-  sh('npx esbuild pages/map.js --minify --format=esm --outfile=pages/public/assets/map.js')
+  # map.js stays an ES module importing MapLibre's own files (kept external), which locate their worker relative to themselves.
+  sh('npx esbuild pages/map.js --bundle --external:./maplibre/* --minify --format=esm --outfile=pages/public/assets/map.js')
   FileUtils.mkdir_p('pages/public/assets/maplibre')
   FileUtils.cp(%w[maplibre-gl.mjs maplibre-gl-worker.mjs maplibre-gl.css].map { |f| "node_modules/maplibre-gl/dist/#{f}" }, 'pages/public/assets/maplibre')
   sh('npx esbuild pages/public/assets/main.css --minify --allow-overwrite --outfile=pages/public/assets/main.css')
