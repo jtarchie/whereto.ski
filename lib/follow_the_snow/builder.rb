@@ -18,7 +18,7 @@ module FollowTheSnow
     class Site
       def initialize(build_dir:, resorts:, source_dir:, logger_io: $stderr)
         @build_dir    = build_dir
-        @context      = Context.new(resorts: resorts)
+        @context      = Context.new(resorts: resorts, source_dir: source_dir)
         @logger       = Ougai::Logger.new(logger_io)
         @logger.level = Ougai::Logger::DEBUG
         @source_dir   = source_dir
@@ -33,8 +33,7 @@ module FollowTheSnow
         FileUtils.mkdir_p(@build_dir)
         FileUtils.copy_entry(File.join(@source_dir, 'public'), @build_dir)
 
-        # Generate search index
-        generate_search_index
+        generate_redirects
 
         layout_html = erb(File.join(@source_dir, '_layout.html.erb'))
 
@@ -58,14 +57,16 @@ module FollowTheSnow
 
             case filename
             when /\[resort\]/
-              # rate limit from open meteo (600 / minute) halved for safety
-              limiter = Limiter::RateQueue.new(50, interval: 10, balanced: true)
+              # Open-Meteo allows 600 calls/min; each resort is 2 (base + summit), halved for safety
+              limiter = Limiter::RateQueue.new(25, interval: 10, balanced: true)
 
               # Filter out resorts with names that don't generate valid slugs
               valid_resorts = resorts.reject { |r| r.name.to_url.empty? }
 
+              # Fetch everything first: pages read nearby resorts' forecasts, which must not bypass the limiter.
               Parallel.each(valid_resorts, in_threads: @num_threads * 10) do |resort|
                 limiter.shift unless defined?(RSpec)
+                resort.timezone
 
                 resort_filename = build_filename.gsub('[resort]', resort.slug)
                 write_file(
@@ -115,6 +116,10 @@ module FollowTheSnow
             end
           end
         end
+
+        # After resort pages: the index carries 7-day snow, so forecasts must already be fetched under the limiter.
+        generate_search_index
+        generate_sitemap
       end
 
       private
@@ -167,18 +172,44 @@ module FollowTheSnow
         resorts.each do |resort|
           next if resort.slug.empty?
 
+          snow = @context.snow_summary(resort)[:next_7d].round(1)
           search_data[:d] << {
             t: 'r',
             n: resort.name,
             c: country_lookup[resort.country_name], # numeric index
             s: resort.region_name,
-            u: "/resorts/#{resort.slug}"
-          }
+            u: "/resorts/#{resort.slug}",
+            l: [resort.lat.round(3), resort.lon.round(3)],
+            w: (snow if snow.positive?)
+          }.compact
         end
 
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
         File.write(search_file, JSON.generate(search_data))
         @logger.info('generated search index', { file: search_file, entries: search_data[:d].length })
+      end
+
+      # Cloudflare Pages serves /foo.html at /foo, which is the canonical form every page declares.
+      def generate_sitemap
+        paths = Dir[File.join(@build_dir, '**', '*.html')].map { |f| f.delete_prefix(@build_dir).delete_suffix('.html') }
+        urls  = (paths - ['/404']).map { |path| path == '/index' ? '/' : path }.sort.map do |path|
+          "<url><loc>https://whereto.ski#{path}</loc></url>"
+        end
+        File.write(File.join(@build_dir, 'sitemap.xml'), <<~XML)
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          #{urls.join("\n")}
+          </urlset>
+        XML
+      end
+
+      # Snow Now pages were retired; send their old URLs to the parent scope. Small countries never had region pages.
+      def generate_redirects
+        lines  = ['/snow-now / 301']
+        lines += countries.map { |c| "/countries/#{c.to_url}-snow-now /countries/#{c.to_url} 301" }
+        lines += states.reject { |s| @context.small_country?(resorts_by_state(s).first.country_name) }
+                       .map { |s| "/states/#{s.to_url}-snow-now /states/#{s.to_url} 301" }
+        File.write(File.join(@build_dir, '_redirects'), "#{lines.join("\n")}\n")
       end
 
       def resorts_by_state(state)
@@ -216,7 +247,8 @@ module FollowTheSnow
         FileUtils.mkdir_p(File.dirname(build_filename))
         File.write(
           build_filename,
-          layout.render(@context, variables)
+          # Herb-formatted templates are mostly indentation; pages have no <pre>/<textarea>, so leading space is noise.
+          layout.render(@context, variables).gsub(/\n\s+/, "\n")
         )
       end
 

@@ -140,217 +140,258 @@
 
     <link rel="manifest" href="/assets/favicon/manifest.json">
 
+    <% if defined?(page_url) %>
+      <link rel="canonical" href="https://whereto.ski<%= page_url %>">
+    <% end %>
+
+    <meta name="color-scheme" content="light dark">
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-    <meta name="theme-color" content="#ffffff">
+
+    <meta
+      name="theme-color"
+      content="#fbfcfd"
+      media="(prefers-color-scheme: light)"
+    >
+
+    <meta
+      name="theme-color"
+      content="#121518"
+      media="(prefers-color-scheme: dark)"
+    >
 
     <title>Where To Ski &raquo; <%= title %></title>
   </head>
 
-  <body>
-    <!-- Navbar -->
-    <div class="flex flex-col">
-      <div class="navbar bg-base-100 w-full">
-        <div class="flex-1">
-          <a class="btn btn-ghost text-xl" href="/">
-            <svg
-              class="w-8 h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              ></path>
-            </svg>
+  <body class="flex min-h-dvh flex-col">
+    <header class="border-b bg-canvas">
+      <div class="mx-auto flex h-14 max-w-page items-center justify-between gap-4 px-4">
+        <a
+          href="/"
+          class="
+            inline-flex h-(--size-hit) items-center text-base font-semibold
+            tracking-tight no-underline
+          "
+        >
+          Where To Ski
+        </a>
 
-            <span class="font-bold">Where To Ski</span>
-          </a>
-        </div>
-
-        <div class="flex-none gap-2">
-          <!-- Search Button -->
+        <div class="flex items-center gap-1">
           <button
             id="search-button"
-            class="btn btn-ghost btn-square"
+            type="button"
+            class="
+              icon-button md:w-64 md:justify-between md:border md:px-3
+              md:text-sm
+            "
             aria-label="Search"
+            aria-keyshortcuts="/ Control+K Meta+K"
           >
+            <span class="hidden md:inline">Search resorts</span>
+
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+              class="size-5"
               fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
               viewBox="0 0 24 24"
-              class="inline-block w-5 h-5 stroke-current"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               ></path>
             </svg>
           </button>
 
           <button
-            class="btn btn-ghost btn-square"
+            type="button"
+            class="icon-button"
             onclick="settings_modal.showModal()"
             aria-label="Settings"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+              class="size-5"
               fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
               viewBox="0 0 24 24"
-              class="inline-block w-5 h-5 stroke-current"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
               ></path>
 
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               ></path>
             </svg>
           </button>
-
-          <dialog id="settings_modal" class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg mb-4">Settings</h3>
-
-              <div class="space-y-4">
-                <div class="flex items-center justify-between p-2">
-                  <label for="unit-toggle" class="grow">
-                    Temperature Unit
-                  </label>
-
-                  <div class="flex cursor-pointer gap-2">
-                    <span class="label-text text-xs">°F</span>
-
-                    <input
-                      type="checkbox"
-                      id="unit-toggle"
-                      class="toggle toggle-sm"
-                      aria-label="Toggle between Fahrenheit and Celsius"
-                    >
-
-                    <span class="label-text text-xs">°C</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-2">
-                  <label for="filter-snow-toggle">Show Only Snow</label>
-
-                  <input
-                    type="checkbox"
-                    id="filter-snow-toggle"
-                    class="toggle toggle-sm"
-                    aria-label="Show only snow"
-                  >
-                </div>
-              </div>
-
-              <div class="modal-action">
-                <form method="dialog">
-                  <button class="btn">Close</button>
-                </form>
-              </div>
-            </div>
-
-            <form method="dialog" class="modal-backdrop">
-              <button>close</button>
-            </form>
-          </dialog>
         </div>
       </div>
+    </header>
 
-      <div class="container mx-auto p-4"><%= content %></div>
+    <main class="mx-auto w-full max-w-page grow px-4 py-6"><%= content %></main>
 
-      <footer
-        class="
-          footer footer-horizontal footer-center bg-base-200
-          text-base-content rounded p-10
-        "
-      >
-        <nav class="grid grid-flow-col gap-4">
-          <a class="link link-hover" href="/about">About</a>
-
-          <a class="link link-hover" href="mailto:hello@whereto.ski">
-            Contact
-          </a>
-
-          <a
-            class="link link-hover"
-            href="https://www.buymeacoffee.com/jtarchie"
-            target="_blank"
-          >
-            Support Us
-          </a>
+    <footer class="border-t text-sm text-ink-2">
+      <div class="mx-auto flex max-w-page flex-col gap-3 px-4 py-6">
+        <nav
+          aria-label="Footer"
+          class="flex flex-wrap gap-x-6 gap-y-4 [&>a]:hit"
+        >
+          <a href="/about">About</a>
+          <a href="mailto:hello@whereto.ski">Contact</a>
+          <a href="https://www.buymeacoffee.com/jtarchie">Support</a>
+          <a href="https://github.com/jtarchie/followthesnow">GitHub</a>
         </nav>
 
-        <aside>
-          <p>
-            © <%= Time.now.strftime("%Y") %>
-            <a href="https://github.com/jtarchie/followthesnow">Where To Ski</a>
-            <br>
-            Last Updated: <%= h current_timestamp %>
-          </p>
-        </aside>
-      </footer>
-    </div>
+        <p>
+          Forecasts by <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY
+          4.0). Resort data from
+          <a href="https://openskimap.org">OpenSkiMap</a>, ©
+          <a href="https://www.openstreetmap.org/copyright"> OpenStreetMap contributors </a>
+          (ODbL).
+        </p>
 
-    <!-- Search Modal -->
-    <dialog id="search-modal" class="modal modal-top sm:modal-middle">
-      <div
-        class="
-          modal-box w-full max-w-2xl mx-auto sm:w-11/12 max-h-[80dvh]
-          sm:max-h-[85vh]
-        "
-      >
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-            ✕
-          </button>
-        </form>
+        <p>Updated <%= current_timestamp %></p>
+      </div>
+    </footer>
 
-        <h3 class="font-bold text-lg mb-4">Search Resorts</h3>
+    <dialog id="settings_modal" class="dialog" aria-labelledby="settings-title">
+      <div class="dialog-box">
+        <div class="flex items-center justify-between">
+          <h2 id="settings-title">Settings</h2>
+
+          <form method="dialog">
+            <button type="submit" class="icon-button" aria-label="Close">
+              <svg
+                aria-hidden="true"
+                class="size-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"></path>
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        <div class="divide-y">
+          <label
+            for="unit-toggle"
+            class="
+              flex min-h-(--size-hit) items-center justify-between gap-4
+              py-2
+            "
+          >
+            <span>
+              Metric units
+              <span class="block text-sm text-ink-2"> °C, cm, km/h, m instead of °F, in, mph, ft </span>
+            </span>
+
+            <input type="checkbox" id="unit-toggle" class="switch">
+          </label>
+
+          <label
+            for="tz-select"
+            class="
+              flex min-h-(--size-hit) items-center justify-between gap-4
+              py-2
+            "
+          >
+            <span>
+              Time zone
+              <span class="block text-sm text-ink-2"> For hourly forecasts and update times </span>
+            </span>
+
+            <select id="tz-select" class="input w-44 text-sm">
+              <option value="auto">Auto</option>
+              <option value="resort">Resort local</option>
+            </select>
+          </label>
+
+          <label
+            for="filter-snow-toggle"
+            class="
+              flex min-h-(--size-hit) items-center justify-between gap-4
+              py-2
+            "
+          >
+            <span>Only show resorts with snow</span>
+            <input type="checkbox" id="filter-snow-toggle" class="switch">
+          </label>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog
+      id="search-modal"
+      class="dialog md:mt-[12vh]"
+      aria-labelledby="search-title"
+    >
+      <div class="dialog-box">
+        <div class="flex items-center justify-between">
+          <h2 id="search-title">Search</h2>
+
+          <form method="dialog">
+            <button type="submit" class="icon-button" aria-label="Close">
+              <svg
+                aria-hidden="true"
+                class="size-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"></path>
+              </svg>
+            </button>
+          </form>
+        </div>
 
         <input
           type="search"
           id="search-input"
-          placeholder="Search for countries, states, or resorts..."
-          class="input input-bordered w-full mb-4"
+          placeholder="Resort, town, region or country"
+          class="input"
           autocomplete="off"
           enterkeyhint="search"
-          aria-label="Search for countries, states, or resorts"
+          aria-label="Search for countries, regions, or resorts"
         >
 
-        <div id="search-loading" class="text-center py-8 hidden">
-          <span class="loading loading-spinner loading-lg"></span>
-        </div>
+        <p
+          id="search-loading"
+          role="status"
+          class="hidden py-6 text-center text-ink-2"
+        >
+          Loading…
+        </p>
 
-        <div
-          id="search-results"
-          class="max-h-[50dvh] sm:max-h-96 overflow-y-auto"
-        ></div>
+        <p
+          id="search-error"
+          role="alert"
+          class="hidden py-6 text-center text-error"
+        >
+          Search couldn't load. Check your connection and try again.
+        </p>
 
-        <div
+        <div id="search-results" class="min-h-0 overflow-y-auto"></div>
+
+        <p
           id="search-empty"
-          class="text-center py-8 text-base-content/60 hidden"
+          role="status"
+          class="hidden py-6 text-center text-ink-2"
         >
-          No results found
-        </div>
+          No matches. Try a town or region name.
+        </p>
       </div>
-
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
     </dialog>
 
     <script src="/assets/main.js"></script>

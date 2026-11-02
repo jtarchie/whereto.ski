@@ -1,0 +1,51 @@
+<% snowing, dry = rows %>
+
+<section aria-labelledby="<%= id %>" class="mt-10">
+  <h2 id="<%= id %>" class="mb-2"><%= heading %></h2>
+
+  <% if snowing.any? %>
+    <table class="areas">
+      <thead>
+        <tr>
+          <th scope="col"><%= noun %></th>
+          <th scope="col" class="num">With snow</th>
+          <th scope="col" class="num">Best 7 days</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% snowing.each do |row| %>
+          <% level = snow_level(row[:summary][:next_7d]) %>
+
+          <tr>
+            <td>
+              <a href="<%= href.call(row[:name]) %>"><%= h row[:name] %></a>
+
+              <span class="place">Snowiest: <%= h row[:top].name %></span>
+            </td>
+
+            <td class="num"><%= row[:snowing] %> / <%= row[:total] %></td>
+
+            <td class="num bg-snow-<%= level %> text-on-snow-<%= level %>">
+              <%= snow_value(row[:summary][:next_7d]) %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+
+  <% if dry.any? %>
+    <div data-has-snow="false">
+      <h3 class="mt-6 mb-2 text-sm text-ink-2">No snow in the next 7 days</h3>
+
+      <ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <% dry.each do |row| %>
+          <li>
+            <a href="<%= href.call(row[:name]) %>"><%= h row[:name] %></a>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</section>

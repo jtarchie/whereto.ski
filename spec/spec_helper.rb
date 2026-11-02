@@ -193,75 +193,100 @@ def stub_geo_lookup(lat:, lng:)
 end
 
 def stub_weather_api
-  stub_request(:get, /api.open-meteo.com/)
-    .to_return(
-      status: 200,
-      body: {
-        'current' => {
-          'time' => '2023-03-14T12:00',
-          'temperature_2m' => 45.2,
-          'relative_humidity_2m' => 65,
-          'apparent_temperature' => 42.1,
-          'is_day' => 1,
-          'precipitation' => 0.0,
-          'weather_code' => 2,
-          'cloud_cover' => 40,
-          'wind_speed_10m' => 8.5,
-          'wind_direction_10m' => 225,
-          'wind_gusts_10m' => 15.2
-        },
-        'hourly' => {
-          'time' => (0..47).map { |i| "2023-03-14T#{(i % 24).to_s.rjust(2, '0')}:00" },
-          'temperature_2m' => Array.new(48) { rand(30.0..60.0).round(1) },
-          'relative_humidity_2m' => Array.new(48) { rand(40..90) },
-          'apparent_temperature' => Array.new(48) { rand(25.0..55.0).round(1) },
-          'precipitation_probability' => Array.new(48) { rand(0..100) },
-          'precipitation' => Array.new(48) { rand(0.0..0.5).round(2) },
-          'snowfall' => Array.new(48) { [0.0, 0.0, 0.0, 0.5, 1.2].sample },
-          'weather_code' => Array.new(48) { [0, 1, 2, 3, 71, 73, 75].sample },
-          'cloud_cover' => Array.new(48) { rand(0..100) },
-          'wind_speed_10m' => Array.new(48) { rand(5.0..25.0).round(1) },
-          'wind_direction_10m' => Array.new(48) { rand(0..359) },
-          'wind_gusts_10m' => Array.new(48) { rand(10.0..40.0).round(1) },
-          'freezing_level_height' => Array.new(48) { rand(5000..12_000) },
-          'visibility' => Array.new(48) { rand(5000..50_000) },
-          'is_day' => Array.new(48) { |i| (i % 24).between?(6, 18) ? 1 : 0 }
-        },
-        'daily' => {
-          'time' => %w[
-            2023-03-14
-            2023-03-15
-            2023-03-16
-            2023-03-17
-            2023-03-18
-            2023-03-19
-            2023-03-20
-            2023-03-21
-            2023-03-22
-            2023-03-23
-            2023-03-24
-            2023-03-25
-            2023-03-26
-            2023-03-27
-            2023-03-28
-            2023-03-29
-          ],
-          'weather_code' => [3, 3, 75, 71, 73, 51, 3, 51, 3, 2, 1, 0, 71, 73, 3, 2],
-          'temperature_2m_max' => [62.2, 67.6, 50.7, 38.4, 41.1, 46.7, 54.9, 58.7, 55.0, 52.3, 48.9, 45.2, 42.1, 39.8, 44.5, 50.2],
-          'temperature_2m_min' => [36.8, 42.5, 23.7, 19.8, 28.5, 29.4, 35.5, 41.3, 38.2, 35.1, 31.4, 28.7, 25.3, 22.9, 29.1, 34.8],
-          'apparent_temperature_max' => [58.3, 63.2, 45.1, 32.6, 36.8, 42.3, 51.2, 55.4, 51.8, 49.1, 45.3, 41.8, 38.4, 35.2, 40.7, 47.1],
-          'apparent_temperature_min' => [32.1, 38.9, 18.4, 14.2, 23.7, 25.1, 31.8, 38.2, 34.9, 31.4, 27.8, 24.3, 21.1, 18.4, 25.2, 31.2],
-          'snowfall_sum' => [0.000, 0.000, 2.950, 0.138, 0.139, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 1.5, 2.1, 0.000, 0.000],
-          'precipitation_sum' => [0.0, 0.0, 1.2, 0.3, 0.4, 0.1, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.8, 1.1, 0.0, 0.0],
-          'rain_sum' => [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-          'precipitation_hours' => [0.0, 0.0, 12.0, 3.0, 6.0, 1.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 8.0, 10.0, 0.0, 0.0],
-          'precipitation_probability_max' => [5, 10, 85, 45, 60, 20, 5, 35, 10, 5, 0, 0, 75, 80, 15, 10],
-          'wind_speed_10m_max' => [12.8, 16.6, 15.1, 6.3, 10.6, 7.1, 4.2, 14.2, 11.5, 9.8, 8.2, 6.5, 13.4, 17.2, 10.1, 8.9],
-          'wind_gusts_10m_max' => [21.7, 26.2, 26.8, 9.6, 8.7, 8.9, 8.9, 27.3, 19.8, 16.4, 14.2, 11.8, 24.5, 29.1, 17.3, 15.1],
-          'wind_direction_10m_dominant' => [278, 251, 35, 89, 99, 123, 220, 358, 180, 200, 220, 240, 45, 60, 270, 290],
-          'uv_index_max' => [4.2, 5.8, 2.1, 3.4, 4.7, 5.3, 6.1, 5.9, 5.5, 5.2, 4.8, 4.5, 3.2, 2.8, 5.1, 5.4],
-          'sunshine_duration' => [21_600, 28_800, 7200, 14_400, 18_000, 25_200, 32_400, 27_000, 25_200, 23_400, 21_600, 19_800, 10_800, 7200, 21_600, 25_200]
-        }
-      }.to_json
-    )
+  stub_request(:get, /api.open-meteo.com/).to_return do |request|
+    query     = request.uri.query_values
+    lats      = query.fetch('latitude').split(',').map(&:to_f)
+    lons      = query.fetch('longitude').split(',').map(&:to_f)
+    locations = lats.zip(lons).each_with_index.map do |(lat, lon), index|
+      fake_location(lat: lat, lon: lon, base: lats.length > 1 && index.zero?)
+    end
+
+    { status: 200, body: (locations.length == 1 ? locations.first : locations).to_json }
+  end
+end
+
+def weather_api_body(lat: 39.6403, lon: -106.3742)
+  fake_location(lat: lat, lon: lon).to_json
+end
+
+# Fixed "now" and coordinate-seeded profiles keep builds reproducible while covering every snow step.
+STORM_TOTALS = [0.0, 0.4, 1.5, 4.0, 9.0, 16.0].freeze
+
+def fake_location(lat:, lon:, base: false)
+  rng     = Random.new(((lat * 1000).round * 31) + (lon * 1000).round)
+  profile = rng.rand(STORM_TOTALS.length)
+  days    = (0...19).map { |i| Date.new(2023, 3, 11) + i }
+  scale   = base ? 0.6 : 1.0
+  warm    = base ? 8 : 0
+
+  daily_snow                = Array.new(days.length, 0.0)
+  storm_day                 = 3 + rng.rand(10)
+  daily_snow[storm_day]     = STORM_TOTALS[profile]
+  daily_snow[storm_day + 1] = (STORM_TOTALS[profile] * 0.3).round(2)
+  daily_snow[rng.rand(3)]   = rng.rand(0.5..3.0).round(2) if profile >= 2
+  daily_snow                = daily_snow.map { |v| (v * scale).round(2) }
+
+  high  = Array.new(days.length) { ((profile.zero? ? 45 : 28) + rng.rand(0..12) + warm).round(1) }
+  low   = high.map { |t| (t - 12).round(1) }
+  wind  = Array.new(days.length) { rng.rand(4.0..30.0).round(1) }
+  hours = days.flat_map { |d| (0..23).map { |h| [d, h] } }
+
+  hourly_snow = hours.map { |d, h| h < 12 ? (daily_snow[days.index(d)] / 12.0).round(2) : 0.0 }
+  hourly_temp = hours.map { |d, h| (low[days.index(d)] + ((high[days.index(d)] - low[days.index(d)]) * Math.sin(Math::PI * h / 24.0))).round(1) }
+
+  {
+    'timezone' => 'America/Denver',
+    'utc_offset_seconds' => -21_600,
+    'current' => {
+      'time' => '2023-03-14T12:00',
+      'temperature_2m' => hourly_temp[(3 * 24) + 12],
+      'relative_humidity_2m' => 65,
+      'apparent_temperature' => (hourly_temp[(3 * 24) + 12] - 4).round(1),
+      'is_day' => 1,
+      'precipitation' => 0.0,
+      'weather_code' => 2,
+      'cloud_cover' => 40,
+      'wind_speed_10m' => wind[3],
+      'wind_direction_10m' => 225,
+      'wind_gusts_10m' => (wind[3] * 1.6).round(1)
+    },
+    'hourly' => {
+      'time' => hours.map { |d, h| "#{d.iso8601}T#{h.to_s.rjust(2, '0')}:00" },
+      'temperature_2m' => hourly_temp,
+      'relative_humidity_2m' => Array.new(hours.length, 70),
+      'apparent_temperature' => hourly_temp.map { |t| (t - 4).round(1) },
+      'precipitation_probability' => hourly_snow.map { |v| v.positive? ? 80 : 10 },
+      'precipitation' => hourly_snow.map { |v| (v / 10.0).round(3) },
+      'snowfall' => hourly_snow,
+      'weather_code' => hourly_snow.map { |v| v.positive? ? 73 : 2 },
+      'cloud_cover' => hourly_snow.map { |v| v.positive? ? 100 : 30 },
+      'wind_speed_10m' => hours.map { |d, _| wind[days.index(d)] },
+      'wind_direction_10m' => Array.new(hours.length, 250),
+      'wind_gusts_10m' => hours.map { |d, _| (wind[days.index(d)] * 1.6).round(1) },
+      'freezing_level_height' => hourly_temp.map { |t| (8000 + ((t - 28) * 250)).round },
+      'snow_depth' => Array.new(hours.length, base ? 2.5 : 4.0),
+      'visibility' => Array.new(hours.length, 20_000),
+      'is_day' => hours.map { |_, h| h.between?(7, 18) ? 1 : 0 }
+    },
+    'daily' => {
+      'time' => days.map(&:iso8601),
+      'weather_code' => daily_snow.map { |v| v.positive? ? 73 : 2 },
+      'temperature_2m_max' => high,
+      'temperature_2m_min' => low,
+      'apparent_temperature_max' => high.map { |t| (t - 4).round(1) },
+      'apparent_temperature_min' => low.map { |t| (t - 4).round(1) },
+      'sunrise' => days.map { |d| "#{d.iso8601}T06:30" },
+      'sunset' => days.map { |d| "#{d.iso8601}T18:30" },
+      'snowfall_sum' => daily_snow,
+      'precipitation_sum' => daily_snow.map { |v| (v / 10.0).round(2) },
+      'rain_sum' => Array.new(days.length, 0.0),
+      'precipitation_hours' => daily_snow.map { |v| v.positive? ? 12.0 : 0.0 },
+      'precipitation_probability_max' => daily_snow.map { |v| v.positive? ? 80 : 10 },
+      'wind_speed_10m_max' => wind,
+      'wind_gusts_10m_max' => wind.map { |w| (w * 1.6).round(1) },
+      'wind_direction_10m_dominant' => Array.new(days.length, 250),
+      'uv_index_max' => Array.new(days.length, 4.0),
+      'sunshine_duration' => daily_snow.map { |v| v.positive? ? 3600 : 28_800 }
+    }
+  }
 end

@@ -22,196 +22,68 @@ RSpec.describe('Building') do
     # Now skipping:
     # - State pages for small countries (threshold=20): ~170 files
     # With stringex, all resorts can be slugified with excellent transliteration
-    expect(html_files.length).to eq(4312)
+    # - Snow Now pages (now 301s in _redirects): 365 files
+    # - Duplicate resorts dropped; same-URL resorts that overwrote each other now each get a page: net +7
+    expect(html_files.length).to eq(3954)
+    expect(File.readlines(File.join(build_dir, '_redirects')).length).to eq(364) # Tolmin (SI) only held a duplicate of Vogel
   end
 
-  describe 'snow-now page' do
-    it 'generates snow-now.html' do
-      snow_now_path = File.join(build_dir, 'snow-now.html')
-      expect(File.exist?(snow_now_path)).to be(true)
+  describe 'list pages' do
+    def doc_for(*path)
+      Nokogiri::HTML(File.read(File.join(build_dir, *path)))
     end
 
-    it 'includes top snowy resorts section' do
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      expect(snow_now_html).to include('Most Snow')
+    it 'leads home with the top 25 resorts worldwide, then countries ranked' do
+      doc = doc_for('index.html')
+
+      expect(doc.css('[data-ranked] tbody tr').length).to eq(25)
+      expect(doc.at_css('header p').text.squish).to match(/Snow in the next 7 days at \d+ of \d+ resorts worldwide/)
+      expect(doc.css('table.areas tbody tr td:first-child a').map(&:text)).to include('United States of America')
     end
 
-    it 'includes snow today section' do
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      expect(snow_now_html).to include('Snow Today')
+    it 'shows large countries as top 25 plus regions' do
+      doc = doc_for('countries', 'united-states-of-america.html')
+
+      expect(doc.css('[data-ranked] tbody tr').length).to eq(25)
+      expect(doc.css('#regions-heading')).not_to be_empty
+      expect(doc.css('section a').map { |a| a['href'] }).to include('/states/colorado')
     end
 
-    it 'displays snow today in table format with actual snow values' do
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      doc           = Nokogiri::HTML(snow_now_html)
+    it 'shows small countries as every resort, with no regions' do
+      doc = doc_for('countries', 'andorra.html')
 
-      # Find the Snow Today section
-      snow_today_section = doc.xpath('//section[.//h2[contains(text(), "Snow Today")]]')
-      expect(snow_today_section).not_to be_empty
+      expect(doc.css('[data-ranked] tbody tr').length).to eq(4)
+      expect(doc.css('#regions-heading')).to be_empty
+    end
 
-      # Check if it has a table
-      table = snow_today_section.at_xpath('.//table')
+    it 'keeps the snow-only filter hook on list pages' do
+      %w[index.html countries/united-states-of-america.html].each do |page|
+        html = File.read(File.join(build_dir, page))
 
-      if table
-        # Verify table structure
-        headers = table.xpath('.//thead//th').map(&:text).map(&:strip)
-        expect(headers).to include('Rank', 'Resort', 'Location', 'Snow Today')
-
-        # Check that there are rows with actual snow values (not all zeros)
-        snow_cells = table.xpath('.//tbody//tr//td[4]').map(&:text).map(&:strip)
-
-        # At least one row should have non-zero snow
-        has_non_zero = snow_cells.any? do |cell|
-          # Extract numeric value and check if it's greater than 0
-          cell.match?(/[1-9]\d*\.?\d*/)
-        end
-
-        expect(has_non_zero).to be(true), "Expected at least one resort with non-zero snow, but got: #{snow_cells.inspect}"
+        expect(html).to include('filter-snow-toggle', 'data-has-snow=')
       end
     end
 
-    it 'includes regional summaries section' do
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      expect(snow_now_html).to include('Snow by Region')
+    it 'lists every page in sitemap.xml at its canonical URL, and points robots.txt at it' do
+      sitemap = Nokogiri::XML(File.read(File.join(build_dir, 'sitemap.xml')))
+      locs    = sitemap.xpath('//xmlns:loc').map(&:text)
+
+      expect(locs).to include('https://whereto.ski/', 'https://whereto.ski/about', 'https://whereto.ski/resorts/steamboat-ski-resort')
+      expect(locs.length).to eq(Dir[File.join(build_dir, '**', '*.html')].length - 1)
+      expect(locs.grep(/404|\.html/)).to be_empty
+      expect(File.read(File.join(build_dir, 'robots.txt'))).to include('Sitemap: https://whereto.ski/sitemap.xml')
     end
 
-    it 'includes quick stats section' do
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      expect(snow_now_html).to include('Total Resorts Tracked')
-      expect(snow_now_html).to include('Resorts w/ Snow')
-    end
-  end
+    it 'retires Snow Now pages with 301s to their parent scope' do
+      expect(Dir[File.join(build_dir, '**', '*snow-now*')]).to be_empty
 
-  describe 'snow indicators and badges' do
-    it 'marks countries and states with snow when snowfall is present' do
-      index_doc = Nokogiri::HTML(File.read(File.join(build_dir, 'index.html')))
-      usa_li    = index_doc.at_xpath("//li[@data-has-snow and .//a[normalize-space(text())='United States of America']]")
+      redirects = File.read(File.join(build_dir, '_redirects')).lines.map(&:chomp)
 
-      expect(usa_li).not_to be_nil
-      expect(usa_li['data-has-snow']).to eq('true')
-
-      usa_doc  = Nokogiri::HTML(File.read(File.join(build_dir, 'countries', 'united-states-of-america.html')))
-      idaho_li = usa_doc.at_xpath("//li[@data-has-snow and .//a[normalize-space(text())='Idaho']]")
-
-      expect(idaho_li).not_to be_nil
-      expect(idaho_li['data-has-snow']).to eq('true')
-    end
-
-    it 'includes snow badges with counts on index page' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      # Should have snow badge class with resort count format
-      if index_html.include?('snow-badge')
-        expect(index_html).to match(/\d+\s*resorts\s*\(/m) # "X resorts (Y.Y inches)" format
-      end
-    end
-
-    it 'includes filter toggle on index page' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('filter-snow-toggle')
-      expect(index_html).to include('Only Snow')
-    end
-
-    it 'includes data-has-snow attributes on country pages' do
-      # Check a country page that should exist (exclude snow-now pages)
-      country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
-      expect(country_files).not_to be_empty
-
-      first_country_html = File.read(country_files.first)
-      expect(first_country_html).to include('data-has-snow=')
-    end
-
-    it 'includes snow badges on country pages with snow' do
-      country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
-
-      # Find a country page with snow badges
-      country_with_badge = country_files.find do |file|
-        File.read(file).include?('snow-badge')
-      end
-
-      # Skip if no country with snow badge found
-      skip 'No country with snow badge found' unless country_with_badge
-
-      html = File.read(country_with_badge)
-      # Small countries show per-resort snow (e.g., "❄️ 3.2 inches")
-      # Regular countries show state count (e.g., "5 (10.5 inches)")
-      # Both should have snow-badge class and some measurement
-      expect(html).to include('snow-badge')
-      expect(html).to match(/\d+\.\d+|"/) # Either decimal number or inch/cm unit
-    end
-
-    it 'includes filter toggle on country pages' do
-      country_files      = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
-      first_country_html = File.read(country_files.first)
-      expect(first_country_html).to include('filter-snow-toggle')
-    end
-  end
-
-  describe 'snow cell styling' do
-    it 'adds snow-cell class to cells with snow in state pages' do
-      state_files = Dir[File.join(build_dir, 'states', '*.html')]
-      expect(state_files).not_to be_empty
-
-      # Find a state page with snow
-      state_with_snow = state_files.find do |file|
-        File.read(file).include?('snow-cell')
-      end
-
-      if state_with_snow
-        html = File.read(state_with_snow)
-        expect(html).to include('snow-cell')
-        expect(html).to include('snow-value')
-      end
-    end
-
-    it 'marks table rows without snow with no-snow class in state pages' do
-      state_files = Dir[File.join(build_dir, 'states', '*.html')].reject { |f| f.include?('snow-now') }
-      expect(state_files).not_to be_empty
-
-      # Find a state page to test (exclude snow-now pages)
-      state_file = state_files.first
-      html       = File.read(state_file)
-      doc        = Nokogiri::HTML(html)
-
-      # Check that table rows exist in the forecast table
-      rows = doc.xpath('//table[.//th[contains(text(), "Resort")]]//tbody//tr')
-
-      # Skip if no forecast table found
-      next if rows.empty?
-
-      # Check that rows either have snow-cell or no-snow class
-      rows.each do |row|
-        has_snow_cell     = row.xpath('.//td[@class="snow-cell"]').any?
-        has_no_snow_class = row['class']&.include?('no-snow')
-
-        # Row should either have snow or be marked as no-snow
-        expect(has_snow_cell || has_no_snow_class).to be(true),
-                                                      "Row should have snow-cell or no-snow class: #{row.to_html}"
-      end
-    end
-
-    it 'adds snow-cell class to snowfall column in resort pages' do
-      resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-      expect(resort_files).not_to be_empty
-
-      # Find a resort page with snow
-      resort_with_snow = resort_files.find do |file|
-        content = File.read(file)
-        content.include?('snow-cell') || content.include?('Long Term Forecast')
-      end
-
-      if resort_with_snow
-        html = File.read(resort_with_snow)
-        # Check for either snow-cell styling or basic table structure
-        expect(html).to include('table')
-      end
-    end
-  end
-
-  describe 'navigation links' do
-    it 'includes Snow Now link in navigation' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      expect(index_html).to include('href="/snow-now"')
-      expect(index_html).to include('Snow Now')
+      expect(redirects).to include('/snow-now / 301',
+                                   '/countries/united-states-of-america-snow-now /countries/united-states-of-america 301',
+                                   '/states/colorado-snow-now /states/colorado 301')
+      expect(redirects.grep(%r{/states/(andorra|canillo)})).to be_empty
+      expect(redirects.length).to be < 2000
     end
   end
 
@@ -257,7 +129,7 @@ RSpec.describe('Building') do
       expect(dialog).not_to be_nil
 
       # Check for accessible search input
-      search_input = doc.at_xpath("//input[@aria-label='Search for countries, states, or resorts']")
+      search_input = doc.at_xpath("//input[@aria-label='Search for countries, regions, or resorts']")
       expect(search_input).not_to be_nil
       expect(search_input['type']).to eq('search')
     end
@@ -323,7 +195,7 @@ RSpec.describe('Building') do
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
       expect(modal).not_to be_nil
-      expect(modal['class']).to include('modal')
+      expect(modal['class']).to include('dialog')
     end
 
     it 'includes settings modal title' do
@@ -331,7 +203,7 @@ RSpec.describe('Building') do
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
-      title = modal.at_xpath(".//h3[contains(text(), 'Settings')]")
+      title = modal.at_xpath(".//h2[contains(text(), 'Settings')]")
       expect(title).not_to be_nil
     end
 
@@ -343,13 +215,13 @@ RSpec.describe('Building') do
       expect(modal).not_to be_nil
 
       # Check for temperature unit label
-      label = modal.at_xpath(".//label[contains(text(), 'Temperature Unit')]")
-      expect(label).not_to be_nil
+      label = modal.at_xpath(".//label[@for='unit-toggle']")
+      expect(label.text).to include('Metric units')
 
       # Check for toggle input with proper association
       toggle = modal.at_xpath(".//input[@id='unit-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
-      expect(toggle['class']).to include('toggle')
+      expect(toggle['class']).to include('switch')
 
       # Check for °F and °C labels
       expect(modal.text).to include('°F')
@@ -366,13 +238,12 @@ RSpec.describe('Building') do
       # Check for label element wrapping or associated with toggle
       toggle = modal.at_xpath(".//input[@id='filter-snow-toggle'][@type='checkbox']")
       expect(toggle).not_to be_nil
-      expect(toggle['class']).to include('toggle')
-      expect(toggle['aria-label']).to eq('Show only snow')
+      expect(toggle['class']).to include('switch')
 
       # Check for label text
       label = modal.at_xpath(".//label[@for='filter-snow-toggle']")
       expect(label).not_to be_nil
-      expect(label.text).to include('Show Only Snow')
+      expect(label.text).to include('Only show resorts with snow')
     end
 
     it 'includes close button in modal' do
@@ -380,35 +251,18 @@ RSpec.describe('Building') do
       doc        = Nokogiri::HTML(index_html)
 
       modal        = doc.at_xpath("//dialog[@id='settings_modal']")
-      close_button = modal.at_xpath(".//button[contains(text(), 'Close')]")
+      close_button = modal.at_xpath(".//form[@method='dialog']/button[@aria-label='Close']")
       expect(close_button).not_to be_nil
-      expect(close_button['class']).to include('btn')
     end
 
-    it 'includes modal backdrop for closing' do
-      index_html = File.read(File.join(build_dir, 'index.html'))
-      doc        = Nokogiri::HTML(index_html)
-
-      modal    = doc.at_xpath("//dialog[@id='settings_modal']")
-      backdrop = modal.at_xpath(".//form[@method='dialog' and contains(@class, 'modal-backdrop')]")
-      expect(backdrop).not_to be_nil
-    end
-
-    it 'has proper DaisyUI modal structure' do
+    it 'has native dialog structure' do
       index_html = File.read(File.join(build_dir, 'index.html'))
       doc        = Nokogiri::HTML(index_html)
 
       modal = doc.at_xpath("//dialog[@id='settings_modal']")
-      expect(modal).not_to be_nil
-      expect(modal['class']).to include('modal')
-
-      # Check for modal-box
-      modal_box = modal.at_xpath(".//div[contains(@class, 'modal-box')]")
-      expect(modal_box).not_to be_nil
-
-      # Check for modal-action
-      modal_action = modal.at_xpath(".//div[contains(@class, 'modal-action')]")
-      expect(modal_action).not_to be_nil
+      expect(modal['class']).to include('dialog')
+      expect(modal['aria-labelledby']).to eq('settings-title')
+      expect(modal.at_xpath(".//div[contains(@class, 'dialog-box')]")).not_to be_nil
     end
 
     it 'includes settings in all page types' do
@@ -419,15 +273,10 @@ RSpec.describe('Building') do
       expect(doc.at_xpath("//dialog[@id='settings_modal']")).not_to be_nil
 
       # Check a country page
-      country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+      country_files = Dir[File.join(build_dir, 'countries', '*.html')]
       country_html  = File.read(country_files.first)
       country_doc   = Nokogiri::HTML(country_html)
       expect(country_doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
-
-      # Check snow-now page
-      snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-      snow_now_doc  = Nokogiri::HTML(snow_now_html)
-      expect(snow_now_doc.at_xpath("//button[@aria-label='Settings']")).not_to be_nil
     end
   end
 
@@ -485,7 +334,7 @@ RSpec.describe('Building') do
       end
 
       it 'includes dynamic URL for country pages' do
-        country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+        country_files = Dir[File.join(build_dir, 'countries', '*.html')]
         expect(country_files).not_to be_empty
 
         country_file = country_files.first
@@ -580,27 +429,22 @@ RSpec.describe('Building') do
     end
 
     describe 'resort page descriptions with forecast data' do
-      it 'includes forecast information in description when snow is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-        expect(resort_files).not_to be_empty
+      def resort_docs
+        Dir[File.join(build_dir, 'resorts', '*.html')].lazy.map { |f| Nokogiri::HTML(File.read(f)) }
+      end
 
-        # Find a resort with snow in forecast (from stubbed data)
-        resort_with_snow = resort_files.find do |file|
-          html = File.read(file)
-          html.include?('snow-cell') || html.include?('❄️')
-        end
+      def sixteen_day_total(doc)
+        doc.css('section[aria-labelledby="snow-heading"] dd data').last['value'].to_f
+      end
 
-        if resort_with_snow
-          resort_html = File.read(resort_with_snow)
-          doc         = Nokogiri::HTML(resort_html)
+      def og_description(doc)
+        doc.at_xpath("//meta[@property='og:description']")['content']
+      end
 
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
+      it 'summarizes 7- and 16-day snow when snow is expected' do
+        doc = resort_docs.find { |d| sixteen_day_total(d).positive? }
 
-          # Should include location information
-          expect(og_description).to match(/in .+, .+/)
-          # Should mention either "Expecting" snow or "No significant snowfall"
-          expect(og_description).to match(/Expecting .+ of snow|No significant snowfall/)
-        end
+        expect(og_description(doc)).to match(/\d.* of snow in the next 7 days, \d.* over 16 days\./)
       end
 
       it 'includes location information in resort descriptions' do
@@ -615,50 +459,16 @@ RSpec.describe('Building') do
         expect(og_description).to match(/\sin\s.+,\s.+\./)
       end
 
-      it 'mentions snowfall amount when snow is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
+      it 'says so when no snow is expected' do
+        doc = resort_docs.find { |d| sixteen_day_total(d).zero? }
 
-        # Find a resort with snow in forecast (from stubbed data)
-        resort_with_snow = resort_files.find do |file|
-          html = File.read(file)
-          html.include?('snow-cell') || html.include?('❄️')
-        end
-
-        if resort_with_snow
-          resort_html = File.read(resort_with_snow)
-          doc         = Nokogiri::HTML(resort_html)
-
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
-
-          # Should include snowfall measurement (inches or cm/mm)
-          expect(og_description).to match(/Expecting .+\d/)
-          expect(og_description).to include('of snow in the forecast period')
-        end
-      end
-
-      it 'mentions no snowfall when none is expected' do
-        resort_files = Dir[File.join(build_dir, 'resorts', '*.html')]
-
-        # Find a resort without snow
-        resort_without_snow = resort_files.find do |file|
-          html = File.read(file)
-          !html.include?('snow-cell') && !html.include?('❄️')
-        end
-
-        if resort_without_snow
-          resort_html = File.read(resort_without_snow)
-          doc         = Nokogiri::HTML(resort_html)
-
-          og_description = doc.at_xpath("//meta[@property='og:description']")['content']
-
-          expect(og_description).to include('No significant snowfall expected')
-        end
+        expect(og_description(doc)).to include('No snow in the 16-day forecast.')
       end
     end
 
     describe 'page-specific metadata' do
       it 'includes snow count in country page descriptions' do
-        country_files = Dir[File.join(build_dir, 'countries', '*.html')].reject { |f| f.include?('snow-now') }
+        country_files = Dir[File.join(build_dir, 'countries', '*.html')]
         country_file  = country_files.first
         country_html  = File.read(country_file)
         doc           = Nokogiri::HTML(country_html)
@@ -666,11 +476,11 @@ RSpec.describe('Building') do
         og_description = doc.at_xpath("//meta[@property='og:description']")['content']
 
         # Should mention resorts with snow
-        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
+        expect(og_description).to match(/\A\d+ of \d+ ski resorts? in .+ ha(s|ve) snow in the next 7 days/)
       end
 
       it 'includes snow count in state page descriptions' do
-        state_files = Dir[File.join(build_dir, 'states', '*.html')].reject { |f| f.include?('snow-now') }
+        state_files = Dir[File.join(build_dir, 'states', '*.html')]
         next if state_files.empty? # Skip if no state pages (small country)
 
         state_file = state_files.first
@@ -680,15 +490,7 @@ RSpec.describe('Building') do
         og_description = doc.at_xpath("//meta[@property='og:description']")['content']
 
         # Should mention resorts with snow
-        expect(og_description).to match(/\d+\s+resorts?\s+with\s+snow/i)
-      end
-
-      it 'includes correct URL for snow-now page' do
-        snow_now_html = File.read(File.join(build_dir, 'snow-now.html'))
-        doc           = Nokogiri::HTML(snow_now_html)
-
-        og_url = doc.at_xpath("//meta[@property='og:url']")['content']
-        expect(og_url).to eq('https://whereto.ski/snow-now')
+        expect(og_description).to match(/\A\d+ of \d+ ski resorts? in .+ ha(s|ve) snow in the next 7 days/)
       end
 
       it 'includes correct URL for about page' do
@@ -697,20 +499,6 @@ RSpec.describe('Building') do
 
         og_url = doc.at_xpath("//meta[@property='og:url']")['content']
         expect(og_url).to eq('https://whereto.ski/about')
-      end
-
-      it 'includes sharing metadata in snow-now country pages' do
-        country_snow_now_files = Dir[File.join(build_dir, 'countries', '*-snow-now.html')]
-        expect(country_snow_now_files).not_to be_empty
-
-        file = country_snow_now_files.first
-        html = File.read(file)
-        doc  = Nokogiri::HTML(html)
-
-        og_url       = doc.at_xpath("//meta[@property='og:url']")
-        country_slug = File.basename(file, '.html')
-
-        expect(og_url['content']).to eq("https://whereto.ski/countries/#{country_slug}")
       end
     end
 

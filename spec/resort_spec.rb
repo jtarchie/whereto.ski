@@ -13,6 +13,44 @@ RSpec.describe('Resort') do
     end
   end
 
+  describe 'duplicate names' do
+    let(:resorts) { FollowTheSnow::Resort.from_sqlite(File.join(__dir__, '..', 'data', 'features.sqlite')) }
+
+    it 'keeps one copy of a resort listed twice' do
+      expect(resorts.count { |r| r.name == 'Hovden' }).to eq(1)
+      expect(resorts.count { |r| r.name == 'Snowshoe Mountain' }).to eq(1)
+      expect(resorts.count { |r| r.slug.start_with?('saas-grund') }).to eq(1)
+    end
+
+    it 'keeps different resorts that share a name, each at its own URL' do
+      crystal = resorts.select { |r| r.name == 'Crystal Mountain' }
+
+      expect(crystal.to_h { |r| [r.region_name, r.slug] })
+        .to eq('Washington' => 'crystal-mountain', 'Michigan' => 'crystal-mountain-michigan')
+    end
+
+    it 'gives every resort with a usable name a unique URL' do
+      slugs = resorts.map(&:slug).reject(&:empty?)
+
+      expect(slugs.length).to eq(slugs.uniq.length)
+    end
+  end
+
+  describe 'terrain data' do
+    let(:steamboat) do
+      FollowTheSnow::Resort.from_sqlite(File.join(__dir__, '..', 'data', 'features.sqlite'))
+                           .find { |r| r.name == 'Steamboat Ski Resort' }
+    end
+
+    it 'loads locality, runs, lifts and vertical from OpenSkiMap' do
+      expect(steamboat.locality).to eq('Steamboat Springs')
+      expect(steamboat.runs.sum { |_, r| r[:count] }).to eq(199)
+      expect(steamboat.runs['advanced']).to eq(count: 80, km: 50.0)
+      expect(steamboat.lifts.sum { |_, l| l[:count] }).to eq(20)
+      expect(steamboat.vertical).to eq(1103)
+    end
+  end
+
   describe '#slug' do
     it 'generates URL-friendly slugs from resort names' do
       resort = FollowTheSnow::Resort.new(name: 'Vail Resort')

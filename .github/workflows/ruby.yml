@@ -15,7 +15,7 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     env:
       RUBY_YJIT_ENABLE: "1"
@@ -28,6 +28,13 @@ jobs:
         with:
           ruby-version: "4.0"
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: npm ci
+      - name: Build assets
+        run: bundle exec rake assets
       - name: Run tests
         run: bundle exec rspec
         env:

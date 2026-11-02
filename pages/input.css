@@ -1,415 +1,257 @@
 @import "tailwindcss" source(none);
-@plugin "daisyui" {
-  themes: winter --default, night --prefersdark;
-}
+@import "./tokens.css";
 
-@source "./**/*.html";
-@source "./*.html";
 @source "./**/*.erb";
 @source "./*.erb";
 @source "./**/*.js";
+@source inline("bg-snow-{1,2,3,4,5} text-on-snow-{1,2,3,4,5} bg-mark-{1,2,3,4,5} border-mark-{1,2,3,4,5}");
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
+  html {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-variant-numeric: tabular-nums;
+    -webkit-text-size-adjust: 100%;
+  }
+
   *,
-  ::after,
   ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+  ::after {
+    @apply border-line;
   }
 
-  /* Ski-inspired gradient background */
-  body {
-    background: linear-gradient(
-      180deg,
-      oklch(98% 0.01 240) 0%,
-      oklch(100% 0 0) 20%,
-      oklch(100% 0 0) 80%,
-      oklch(98% 0.01 240) 100%
-    );
-    min-height: 100vh;
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold tracking-tight text-balance;
   }
 
-  @media (prefers-color-scheme: dark) {
-    body {
-      background: linear-gradient(
-        180deg,
-        oklch(20% 0.02 240) 0%,
-        oklch(18% 0.02 245) 50%,
-        oklch(16% 0.02 250) 100%
-      );
+  h1 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h2 {
+    @apply text-lg;
+  }
+
+  h3 {
+    @apply text-base;
+  }
+
+  a {
+    @apply underline decoration-1 underline-offset-2;
+  }
+
+  a:hover {
+    @apply decoration-2;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
+  table {
+    @apply w-full text-sm;
+  }
+
+  th {
+    @apply text-left text-xs font-medium tracking-wide text-ink-2 uppercase;
+  }
+
+  tbody th {
+    @apply text-sm font-medium tracking-normal text-ink normal-case;
+  }
+
+  th,
+  td {
+    @apply border-b px-2 py-2;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
     }
   }
 }
 
-/* Enhanced typography with mountain-inspired boldness */
-h1, h2, h3 {
-  @apply font-black;
-  letter-spacing: -0.02em;
+/* Grows the tap area to 44px without changing layout. */
+@utility hit {
+  position: relative;
+
+  /* ::before, because ::after carries the sort arrow on table headers. */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--size-hit));
+    height: max(100%, var(--size-hit));
+    translate: -50% -50%;
+  }
 }
 
-p {
-  @apply text-base leading-relaxed mb-4;
+@layer components {
+  /* Icon-only header buttons: 44px hit target, no chrome until hover. */
+  .icon-button {
+    @apply inline-flex size-(--size-hit) items-center justify-center
+      rounded-md text-ink-2 transition-colors hover:bg-inset hover:text-ink;
+  }
+
+  .dialog {
+    @apply m-auto mt-2 w-[calc(100%-1rem)] max-w-xl rounded-lg border
+      bg-surface p-0 text-ink shadow-overlay md:mt-auto;
+    max-height: 85dvh;
+  }
+
+  .dialog::backdrop {
+    background: var(--color-backdrop);
+  }
+
+  .dialog-box {
+    @apply flex max-h-[85dvh] flex-col gap-4 p-4;
+  }
+
+  .input {
+    @apply h-(--size-hit) w-full shrink-0 rounded-md border border-line-strong
+      bg-canvas px-3 text-base text-ink placeholder:text-ink-3;
+  }
+
+  /* Native checkbox drawn as a switch; state stays visible without color. */
+  .switch {
+    @apply relative h-6 w-10 shrink-0 cursor-pointer appearance-none
+      rounded-full border border-line-strong bg-inset transition-colors;
+  }
+
+  .switch::after {
+    @apply absolute top-0.5 left-0.5 size-4.5 rounded-full bg-ink-2
+      transition-transform content-[''];
+  }
+
+  .switch:checked {
+    @apply border-ink bg-ink;
+  }
+
+  .switch:checked::after {
+    @apply translate-x-4 bg-canvas;
+  }
 }
 
-a {
-  @apply underline hover:no-underline;
-  @apply transition-all duration-200;
+@layer components {
+  .chip {
+    @apply hit inline-flex h-8 items-center rounded-full border px-3;
+  }
+
+  /* While Near me is on, the page scope is no longer what's shown. */
+  nav:has([aria-pressed="true"]) .chip[aria-current] {
+    @apply border-line bg-transparent text-ink-2;
+  }
+
+  .chip[aria-current], .chip[aria-pressed="true"] {
+    @apply border-ink bg-ink text-on-inverse;
+  }
+
+  .areas {
+    .place {
+      @apply block truncate text-xs text-ink-2;
+    }
+
+    td a {
+      @apply font-medium no-underline hover:underline;
+    }
+
+    .num {
+      @apply w-24 text-right md:w-32;
+    }
+  }
+
+  /* Ranked list: classes live here, not on each of ~100 rows, to keep region pages under budget. */
+  .ranked {
+    @apply table-fixed;
+
+    th, td {
+      @apply px-1.5 md:px-2;
+    }
+
+    .rank {
+      @apply w-7 text-right text-xs text-ink-3;
+    }
+
+    .who {
+      @apply w-auto;
+    }
+
+    .who a {
+      @apply font-medium no-underline hover:underline;
+    }
+
+    .place {
+      @apply block truncate text-xs text-ink-2;
+    }
+
+    .who-row > div:first-child {
+      @apply min-w-0;
+    }
+
+    .who-row {
+      @apply flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between lg:gap-4;
+    }
+
+    .strip, .days {
+      @apply grid shrink-0 grid-cols-16 lg:w-96;
+    }
+
+    .strip {
+      @apply h-3 items-end border-b lg:h-6;
+    }
+
+    .strip i {
+      @apply block rounded-t-[1px];
+    }
+
+    .days {
+      @apply hidden lg:grid;
+    }
+
+    .days button {
+      @apply rounded-sm py-0.5 text-center leading-tight normal-case hover:bg-inset;
+    }
+
+    .num, td[data-s] {
+      @apply w-14 text-right md:w-20;
+    }
+
+    td.num, td[data-s] {
+      @apply whitespace-nowrap;
+    }
+
+    .next {
+      @apply w-16 text-xs text-ink-2 md:w-20;
+    }
+
+    [data-s="past72h"], [data-s="16d"] {
+      @apply hidden md:table-cell;
+    }
+
+    th button {
+      @apply hit uppercase hover:text-ink;
+    }
+
+    th[aria-sort="descending"] > button, .days button[aria-pressed="true"] {
+      @apply text-ink underline underline-offset-4;
+    }
+
+    th.num[aria-sort="descending"] button::after {
+      content: " ↓";
+    }
+  }
 }
 
 body {
-  &.metric {
-    .metric {
-      display: inline-block;
-    }
-
-    .imperial {
-      display: none;
-    }
-  }
-
-  .metric {
+  &.filter-snow-only [data-has-snow="false"],
+  &.filter-snow-only tr.no-snow {
     display: none;
-  }
-
-  .imperial {
-    display: inline-block;
-  }
-}
-
-/* Epic snow cell with powder effect */
-.snow-cell {
-  @apply bg-gradient-to-br from-cyan-50/80 to-blue-100/60 dark:from-cyan-900/30
-    dark:to-blue-800/20;
-  @apply font-bold;
-  @apply border-l-4 border-cyan-400 dark:border-cyan-500;
-  position: relative;
-  overflow: hidden;
-}
-
-.snow-cell::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.1) 0%,
-    transparent 70%
-  );
-  animation: powder-float 8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes powder-float {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  33% {
-    transform: translate(10px, -10px) rotate(5deg);
-  }
-  66% {
-    transform: translate(-10px, 10px) rotate(-5deg);
-  }
-}
-
-.snow-value {
-  @apply inline-flex items-center gap-1.5;
-  @apply text-cyan-700 dark:text-cyan-300;
-  @apply font-extrabold text-sm;
-}
-
-.snow-cell:hover {
-  @apply bg-gradient-to-br from-cyan-100 to-blue-200 dark:from-cyan-800/40
-    dark:to-blue-700/30;
-  @apply shadow-lg shadow-cyan-200/50 dark:shadow-cyan-900/50;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-td.text-gray-400 {
-  @apply opacity-60;
-}
-
-/* Hourly table snow row - simpler styling that doesn't break table layout */
-.hourly-snow-row {
-  @apply bg-gradient-to-r from-cyan-50/80 to-blue-50/60 dark:from-cyan-900/30
-    dark:to-blue-900/20;
-}
-
-.hourly-snow-row td {
-  @apply border-y border-cyan-200 dark:border-cyan-800;
-}
-
-.hourly-snow-row td:first-child {
-  @apply border-l-4 border-l-cyan-400 dark:border-l-cyan-500;
-}
-
-/* Sortable table headers */
-.sortable-header.sorting-active {
-  @apply bg-base-200;
-}
-
-/* Best Days to Ski - Compact score cards */
-.ski-day-card {
-  @apply border border-base-300 transition-all duration-200;
-}
-
-.ski-day-card:hover {
-  @apply scale-105 shadow-md;
-}
-
-.ski-day-epic {
-  @apply bg-gradient-to-br from-cyan-400 to-blue-500 text-white;
-  @apply shadow-sm shadow-cyan-500/30;
-}
-
-.ski-day-great {
-  @apply bg-gradient-to-br from-green-400 to-emerald-500 text-white;
-  @apply shadow-sm shadow-green-500/30;
-}
-
-.ski-day-good {
-  @apply bg-gradient-to-br from-lime-400 to-green-500 text-white;
-}
-
-.ski-day-fair {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50
-    dark:text-yellow-200;
-}
-
-.ski-day-poor {
-  @apply bg-base-200 text-base-content/50;
-}
-
-/* Dynamic snow badge with fresh pow vibes */
-.snow-badge {
-  @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs
-    font-black uppercase tracking-wider;
-  @apply bg-gradient-to-r from-cyan-500 to-blue-600 text-white;
-  @apply shadow-lg shadow-cyan-500/30;
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-}
-
-.snow-badge::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  50%, 100% {
-    left: 100%;
-  }
-}
-
-.snow-badge:hover {
-  @apply scale-105;
-  @apply shadow-xl shadow-cyan-500/50;
-  transition: all 0.2s ease-out;
-}
-
-/* Avalanche-style table hover effects */
-table tbody tr {
-  @apply transition-colors duration-200;
-}
-
-table tbody tr:hover {
-  @apply bg-blue-50/50 dark:bg-blue-900/10;
-}
-
-/* Mountain peak accents for headers */
-h1, h2 {
-  @apply relative inline-block;
-}
-
-h1::after, h2::after {
-  content: "";
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    oklch(70% 0.15 240) 20%,
-    oklch(80% 0.12 220) 50%,
-    oklch(70% 0.15 240) 80%,
-    transparent 100%
-  );
-  border-radius: 2px;
-}
-
-/* Icy link effects */
-a:hover {
-  @apply text-cyan-600 dark:text-cyan-400;
-}
-
-/* Stats cards with powder glow */
-.stat {
-  @apply transition-all duration-300;
-  @apply hover:shadow-xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30;
-}
-
-/* Alert boxes with mountain lodge warmth */
-.alert {
-  @apply border-l-4;
-}
-
-.alert-info {
-  @apply border-cyan-500 bg-cyan-50/50 dark:bg-cyan-900/50 dark:text-cyan-100;
-}
-
-/* Button enhancements - send it! */
-.btn-primary {
-  @apply shadow-lg shadow-primary/30;
-  @apply hover:shadow-xl hover:shadow-primary/50;
-  @apply transition-all duration-200;
-}
-
-/* Navbar with fresh snow feel */
-.navbar {
-  @apply backdrop-blur-md;
-  @apply border-b border-blue-100 dark:border-blue-900;
-}
-
-/* Footer with après-ski vibes */
-footer {
-  @apply border-t-2 border-blue-100 dark:border-blue-900;
-  @apply backdrop-blur-sm;
-}
-
-/* Hide elements when filter is active */
-body.filter-snow-only [data-has-snow="false"] {
-  display: none;
-}
-
-/* No-snow rows for state pages */
-body.filter-snow-only tr.no-snow {
-  display: none;
-}
-
-/* Dropdown menu with ice crystal effect */
-.dropdown-content {
-  @apply backdrop-blur-xl;
-  @apply border border-blue-100 dark:border-blue-800;
-  @apply shadow-2xl shadow-blue-200/30 dark:shadow-blue-900/50;
-}
-
-/* Loading states with snowfall */
-@keyframes snowfall {
-  0% {
-    transform: translateY(-10px);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-}
-
-/* Breadcrumbs with trail markers */
-.breadcrumbs li::before {
-  @apply text-cyan-500 dark:text-cyan-400;
-}
-
-/* Hourly forecast table enhancements */
-.table-xs th,
-.table-xs td {
-  @apply whitespace-nowrap;
-}
-
-/* Sticky first column in hourly table */
-.table .sticky {
-  position: sticky;
-}
-
-/* Enhanced stat cards for current conditions */
-.stat {
-  @apply transition-all duration-300;
-  @apply hover:shadow-xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30;
-  @apply border border-transparent hover:border-cyan-200
-    dark:hover:border-cyan-800;
-}
-
-.stat-value {
-  @apply wrap-break-word;
-}
-
-/* Date separator rows in hourly forecast */
-.bg-base-300\/50 td {
-  @apply border-t-2 border-cyan-200 dark:border-cyan-800;
-}
-
-/* Compact hourly table on mobile */
-@media (max-width: 768px) {
-  .table-xs {
-    @apply text-xs;
-  }
-
-  .table-xs th,
-  .table-xs td {
-    @apply px-1 py-1;
-  }
-}
-
-/* Attribution link styling */
-.text-base-content\/50 a {
-  @apply text-cyan-600 dark:text-cyan-400;
-}
-
-/* Mobile search modal - handle virtual keyboard */
-@media (max-width: 640px) {
-  /* Position modal at top on mobile for better keyboard handling */
-  .modal-top .modal-box {
-    margin-top: env(safe-area-inset-top, 0);
-    border-radius: 0 0 1rem 1rem;
-  }
-
-  /* Reduce padding when keyboard might be open */
-  .modal-top .modal-box {
-    padding-bottom: 1rem;
-  }
-
-  /* Ensure search results don't overflow when keyboard is open */
-  #search-results {
-    max-height: 40dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Handle viewport resize from virtual keyboard */
-@supports (height: 100dvh) {
-  .modal-top .modal-box {
-    max-height: 85dvh;
   }
 }

@@ -40,6 +40,7 @@ module FollowTheSnow
     :wind_gust,
     :freezing_level,
     :visibility,
+    :snow_depth,
     :is_day,
     keyword_init: true
   )

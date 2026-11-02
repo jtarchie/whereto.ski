@@ -86,8 +86,7 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
       it 'returns formatted temperature for valid data' do
         daily    = described_class.new(forecasts: [valid_forecast])
         delegate = daily.forecasts.first
-        expect(delegate.temp).to include('38.5 °F')
-        expect(delegate.temp).to include('°C')
+        expect(delegate.temp).to eq('<data value="38.5" data-k="t">39°F</data>')
       end
 
       it 'returns placeholder for nil temperature' do
@@ -103,7 +102,6 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
         daily    = described_class.new(forecasts: [valid_forecast])
         delegate = daily.forecasts.first
         expect(delegate.apparent_temp).to include('35')
-        expect(delegate.apparent_temp).to include('°C')
       end
     end
 
@@ -111,13 +109,13 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
       it 'returns formatted snow range for valid data' do
         daily    = described_class.new(forecasts: [valid_forecast])
         delegate = daily.forecasts.first
-        expect(delegate.snow).to include('2.5"')
+        expect(delegate.snow).to include('2.5″')
       end
 
       it 'handles nil snow end gracefully' do
         daily    = described_class.new(forecasts: [partial_nil_forecast])
         delegate = daily.forecasts.first
-        expect(delegate.snow).to include('0"')
+        expect(delegate.snow).to include('0″')
       end
     end
 
@@ -133,7 +131,7 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
       it 'handles nil wind speed gracefully' do
         daily    = described_class.new(forecasts: [partial_nil_forecast])
         delegate = daily.forecasts.first
-        expect(delegate.wind_speed).to include('-- mph')
+        expect(delegate.wind_speed).to include('–')
       end
     end
 
@@ -148,7 +146,7 @@ RSpec.describe(FollowTheSnow::Forecast::Daily) do
       it 'handles nil wind gust gracefully' do
         daily    = described_class.new(forecasts: [partial_nil_forecast])
         delegate = daily.forecasts.first
-        expect(delegate.wind_gust).to include('-- mph')
+        expect(delegate.wind_gust).to eq('–')
       end
     end
 

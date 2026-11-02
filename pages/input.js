@@ -1,37 +1,116 @@
 (function () {
-  var $toggle = document.getElementById("unit-toggle");
+  const $units = document.getElementById("unit-toggle");
+  const $tz = document.getElementById("tz-select");
 
-  function toggleUnits() {
-    var selected = $toggle.checked;
-    if (selected) {
-      document.body.classList.add("metric");
-    } else {
-      document.body.classList.remove("metric");
+  // Raw values are imperial (see lib/follow_the_snow/builder/units.rb).
+  const KINDS = {
+    s: (v, m) => (m ? [v * 2.54, " cm"] : [v, "″"]),
+    t: (v, m) => (m ? [((v - 32) * 5) / 9, "°C"] : [v, "°F"]),
+    w: (v, m) => (m ? [v * 1.60934, " km/h"] : [v, " mph"]),
+    h: (v, m) => (m ? [v * 0.3048, " m"] : [v, " ft"]),
+    d: (v, m) => (m ? [v, " km"] : [v * 0.621371, " mi"]),
+  };
+  const numberFormats = [0, 1].map((digits) =>
+    new Intl.NumberFormat(undefined, { maximumFractionDigits: digits })
+  );
+
+  const isMetric = () => {
+    const saved = localStorage.getItem("preferredUnits");
+    return saved ? saved === "metric" : navigator.language !== "en-US";
+  };
+
+  const resortZone = () =>
+    document.querySelector("[data-resort-tz]")?.dataset.resortTz;
+
+  function timeZone() {
+    const pref = localStorage.getItem("preferredTimezone") || "auto";
+    const zone = pref === "auto"
+      ? undefined
+      : pref === "resort"
+      ? resortZone()
+      : pref;
+    try {
+      new Intl.DateTimeFormat(undefined, { timeZone: zone });
+      return zone;
+    } catch {
+      return undefined;
     }
   }
 
-  $toggle.addEventListener("change", () => {
-    toggleUnits();
+  function formatAll(root = document) {
+    const metric = isMetric();
+    root.querySelectorAll("data[data-k]").forEach((el) => {
+      const convert = KINDS[el.dataset.k];
+      if (!convert) return;
+      const [n, unit] = convert(parseFloat(el.value), metric);
+      const digits = el.dataset.k === "s" && Math.abs(n) < 10 ? 1 : 0;
+      el.textContent = numberFormats[digits].format(n) + unit;
+    });
+
+    const zone = timeZone();
+    const hour = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      timeZone: zone,
+    });
+    const dayHour = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      hour: "numeric",
+      timeZone: zone,
+    });
+    const full = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: zone,
+    });
+    document.querySelectorAll("time[data-k]").forEach((el) => {
+      const date = new Date(el.dateTime);
+      const format = { hr: hour, dh: dayHour }[el.dataset.k] ?? full;
+      el.textContent = format.format(date);
+    });
+
+    const name = new Intl.DateTimeFormat(undefined, {
+      timeZoneName: "short",
+      timeZone: zone,
+    }).formatToParts(new Date()).find((p) => p.type === "timeZoneName");
+    document.querySelectorAll("[data-tz-label]").forEach((el) => {
+      el.textContent = name?.value ?? "";
+    });
+  }
+
+  function initTimezoneSelect() {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    $tz.options[0].textContent = `Auto (${detected})`;
+    if (!resortZone()) {
+      $tz.options[1].textContent = "Resort local (on resort pages)";
+    }
+    (Intl.supportedValuesOf?.("timeZone") ?? []).forEach((zone) => {
+      $tz.add(new Option(zone.replaceAll("_", " "), zone));
+    });
+    $tz.value = localStorage.getItem("preferredTimezone") || "auto";
+    if (!$tz.value) $tz.value = "auto";
+  }
+
+  $units.addEventListener("change", () => {
     localStorage.setItem(
       "preferredUnits",
-      $toggle.checked ? "metric" : "imperial",
+      $units.checked ? "metric" : "imperial",
     );
+    formatAll();
   });
 
-  window.addEventListener("DOMContentLoaded", (event) => {
-    const userLang = navigator.language || navigator.userLanguage;
-    const preferredUnits = localStorage.getItem("preferredUnits");
+  $tz.addEventListener("change", () => {
+    localStorage.setItem("preferredTimezone", $tz.value);
+    formatAll();
+  });
 
-    if (preferredUnits) {
-      console.log("preferred units", preferredUnits);
-      $toggle.checked = preferredUnits === "metric";
-    } else if (userLang === "en-US") {
-      $toggle.checked = false;
-    } else {
-      $toggle.checked = true;
-    }
-
-    toggleUnits();
+  window.addEventListener("DOMContentLoaded", () => {
+    $units.checked = isMetric();
+    initTimezoneSelect();
+    formatAll();
 
     // Snow filter toggle functionality
     const filterSnowToggle = document.getElementById("filter-snow-toggle");
@@ -55,73 +134,96 @@
       });
     }
 
-    // Date sorting functionality for state/country pages
-    initDateSorting();
+    initRankedLists();
+    initMapLoader();
+    initNearMe();
   });
 
-  // Initialize date sorting for forecast tables
-  function initDateSorting() {
-    const table = document.getElementById("forecast-table");
-    const tbody = document.getElementById("forecast-body");
+  // MapLibre is ~400 KB gz, so it loads only when a map placeholder nears the viewport.
+  function initMapLoader() {
+    const maps = document.querySelectorAll("[data-map]");
+    if (!maps.length || !("IntersectionObserver" in window)) return;
+    const status = (text) =>
+      maps.forEach((m) =>
+        m.querySelector("[data-map-status]").textContent = text
+      );
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      observer.disconnect();
+      status("Loading map…");
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "/assets/maplibre/maplibre-gl.css";
+      const js = document.createElement("script");
+      js.type = "module";
+      js.src = "/assets/map.js";
+      js.onerror = () => status("Map unavailable");
+      document.head.append(css, js);
+    }, { rootMargin: "200px" });
+    maps.forEach((m) => observer.observe(m));
+  }
 
-    if (!table || !tbody) return;
+  // Ranked lists: server order is the 7d default; any other key sorts descending, tapping it again restores.
+  function initRankedLists() {
+    const table = document.querySelector("[data-ranked]");
+    if (!table) return;
+    const body = table.tBodies[0];
+    const original = [...body.rows];
+    const value = (row, key) =>
+      parseFloat(
+        (/^\d{4}-/.test(key)
+          ? [...row.querySelectorAll(".strip i")].find((i) =>
+            i.style.gridColumnStart === dayColumn(key)
+          )?.dataset.v
+          : row.querySelector(`td[data-s="${key}"] data`)?.value) ?? 0,
+      ) || 0;
+    const dayButtons = [...table.querySelectorAll(".days button")];
+    const dayColumn = (key) =>
+      String(dayButtons.findIndex((b) => b.dataset.sort === key) + 1);
+    let current = "7d";
 
-    // Get sortable headers (date columns only)
-    const sortableHeaders = table.querySelectorAll("thead th.sortable-header");
-    if (sortableHeaders.length === 0) return;
-
-    // Store original row order for reset
-    const originalRows = Array.from(tbody.querySelectorAll("tr"));
-    let currentSortCol = null;
-
-    // Handle header click for sorting
-    sortableHeaders.forEach((header) => {
-      header.addEventListener("click", () => {
-        const colIndex = parseInt(header.dataset.colIndex, 10);
-
-        // Clear all sort indicators
-        sortableHeaders.forEach((h) => {
-          h.querySelector(".sort-indicator").textContent = "";
-          h.classList.remove("sorting-active");
-        });
-
-        // If clicking the same column, reset to original order
-        if (currentSortCol === colIndex) {
-          originalRows.forEach((row) => tbody.appendChild(row));
-          currentSortCol = null;
-          return;
-        }
-
-        // Sort by the clicked column
-        currentSortCol = colIndex;
-        header.querySelector(".sort-indicator").textContent = "↓";
-        header.classList.add("sorting-active");
-
-        const rows = Array.from(tbody.querySelectorAll("tr"));
-
-        // Sort rows by snow value for the selected date (descending)
-        rows.sort((a, b) => {
-          const aValues = a.dataset.snowValues
-            ? a.dataset.snowValues.split(",")
-            : [];
-          const bValues = b.dataset.snowValues
-            ? b.dataset.snowValues.split(",")
-            : [];
-
-          const aSnow = parseFloat(aValues[colIndex]) || 0;
-          const bSnow = parseFloat(bValues[colIndex]) || 0;
-
-          return bSnow - aSnow; // Descending order
-        });
-
-        // Re-append rows in sorted order
-        rows.forEach((row) => tbody.appendChild(row));
+    function apply(key) {
+      const rows = key === "7d"
+        ? original
+        : [...original].sort((a, b) => value(b, key) - value(a, key));
+      rows.forEach((row, index) => {
+        row.cells[0].textContent = index + 1;
+        body.appendChild(row);
       });
+      const isDay = /^\d{4}-/.test(key);
+      table.querySelectorAll("thead th[data-s]").forEach((th) => {
+        const active = th.dataset.s === (isDay ? "day" : key);
+        active
+          ? th.setAttribute("aria-sort", "descending")
+          : th.setAttribute("aria-sort", "none");
+      });
+      table.querySelectorAll(".days button").forEach((button) =>
+        button.setAttribute("aria-pressed", button.dataset.sort === key)
+      );
+      current = key;
+      const url = new URL(location.href);
+      key === "7d"
+        ? url.searchParams.delete("sort")
+        : url.searchParams.set("sort", key);
+      history.replaceState(null, "", url);
+    }
+
+    table.querySelectorAll("thead button[data-sort]").forEach((button) => {
+      button.addEventListener(
+        "click",
+        () =>
+          apply(button.dataset.sort === current ? "7d" : button.dataset.sort),
+      );
     });
+
+    const requested = new URLSearchParams(location.search).get("sort");
+    if (requested && table.querySelector(`button[data-sort="${requested}"]`)) {
+      apply(requested);
+    }
   }
 
   let searchData = null;
-  let isLoading = false;
+  let loading = null;
 
   const modal = document.getElementById("search-modal");
   const searchButton = document.getElementById("search-button");
@@ -129,112 +231,296 @@
   const searchResults = document.getElementById("search-results");
   const searchLoading = document.getElementById("search-loading");
   const searchEmpty = document.getElementById("search-empty");
+  const searchError = document.getElementById("search-error");
 
-  // Load search data lazily
-  async function loadSearchData() {
-    if (searchData || isLoading) return;
+  const show = (el, visible) => el.classList.toggle("hidden", !visible);
 
-    isLoading = true;
-    searchLoading.classList.remove("hidden");
-
-    try {
-      const response = await fetch("/assets/search-data.json");
-      const rawData = await response.json();
-
-      // Expand compressed format for easier searching
-      // Format: { cl: [countries], d: [{t,n,c,s,u},...] }
-      // t=type (c/s/r), n=name, c=country index, s=state, u=url
-      searchData = rawData.d.map((item) => ({
-        type: item.t === "c" ? "country" : item.t === "s" ? "state" : "resort",
-        name: item.n,
-        country: typeof item.c === "number" ? rawData.cl[item.c] : undefined,
-        state: item.s,
-        url: item.u,
-      }));
-    } catch (error) {
-      console.error("Failed to load search data:", error);
-      searchData = [];
-    } finally {
-      isLoading = false;
-      searchLoading.classList.add("hidden");
-    }
+  // Index format: { cl: [countries], d: [{t, n, c, s, u, l, w}] }; t = c/s/r, c = index into cl, l = [lat, lon], w = 7-day snow (omitted when 0).
+  function loadSearchData() {
+    if (searchData) return Promise.resolve();
+    loading ??= fetch("/assets/search-data.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((raw) => {
+        searchData = raw.d.map((item) => ({
+          type: item.t,
+          name: item.n,
+          country: typeof item.c === "number" ? raw.cl[item.c] : undefined,
+          region: item.s,
+          url: item.u,
+          snow: item.w ?? 0,
+          at: item.l,
+        }));
+        show(searchError, false);
+      })
+      .catch(() => show(searchError, true))
+      .finally(() => {
+        loading = null;
+        show(searchLoading, false);
+        performSearch(searchInput.value);
+      });
+    show(searchLoading, true);
+    return loading;
   }
 
-  // Filter and display results
-  function performSearch(query) {
-    if (!searchData) return;
+  const SNOW_STEPS = [1, 2, 6, 12];
+  const snowLevel = (inches) =>
+    inches <= 0 ? 0 : SNOW_STEPS.filter((step) => inches >= step).length + 1;
 
-    const lowerQuery = query.toLowerCase().trim();
+  const GROUPS = [["c", "Countries"], ["s", "Regions"], ["r", "Resorts"]];
 
-    if (!lowerQuery) {
-      searchResults.innerHTML = "";
-      searchEmpty.classList.add("hidden");
-      return;
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function resultItem(item) {
+    const link = el(
+      "a",
+      "flex items-center gap-3 rounded-md px-2 py-2 no-underline hover:bg-inset",
+    );
+    link.href = item.url;
+    const text = el("span", "min-w-0 grow");
+    text.append(el("span", "block truncate font-medium", item.name));
+    const place = item.type === "r"
+      ? [item.region, item.country]
+      : [item.country];
+    const meta = place.filter(Boolean).join(" · ");
+    if (meta) {
+      text.append(el("span", "block truncate text-xs text-ink-2", meta));
+    }
+    link.append(text);
+
+    if (item.type === "r") {
+      const level = snowLevel(item.snow);
+      const snow = el(
+        "data",
+        level
+          ? `shrink-0 rounded-sm px-1.5 text-sm font-medium bg-snow-${level} text-on-snow-${level}`
+          : "shrink-0 px-1.5 text-sm text-ink-3",
+        "–",
+      );
+      snow.value = item.snow;
+      if (level) snow.dataset.k = "s";
+      snow.title = "Next 7 days";
+      link.append(snow);
     }
 
-    // Simple fuzzy search: matches if query appears anywhere in name, country, or state
+    const li = el("li");
+    li.append(link);
+    return li;
+  }
+
+  // Name matches outrank region/country matches; within a rank, snowier resorts first.
+  function performSearch(query) {
+    const q = query.toLowerCase().trim();
+    searchResults.replaceChildren();
+    show(searchEmpty, false);
+    if (!searchData || !q) return;
+
+    const rank = (item) => {
+      const name = item.name.toLowerCase();
+      if (name.startsWith(q)) return 0;
+      if (name.includes(q)) return 1;
+      return [item.region, item.country].some((p) =>
+          p?.toLowerCase().includes(q)
+        )
+        ? 2
+        : -1;
+    };
     const results = searchData
-      .filter((item) => {
-        const nameMatch = item.name.toLowerCase().includes(lowerQuery);
-        const countryMatch = item.country &&
-          item.country.toLowerCase().includes(lowerQuery);
-        const stateMatch = item.state &&
-          item.state.toLowerCase().includes(lowerQuery);
-        return nameMatch || countryMatch || stateMatch;
-      })
-      .slice(0, 50); // Limit to 50 results
+      .map((item) => ({ item, rank: rank(item) }))
+      .filter((r) => r.rank >= 0)
+      .sort((a, b) => a.rank - b.rank || b.item.snow - a.item.snow)
+      .slice(0, 50)
+      .map((r) => r.item);
 
     if (results.length === 0) {
-      searchResults.innerHTML = "";
-      searchEmpty.classList.remove("hidden");
+      show(searchEmpty, true);
       return;
     }
 
-    searchEmpty.classList.add("hidden");
+    GROUPS.forEach(([type, label]) => {
+      const items = results.filter((r) => r.type === type);
+      if (!items.length) return;
+      const section = el("section", "mb-4");
+      section.append(
+        el(
+          "h3",
+          "mb-1 px-2 text-xs font-medium tracking-wide text-ink-2 uppercase",
+          label,
+        ),
+      );
+      const list = el("ul");
+      items.forEach((item) => list.append(resultItem(item)));
+      section.append(list);
+      searchResults.append(section);
+    });
+    formatAll(searchResults);
+  }
 
-    // Group results by type for better UX
-    const grouped = {
-      country: results.filter((r) => r.type === "country"),
-      state: results.filter((r) => r.type === "state"),
-      resort: results.filter((r) => r.type === "resort"),
-    };
+  const NEAR_KM = 300;
 
-    let html = "";
+  function km([lat1, lon1], [lat2, lon2]) {
+    const rad = Math.PI / 180;
+    const h = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+      Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+        Math.sin(((lon2 - lon1) * rad) / 2) ** 2;
+    return 12742 * Math.asin(Math.sqrt(h));
+  }
 
-    // Render countries
-    if (grouped.country.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Countries</h4><ul class="menu">';
-      grouped.country.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>🌍</span><span>${item.name}</span></a></li>`;
+  function nearMeTable(rows) {
+    const table = el("table", "ranked");
+    const head = el("tr");
+    [["rank", ""], ["who", "Resort"], ["num w-16 md:w-20", "Away"], [
+      "num",
+      "7 days",
+    ]]
+      .forEach(([cls, label]) => {
+        const th = el("th", cls, label);
+        th.scope = "col";
+        head.append(th);
       });
-      html += "</ul></div>";
+    table.append(el("thead"), el("tbody"));
+    table.tHead.append(head);
+    rows.forEach((r, index) => {
+      const tr = el("tr");
+      tr.dataset.hasSnow = r.snow > 0;
+      const who = el("td", "who");
+      const link = el("a", "", r.name);
+      link.href = r.url;
+      who.append(
+        link,
+        el("span", "place", [r.region, r.country].filter(Boolean).join(" · ")),
+      );
+      const distance = el("data", "", `${Math.round(r.km)} km`);
+      distance.value = r.km.toFixed(1);
+      distance.dataset.k = "d";
+      const level = snowLevel(r.snow);
+      const snow = el(
+        "td",
+        level ? `num bg-snow-${level} text-on-snow-${level}` : "num",
+      );
+      if (level) {
+        const amount = el("data", "", `${r.snow}″`);
+        amount.value = r.snow;
+        amount.dataset.k = "s";
+        snow.append(amount);
+      } else snow.textContent = "–";
+      const dist = el("td", "num");
+      dist.append(distance);
+      tr.append(el("td", "rank", String(index + 1)), who, dist, snow);
+      table.tBodies[0].append(tr);
+    });
+    return table;
+  }
+
+  // Location stays in the browser: it is never sent anywhere or put in the URL.
+  function initNearMe() {
+    const chip = document.querySelector("[data-near-me]");
+    const list = document.querySelector("[data-ranked-section]");
+    if (!chip || !list || !navigator.geolocation) return;
+    if (localStorage.getItem("nearMeDenied")) return;
+    chip.hidden = false;
+    chip.setAttribute("aria-pressed", "false");
+
+    const section = el("section");
+    section.id = "near-me";
+    section.setAttribute("aria-live", "polite");
+    section.hidden = true;
+    list.before(section);
+
+    function reset() {
+      chip.setAttribute("aria-pressed", "false");
+      section.hidden = true;
+      list.hidden = false;
     }
 
-    // Render states
-    if (grouped.state.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">States / Regions</h4><ul class="menu">';
-      grouped.state.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>📍</span><span>${item.name}</span><span class="text-xs text-base-content/60">${item.country}</span></a></li>`;
-      });
-      html += "</ul></div>";
+    function render(position) {
+      const here = [position.coords.latitude, position.coords.longitude];
+      const nearby = searchData
+        .filter((d) => d.type === "r" && d.at)
+        .map((d) => ({ ...d, km: km(here, d.at) }))
+        .filter((d) => d.km <= NEAR_KM);
+      const snowy = nearby.filter((d) => d.snow > 0)
+        .sort((a, b) => b.snow - a.snow || a.km - b.km);
+      const rows = snowy.length
+        ? snowy.slice(0, 25)
+        : nearby.sort((a, b) => a.km - b.km).slice(0, 10);
+      const range = el("data", "", `${NEAR_KM} km`);
+      range.value = NEAR_KM;
+      range.dataset.k = "d";
+
+      const heading = el("h2", "mb-1", "Near you");
+      const note = el("p", "mb-2 text-sm text-ink-2");
+      if (!nearby.length) {
+        note.append("No resorts within ", range, " of you.");
+      } else if (!snowy.length) {
+        note.append(
+          "No snow forecast in the next 7 days within ",
+          range,
+          ". Nearest resorts:",
+        );
+      } else {
+        note.append(
+          `Snow in the next 7 days at ${snowy.length} of ${nearby.length} resorts within `,
+          range,
+          ".",
+        );
+      }
+      section.replaceChildren(heading, note);
+      if (rows.length) section.append(nearMeTable(rows));
+      formatAll(section);
+      list.hidden = true;
+      section.hidden = false;
+      chip.setAttribute("aria-pressed", "true");
     }
 
-    // Render resorts
-    if (grouped.resort.length > 0) {
-      html +=
-        '<div class="mb-4"><h4 class="font-semibold text-sm mb-2 text-base-content/60">Ski Resorts</h4><ul class="menu">';
-      grouped.resort.forEach((item) => {
-        html +=
-          `<li><a href="${item.url}" class="flex items-center gap-2"><span>⛷️</span><div class="flex flex-col items-start"><span>${item.name}</span><span class="text-xs text-base-content/60">${item.state}, ${item.country}</span></div></a></li>`;
-      });
-      html += "</ul></div>";
-    }
+    chip.addEventListener("click", () => {
+      if (chip.getAttribute("aria-pressed") === "true") return reset();
+      chip.textContent = "Locating…";
+      chip.setAttribute("aria-busy", "true");
+      const done = () => {
+        chip.textContent = "Near me";
+        chip.removeAttribute("aria-busy");
+      };
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          loadSearchData().then(() => {
+            done();
+            searchData ? render(position) : showNearMeError(
+              section,
+              list,
+              "Couldn't load resorts. Try again.",
+            );
+          }),
+        (error) => {
+          done();
+          if (error.code === error.PERMISSION_DENIED) {
+            localStorage.setItem("nearMeDenied", "1");
+            chip.hidden = true;
+            reset();
+          } else {
+            showNearMeError(
+              section,
+              list,
+              "Couldn't find your location. Try again.",
+            );
+          }
+        },
+        { timeout: 10000, maximumAge: 600000 },
+      );
+    });
+  }
 
-    searchResults.innerHTML = html;
+  function showNearMeError(section, list, message) {
+    section.replaceChildren(el("p", "mb-4 border-l-4 py-1 pl-3", message));
+    section.hidden = false;
+    list.hidden = false;
   }
 
   // Debounce function to avoid searching on every keystroke
@@ -252,18 +538,20 @@
 
   const debouncedSearch = debounce(performSearch, 300);
 
-  // Open modal and load data
-  searchButton.addEventListener("click", () => {
+  function openSearch() {
+    if (modal.open) return;
     modal.showModal();
-    loadSearchData();
     searchInput.focus();
-  });
+    loadSearchData();
+  }
+
+  searchButton.addEventListener("click", openSearch);
 
   // Handle virtual keyboard on mobile
   function handleMobileKeyboard() {
     if (!window.visualViewport) return;
 
-    const modalBox = modal.querySelector(".modal-box");
+    const modalBox = modal.querySelector(".dialog-box");
     if (!modalBox) return;
 
     window.visualViewport.addEventListener("resize", () => {
@@ -294,22 +582,32 @@
   // Reset modal styles when closed
   modal.addEventListener("close", () => {
     searchInput.value = "";
-    searchResults.innerHTML = "";
-    searchEmpty.classList.add("hidden");
-    const modalBox = modal.querySelector(".modal-box");
+    searchResults.replaceChildren();
+    show(searchEmpty, false);
+    const modalBox = modal.querySelector(".dialog-box");
     if (modalBox) {
       modalBox.style.maxHeight = "";
       modalBox.style.transform = "";
     }
   });
 
-  // Keyboard shortcut: Cmd/Ctrl + K to open search
+  // Native <dialog> ignores backdrop clicks; the dialog element itself is the backdrop hit area.
+  document.querySelectorAll("dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+  });
+
+  // Cmd/Ctrl+K anywhere; "/" only when the user isn't typing somewhere else.
   document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    const typing = e.target.closest?.(
+      "input, textarea, select, [contenteditable]",
+    );
+    if (
+      ((e.metaKey || e.ctrlKey) && e.key === "k") || (e.key === "/" && !typing)
+    ) {
       e.preventDefault();
-      modal.showModal();
-      loadSearchData();
-      searchInput.focus();
+      openSearch();
     }
   });
 })();

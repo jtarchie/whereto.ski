@@ -46,12 +46,12 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
       page.driver.browser.manage.window.resize_to(1400, 900)
     end
 
-    it 'uses modal-top class on mobile for better keyboard handling' do
+    it 'pins the dialog to the top on mobile so the keyboard does not cover it' do
       visit '/'
+      find('button[aria-label="Search"]').click
 
-      # Check that modal has modal-top class (use visible: false since dialog is hidden)
-      modal = find('#search-modal', visible: false)
-      expect(modal['class']).to include('modal-top')
+      top = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().top")
+      expect(top).to be < 20
     end
 
     it 'opens search modal on mobile' do
@@ -73,32 +73,26 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
     it 'search results are scrollable on mobile' do
       visit '/'
       find('button[aria-label="Search"]').click
-      sleep 1 # Wait for data to load
-
       fill_in 'search-input', with: 'a'
 
-      # Wait for results and check scrollability
-      expect(page).to have_css('#search-results', wait: 2)
-
-      # Results container should have overflow-y-auto
-      results_container = find('#search-results')
-      expect(results_container['class']).to include('overflow-y-auto')
+      within('#search-results') { expect(page).to have_css('a', minimum: 10) }
+      overflow = evaluate_script("getComputedStyle(document.getElementById('search-results')).overflowY")
+      expect(overflow).to eq('auto')
+      bottom   = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().bottom")
+      expect(bottom).to be <= evaluate_script('window.innerHeight')
     end
 
-    it 'modal box uses dvh units for mobile viewport' do
+    it 'fits the dialog within the viewport' do
       visit '/'
       find('button[aria-label="Search"]').click
 
-      modal_box = find('.modal-box')
-      # Check for responsive classes
-      expect(modal_box['class']).to match(/max-h-\[.*dvh\]|sm:max-h/)
+      bottom = evaluate_script("document.getElementById('search-modal').getBoundingClientRect().bottom")
+      expect(bottom).to be <= evaluate_script('window.innerHeight')
     end
 
     it 'search still functions correctly on mobile viewport' do
       visit '/'
       find('button[aria-label="Search"]').click
-      sleep 1
-
       fill_in 'search-input', with: 'Colorado'
 
       expect(page).to have_link('Colorado', wait: 2)
@@ -112,28 +106,10 @@ RSpec.describe('Mobile Search Feature', :js, type: :feature) do
 
       # Click the X button
       within('dialog[open]') do
-        find('button.btn-circle').click
+        find('button[aria-label="Close"]').click
       end
 
       expect(page).not_to have_css('dialog[open]')
-    end
-  end
-
-  describe 'modal CSS classes' do
-    it 'has modal-top sm:modal-middle for responsive positioning' do
-      visit '/'
-      modal = find('#search-modal', visible: false)
-      expect(modal['class']).to include('modal-top')
-      expect(modal['class']).to include('sm:modal-middle')
-    end
-
-    it 'modal box has responsive width classes' do
-      visit '/'
-      find('button[aria-label="Search"]').click
-
-      modal_box = find('.modal-box')
-      expect(modal_box['class']).to include('w-full')
-      expect(modal_box['class']).to include('sm:w-11/12')
     end
   end
 end

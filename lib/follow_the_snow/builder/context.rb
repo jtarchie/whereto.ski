@@ -2,22 +2,36 @@
 
 require 'active_support/time'
 require 'active_support/core_ext/string'
+require 'tilt'
+require 'tilt/erb'
 require_relative 'snow_helper'
+require_relative 'units'
 
 module FollowTheSnow
   module Builder
     class Context
       include ERB::Util
       include SnowHelper
+      include Units
 
       # Countries with this many or fewer resorts will show resorts directly
       # instead of states/regions, to simplify navigation
       SMALL_COUNTRY_THRESHOLD = 20
+      NEARBY_KM               = 150
+      SNOW_DAY                = 2
+      POWDER_DAY              = 6
+      OUTLOOK_LABELS          = {
+        snow: ['Snow to base', false],
+        mixed: ['Rain at base', true],
+        rain: ['Rain to summit', true],
+        dry: ['Dry', false]
+      }.freeze
 
       attr_reader :resorts
 
-      def initialize(resorts:)
-        @resorts = resorts.sort_by do |r|
+      def initialize(resorts:, source_dir: File.expand_path('../../../pages', __dir__))
+        @source_dir = source_dir
+        @resorts    = resorts.sort_by do |r|
           [r.country_code, r.region_code, r.name].join
         end
       end
@@ -39,166 +53,9 @@ module FollowTheSnow
         resorts_for_country(country).count <= SMALL_COUNTRY_THRESHOLD
       end
 
-      # Check if a country has any snow in the forecast
-      def country_has_snow?(country)
-        resorts_by_countries.fetch(country).any? do |resort|
-          any_snow?(resort)
-        end
-      end
-
-      # Check if a state/region has any snow in the forecast
-      def state_has_snow?(state)
-        resorts = @resorts.select { |r| r.region_name == state }
-        resorts.any? { |resort| any_snow?(resort) }
-      end
-
-      # Get total snow amount for a country
-      def total_snow_for_country(country)
-        resorts_by_countries.fetch(country).sum do |resort|
-          total_snow_for(resort)
-        end
-      end
-
-      # Get total snow amount for a state/region
-      def total_snow_for_state(state)
-        resorts = @resorts.select { |r| r.region_name == state }
-        resorts.sum { |resort| total_snow_for(resort) }
-      end
-
-      # Get count of resorts with snow in a country
-      def country_snow_count(country)
-        resorts_by_countries.fetch(country).count do |resort|
-          any_snow?(resort)
-        end
-      end
-
-      # Get count of resorts with snow in a state
-      def state_snow_count(state)
-        resorts = @resorts.select { |r| r.region_name == state }
-        resorts.count { |resort| any_snow?(resort) }
-      end
-
-      # Get top N resorts by total snow in forecast period
-      def top_snowy_resorts(limit: 10, country: nil, state: nil)
-        resorts_to_check = filter_resorts(country: country, state: state)
-
-        resort_snow = resorts_to_check.map do |resort|
-          total = total_snow_for(resort)
-          { resort: resort, total: total }
-        end
-
-        resort_snow.select { |rs| rs[:total].positive? }
-                   .sort_by { |rs| -rs[:total] }
-                   .take(limit)
-      end
-
-      # Get resorts with snow today (next 24 hours)
-      def resorts_with_snow_today(limit: 10, country: nil, state: nil)
-        resorts_to_check = filter_resorts(country: country, state: state)
-
-        resort_snow = resorts_to_check.map do |resort|
-          first_forecast = raw_forecasts_for(resort).first
-          snow_amount    = first_forecast ? snow_inches(first_forecast) : 0
-          { resort: resort, snow: snow_amount }
-        end
-
-        resort_snow.select { |rs| rs[:snow].positive? }
-                   .sort_by { |rs| -rs[:snow] }
-                   .take(limit)
-      end
-
-      # Get regional summaries (country -> total snow, resort count)
-      def regional_summaries(country: nil)
-        if country
-          # Return state-level summaries for a specific country
-          country_resorts = resorts_by_countries.fetch(country)
-          country_resorts.group_by(&:region_name).map do |state, resorts|
-            total_snow   = resorts.sum { |resort| total_snow_for(resort) }
-            resort_count = resorts.count { |resort| any_snow?(resort) }
-
-            {
-              state: state,
-              total_snow: total_snow,
-              resort_count: resort_count,
-              total_resorts: resorts.count
-            }
-          end.select { |s| s[:resort_count].positive? }
-             .sort_by { |s| -s[:total_snow] }
-        else
-          # Return country-level summaries
-          resorts_by_countries.map do |country_name, resorts|
-            total_snow = resorts.sum do |resort|
-              total_snow_for(resort)
-            end
-
-            resort_count = resorts.count do |resort|
-              any_snow?(resort)
-            end
-
-            {
-              country: country_name,
-              total_snow: total_snow,
-              resort_count: resort_count,
-              total_resorts: resorts.count
-            }
-          end.select { |s| s[:resort_count].positive? }
-             .sort_by { |s| -s[:total_snow] }
-        end
-      end
-
       # Get all resorts for a country
       def resorts_for_country(country)
         resorts_by_countries.fetch(country)
-      end
-
-      def table_for_resorts(resorts)
-        max_days = resorts.map do |resort|
-          resort.forecasts.map(&:time_of_day)
-        end.max_by(&:length)
-
-        headers  = ['Location'] + max_days
-
-        rows = resorts.map do |resort|
-          snow_days = resort.forecasts.map do |f|
-            f.snow.to_s
-          end
-
-          row  = [%(<a href="/resorts/#{resort.slug}">#{resort.name}</a>).html_safe]
-          row += if snow_days.length == max_days.length
-                   snow_days
-                 else
-                   snow_days + ([''] * (max_days.length - snow_days.length))
-                 end
-          row
-        end
-
-        [headers, rows]
-      end
-
-      def table_for_longterm(resort)
-        headers = ['Date', 'Snowfall', 'Icon', 'Conditions', 'Temp', 'Feels Like', 'UV Index', 'Sunshine', 'Precip %', 'Wind Speed', 'Wind Gusts']
-
-        forecasts = resort.forecasts(
-          aggregates: [FollowTheSnow::Forecast::Daily]
-        )
-
-        rows = forecasts.map do |f|
-          [
-            f.name,
-            f.snow,
-            f.short_icon,
-            f.short,
-            f.temp,
-            f.apparent_temp,
-            f.uv_index,
-            f.sunshine_duration,
-            f.precipitation_probability,
-            f.wind_speed,
-            f.wind_gust
-          ]
-        end
-
-        [headers, rows]
       end
 
       # Get current conditions for a resort
@@ -233,235 +90,205 @@ module FollowTheSnow
         end
       end
 
-      # Format temperature with imperial/metric toggle support
       def format_temperature(fahrenheit)
-        return '-' if fahrenheit.nil?
-
-        celsius = ((fahrenheit - 32) * 5.0 / 9.0).round(1)
-        %(<span class="imperial">#{fahrenheit}°F</span><span class="metric">#{celsius}°C</span>).html_safe
+        temp_value(fahrenheit)
       end
 
-      # Format wind speed with direction
       def format_wind(speed, direction, gust: nil)
-        return '-' if speed.nil?
+        return '–' if speed.nil?
 
-        kph    = (speed * 1.60934).round(1)
-        result = %(#{direction} <span class="imperial">#{speed} mph</span><span class="metric">#{kph} kph</span>)
-
-        if gust && gust > speed
-          gust_kph = (gust * 1.60934).round(1)
-          result  += %( (gusts <span class="imperial">#{gust} mph</span><span class="metric">#{gust_kph} kph</span>))
-        end
-
-        result.html_safe
+        result  = "#{direction} ".html_safe + speed_value(speed)
+        result += ' (gusts '.html_safe + speed_value(gust) + ')'.html_safe if gust && gust > speed
+        result
       end
 
-      # Format elevation/height in feet and meters
       def format_elevation(feet)
-        return '-' if feet.nil?
-
-        meters = (feet * 0.3048).round(0)
-        %(<span class="imperial">#{feet.to_i.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} ft</span><span class="metric">#{meters.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse} m</span>).html_safe
+        height_value(feet)
       end
 
-      # Format visibility
-      def format_visibility(meters)
-        return '-' if meters.nil?
-
-        miles = (meters / 1609.34).round(1)
-        km    = (meters / 1000.0).round(1)
-        %(<span class="imperial">#{miles} mi</span><span class="metric">#{km} km</span>).html_safe
+      def format_elevation_m(meters)
+        meters && height_value(meters * 3.28084)
       end
 
-      # Format precipitation amount
-      def format_precipitation(inches)
-        return '-' if inches.nil? || inches.zero?
-
-        mm = (inches * 25.4).round(1)
-        %(<span class="imperial">#{inches}"</span><span class="metric">#{mm} mm</span>).html_safe
-      end
-
-      # Format time for hourly display
       def format_hour(time)
-        time.strftime('%I %p').gsub(/^0/, '')
+        time_value(time, format: :hour)
       end
 
-      # Format snowfall for display
       def format_snowfall(inches)
-        return '-' if inches.nil? || inches.zero?
+        return '–' if inches.nil? || inches.zero?
 
-        cm = (inches * 2.54).round(1)
-        %(<span class="imperial">#{inches}"</span><span class="metric">#{cm} cm</span>).html_safe
+        snow_value(inches)
       end
 
       def current_timestamp
-        Time.zone = 'Eastern Time (US & Canada)'
-        Time.zone.now.strftime('%Y-%m-%d %l:%M%p %Z')
+        time_value(Time.now.utc, format: :datetime)
       end
 
-      # Check if a resort has any snow in its forecast
-      def any_snow?(resort)
-        raw_forecasts_for(resort).any? do |forecast|
-          snow_inches(forecast).positive?
+      # Latitude prefilter (1.4° ≈ 155 km) skips haversine for almost every pair.
+      def nearby_resorts(resort, limit: 8)
+        @nearby                                ||= {}
+        @nearby[resort.id || resort.object_id] ||= @resorts.filter_map do |other|
+          next if other.equal?(resort) || (other.lat - resort.lat).abs > 1.4
+
+          km = distance_km(resort, other)
+          { resort: other, km: km.round } if km <= NEARBY_KM
+        end.sort_by { |n| n[:km] }.first(limit)
+      end
+
+      def nearby_by_snow(resort)
+        nearby_resorts(resort).map { |n| n.merge(next_7d: snow_summary(n[:resort])[:next_7d]) }
+                              .sort_by { |n| [-n[:next_7d], n[:km]] }
+      end
+
+      # Only worth a detour when the difference is both relative and absolute.
+      def more_snow_nearby(resort, nearby)
+        mine = snow_summary(resort)[:next_7d]
+        best = nearby.first
+        best if best && best[:next_7d] >= mine * 2 && best[:next_7d] - mine >= 3
+      end
+
+      RUN_ORDER = %w[novice easy intermediate advanced expert freeride extreme].freeze
+
+      def terrain_runs(resort)
+        (resort.runs || {}).sort_by { |type, _| RUN_ORDER.index(type) || RUN_ORDER.length }
+                           .map { |type, stat| [type.humanize, stat] }
+      end
+
+      def terrain_lifts(resort)
+        (resort.lifts || {}).sort_by { |_, stat| -stat[:count].to_i }.map { |type, stat| [type.humanize, stat] }
+      end
+
+      def distance_km(from, to)
+        rad  = Math::PI / 180
+        dlat = (to.lat - from.lat) * rad
+        dlon = (to.lon - from.lon) * rad
+        h    = (Math.sin(dlat / 2)**2) + (Math.cos(from.lat * rad) * Math.cos(to.lat * rad) * (Math.sin(dlon / 2)**2))
+        12_742 * Math.asin(Math.sqrt(h))
+      end
+
+      def snow_days(resort)
+        raw_forecasts_for(resort).map { |f| { date: f.time_of_day, inches: snow_inches(f) } }
+      end
+
+      def day_callout(resort)
+        best = snow_days(resort).max_by { |d| d[:inches] }
+        return unless best && best[:inches] >= SNOW_DAY
+
+        best.merge(label: best[:inches] >= POWDER_DAY ? 'Powder day' : 'Snow day')
+      end
+
+      def day_name(date, index)
+        index.zero? ? 'Today' : date.strftime('%a %-d')
+      end
+
+      # Freezing level stands in for snow level, taken from the hours it's actually precipitating.
+      def snow_or_rain(resort, days: 3)
+        base_days = resort.base_forecasts
+        levels    = resort.hourly_forecasts.group_by { |h| h.time.to_date }.transform_values do |hours|
+          wet = hours.select { |h| h.precipitation.to_f.positive? }
+          (wet.empty? ? hours : wet).filter_map(&:freezing_level).max
         end
-      end
+        base_ft   = resort.min_elevation && (resort.min_elevation * 3.28084)
+        summit_ft = resort.max_elevation && (resort.max_elevation * 3.28084)
 
-      # Get total snow amount for a specific resort
-      def total_snow_for(resort)
-        raw_forecasts_for(resort).sum do |forecast|
-          snow_inches(forecast)
-        end
-      end
+        raw_forecasts_for(resort).first(days).each_with_index.map do |day, index|
+          base   = base_days[index]
+          level  = levels[day.time_of_day]
+          precip = [day.precipitation.to_f, base&.precipitation.to_f].max
 
-      # Calculate "Best Days to Ski" scores for a resort
-      # Returns array of hashes with date, score (0-100), and reasons
-      def best_ski_days(resort, limit: 7)
-        forecasts = raw_forecasts_for(resort)
-
-        scored_days = forecasts.map do |forecast|
-          score, reasons = calculate_ski_score(forecast)
           {
-            date: forecast.time_of_day,
-            name: forecast.name,
-            score: score,
-            rating: score_to_rating(score),
-            reasons: reasons,
-            snow: snow_inches(forecast)
+            date: day.time_of_day,
+            snow_level: level,
+            base_temp: base_ft && base&.temp,
+            summit_temp: day.temp,
+            wind: day.wind_speed&.end,
+            gust: day.wind_gust&.end,
+            status: precip_status(precip, level, base_ft, summit_ft)
           }
         end
-
-        scored_days.take(limit)
       end
 
-      # Get the single best day in the forecast
-      def best_day_to_ski(resort)
-        best_ski_days(resort, limit: 16).max_by { |day| day[:score] }
+      def precip_status(precip, level, base_ft, summit_ft)
+        return :dry if precip < 0.01
+        return :unknown if level.nil? || base_ft.nil?
+        return :snow if level <= base_ft
+        return :mixed if summit_ft.nil? || level < summit_ft
+
+        :rain
       end
 
-      # Calculate "Best Days to Ski" aggregated across multiple resorts (for state/country pages)
-      # Returns array of day summaries with resort counts by rating
-      def best_ski_days_for_region(resorts_list, limit: 7)
-        # Collect all resort scores by day
-        day_data = Hash.new { |h, k| h[k] = { scores: [], snow_totals: [], resorts_with_snow: 0 } }
-
-        resorts_list.each do |resort|
-          best_ski_days(resort, limit: limit).each do |day|
-            day_data[day[:name]][:scores] << day[:score]
-            day_data[day[:name]][:snow_totals] << day[:snow]
-            day_data[day[:name]][:resorts_with_snow] += 1 if day[:snow].positive?
-            day_data[day[:name]][:date]             ||= day[:date]
-          end
+      # crumbs: [[label, href], ...]; the last one is the current page.
+      def breadcrumbs(crumbs)
+        items = crumbs.each_with_index.map do |(label, href), index|
+          current = index == crumbs.length - 1
+          link    = current ? %(<span aria-current="page">#{h label}</span>) : %(<a class="hit" href="#{h href}">#{h label}</a>)
+          %(<li class="flex shrink-0 items-center gap-2">#{%(<span aria-hidden="true">/</span>) unless index.zero?}#{link}</li>)
         end
-
-        # Calculate aggregated stats for each day
-        day_data.map do |name, data|
-          avg_score     = data[:scores].sum.to_f / data[:scores].size
-          total_resorts = data[:scores].size
-          epic_count    = data[:scores].count { |s| s >= 85 }
-          great_count   = data[:scores].count { |s| s >= 70 && s < 85 }
-          good_count    = data[:scores].count { |s| s >= 55 && s < 70 }
-
-          {
-            name: name,
-            date: data[:date],
-            avg_score: avg_score.round,
-            rating: score_to_rating(avg_score),
-            total_resorts: total_resorts,
-            resorts_with_snow: data[:resorts_with_snow],
-            epic_count: epic_count,
-            great_count: great_count,
-            good_count: good_count,
-            max_snow: data[:snow_totals].max || 0
-          }
-        end.sort_by { |d| d[:date] }.take(limit)
+        %(<nav aria-label="Breadcrumb" class="-mx-4 -my-3 overflow-x-auto px-4 py-3 text-sm text-ink-2"><ol class="flex gap-2 whitespace-nowrap">#{items.join}</ol></nav>).html_safe
       end
 
-      private
-
-      # Calculate ski score (0-100) based on conditions
-      def calculate_ski_score(forecast)
-        score   = 50 # Base score
-        reasons = []
-
-        # Fresh snow is the biggest factor (+0-40 points)
-        snow = snow_inches(forecast)
-        if snow >= 6
-          score += 40
-          reasons << "Deep powder day! (#{snow.round(1)}\")"
-        elsif snow >= 3
-          score += 30
-          reasons << "Great fresh snow (#{snow.round(1)}\")"
-        elsif snow >= 1
-          score += 20
-          reasons << "Fresh snow (#{snow.round(1)}\")"
-        elsif snow.positive?
-          score += 10
-          reasons << 'Light dusting'
-        end
-
-        # Wind penalty (-0-25 points)
-        max_wind = forecast.wind_speed&.end || 0
-        if max_wind > 40
-          score -= 25
-          reasons << 'High winds likely'
-        elsif max_wind > 25
-          score -= 15
-          reasons << 'Windy conditions'
-        elsif max_wind > 15
-          score -= 5
-        elsif max_wind < 10
-          score += 5
-          reasons << 'Calm winds'
-        end
-
-        # Temperature comfort (-10 to +10 points)
-        min_temp = forecast.temp&.begin || 32
-        if min_temp.negative?
-          score -= 10
-          reasons << 'Extremely cold'
-        elsif min_temp < 10
-          score -= 5
-          reasons << 'Very cold'
-        elsif min_temp.between?(20, 32)
-          score += 10
-          reasons << 'Ideal temps'
-        elsif min_temp > 40
-          score -= 5
-          reasons << 'Warm (possible slush)'
-        end
-
-        # Precipitation probability bonus for snow days
-        precip_prob = forecast.precipitation_probability || 0
-        if snow.positive? && precip_prob > 70
-          score += 5
-          reasons << 'Snowing during the day'
-        end
-
-        # Clamp score between 0-100
-        score = score.clamp(0, 100)
-
-        [score, reasons]
+      # Renders pages/_name.html.erb with this context as self.
+      def partial(name, **locals)
+        @partials       ||= {}
+        @partials[name] ||= Tilt::ERBTemplate.new(File.join(@source_dir, "_#{name}.html.erb"), trim: true)
+        @partials[name].render(self, locals).html_safe
       end
 
-      # Convert numeric score to rating label
-      def score_to_rating(score)
-        case score
-        when 85..100 then 'Epic'
-        when 70..84 then 'Great'
-        when 55..69 then 'Good'
-        when 40..54 then 'Fair'
-        else 'Poor'
+      # Default order: 7-day snow, then 16-day, then name for a stable tie-break.
+      def ranked(resorts)
+        resorts.sort_by do |resort|
+          summary = snow_summary(resort)
+          [-summary[:next_7d], -summary[:next_16d], resort.name]
         end
       end
 
-      # Filter resorts by country and/or state
-      def filter_resorts(country: nil, state: nil)
-        filtered = @resorts
+      def next_snow_day(resort)
+        snow_days(resort).find { |d| d[:inches] >= 1 }
+      end
 
-        filtered = filtered.select { |r| r.country_name == country } if country
-        filtered = filtered.select { |r| r.region_name == state } if state
+      # Empty-state link: the area whose best resort has the most 16-day snow, if any has snow at all.
+      def snowiest_area(groups, except:)
+        groups.except(except).map { |name, list| [name, list.map { |r| snow_summary(r)[:next_16d] }.max.to_f] }
+              .select { |_, inches| inches.positive? }.max_by(&:last)&.first
+      end
 
-        filtered
+      def regions_of(country)
+        resorts_for_country(country).group_by(&:region_name)
+      end
+
+      # Meta description for a ranked scope; leads with the numbers a searcher wants. list must be ranked.
+      # where: "in Colorado", "worldwide".
+      def scope_description(list, where)
+        snowing = list.count { |r| snow_summary(r)[:next_7d].positive? }
+        text    = "#{snowing} of #{list.size} ski #{'resort'.pluralize(list.size)} #{where} #{snowing == 1 ? 'has' : 'have'} snow in the next 7 days"
+        text   += ". Most: #{list.first.name}, #{format_snow_total_plain(snow_summary(list.first)[:next_7d])}" if snowing.positive?
+        "#{text}. 16-day snow forecasts, updated daily."
+      end
+
+      # Areas ranked like resorts: by their best resort's 7-day, then 16-day snow. Dry areas come back separately, A–Z.
+      def area_rows(groups)
+        rows         = groups.map do |name, list|
+          top = ranked(list).first
+          { name: name, total: list.size, snowing: list.count { |r| snow_summary(r)[:next_7d].positive? }, top: top, summary: snow_summary(top) }
+        end
+        snowing, dry = rows.partition { |row| row[:summary][:next_7d].positive? }
+        [snowing.sort_by { |row| [-row[:summary][:next_7d], -row[:summary][:next_16d], row[:name]] }, dry.sort_by { |row| row[:name] }]
+      end
+
+      # Forward totals start at the current hour so nothing already counted in past_72h repeats.
+      def snow_summary(resort)
+        @summaries                                ||= {}
+        @summaries[resort.id || resort.object_id] ||= compute_snow_summary(resort)
+      end
+
+      def compute_snow_summary(resort)
+        upcoming = resort.hourly_forecasts.map { |h| h.snowfall.to_f }
+        {
+          past_72h: resort.past_snowfall(hours: 72),
+          next_24h: upcoming.take(24).sum.round(2),
+          next_7d: upcoming.take(24 * 7).sum.round(2),
+          next_16d: upcoming.sum.round(2)
+        }
       end
 
       def raw_forecasts_for(resort)

@@ -5,9 +5,6 @@
       "axe",
       "htmlcs"
     ],
-    "ignore": [
-      "color-contrast"
-    ],
     "chromeLaunchConfig": {
       "args": [
         "--no-sandbox",
@@ -18,9 +15,9 @@
   "urls": [
     "http://localhost:8000/",
     "http://localhost:8000/about.html",
-    "http://localhost:8000/snow-now.html",
     "http://localhost:8000/countries/united-states-of-america.html",
+    "http://localhost:8000/countries/andorra.html",
     "http://localhost:8000/states/colorado.html",
-    "http://localhost:8000//resorts/wolf-creek-ski-area.html"
+    "http://localhost:8000/resorts/wolf-creek-ski-area.html"
   ]
 }
