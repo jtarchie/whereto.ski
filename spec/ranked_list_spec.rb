@@ -91,7 +91,7 @@ RSpec.describe('Ranked list', :js, type: :feature) do
 
     it 'lists all resorts in the region' do
       rows = Nokogiri::HTML(html('bayern')).css('[data-ranked] tbody tr')
-      expect(rows.length).to eq(114)
+      expect(rows.length).to eq(113)
     end
 
     it 'says so when a region has no snow and points somewhere that does' do

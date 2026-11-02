@@ -21,6 +21,7 @@ module FollowTheSnow
     :locality,
     :runs,
     :lifts,
+    :slug_suffix,
     keyword_init: true
   ) do
     def self.from_sqlite(filename)
@@ -40,10 +41,29 @@ module FollowTheSnow
         payload['lifts'] = parse_stats(payload['lifts'])
         results.push Resort.new(payload)
       end
-      results.uniq(&:name)
       rows.close
 
-      results
+      disambiguate(dedupe(results))
+    end
+
+    # OpenSkiMap sometimes lists one resort twice, split across a region border or spelled two ways ("Эльбрус"/"Elbrus"):
+    # same URL slug within ~10 km.
+    def self.dedupe(resorts)
+      resorts.group_by(&:slug).values.flat_map do |same|
+        same.each_with_object([]) do |resort, kept|
+          kept << resort unless kept.any? { |k| (k.lat - resort.lat).abs < 0.1 && (k.lon - resort.lon).abs < 0.1 }
+        end
+      end
+    end
+
+    # Different resorts can share a URL (two Crystal Mountains); the one with the most runs keeps it, the rest get
+    # their region appended.
+    def self.disambiguate(resorts)
+      resorts.group_by(&:slug).except('').each_value do |same|
+        by_size                                            = same.sort_by { |resort| -(resort.runs || {}).sum { |_, stat| stat[:count] } }
+        by_size.drop(1).each { |resort| resort.slug_suffix = resort.region_name.to_url }
+      end
+      resorts
     end
 
     # OpenSkiMap stats: { "advanced" => { count:, km: } }, empty when unmapped.
@@ -69,7 +89,7 @@ module FollowTheSnow
       # - Greek: Καλαβρυτα → kalabruta
       # - Turkish, German, etc.: Gölcük → golcuk, Palandöken → palandoken
       # - Special characters: rock & roll → rock-and-roll, $12 → 12-dollars
-      name.to_url
+      [name.to_url, slug_suffix].compact.join('-')
     end
 
     def forecasts(aggregates: [

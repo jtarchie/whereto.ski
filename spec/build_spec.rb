@@ -23,8 +23,9 @@ RSpec.describe('Building') do
     # - State pages for small countries (threshold=20): ~170 files
     # With stringex, all resorts can be slugified with excellent transliteration
     # - Snow Now pages (now 301s in _redirects): 365 files
-    expect(html_files.length).to eq(3947)
-    expect(File.readlines(File.join(build_dir, '_redirects')).length).to eq(4312 - 3947)
+    # - Duplicate resorts dropped; same-URL resorts that overwrote each other now each get a page: net +7
+    expect(html_files.length).to eq(3954)
+    expect(File.readlines(File.join(build_dir, '_redirects')).length).to eq(364) # Tolmin (SI) only held a duplicate of Vogel
   end
 
   describe 'list pages' do
