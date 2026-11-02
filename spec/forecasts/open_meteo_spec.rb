@@ -328,7 +328,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
 
   describe 'forecast data v2' do
     let(:mountain) do
-      instance_double(FollowTheSnow::Resort, id: 2, lat: 41.332, lon: -106.8, min_elevation: 2105, max_elevation: 3207.6)
+      instance_double(FollowTheSnow::Resort, id: 2, lat: 41.335, lon: -106.8, min_elevation: 2105, max_elevation: 3207.6)
     end
     let(:client) { described_class.new(resort: mountain) }
 
@@ -338,7 +338,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
       client.forecasts
 
       expect(a_request(:get, /api.open-meteo.com/).with(query: hash_including(
-        'latitude' => '41.332,41.332', 'elevation' => '2105,3208', 'timezone' => 'auto', 'past_days' => '3'
+        'latitude' => '41.335,41.335', 'elevation' => '2105,3208', 'timezone' => 'auto', 'past_days' => '3'
       ))).to have_been_made.once
     end
 
@@ -350,7 +350,7 @@ RSpec.describe(FollowTheSnow::Forecast::OpenMeteo) do
     end
 
     it 'sums the past 72 hours of summit snowfall' do
-      hourly = JSON.parse(weather_api_body(lat: 41.332, lon: -106.8)).fetch('hourly')
+      hourly = JSON.parse(weather_api_body(lat: 41.335, lon: -106.8)).fetch('hourly')
       past   = hourly.fetch('time').each_index.grep(12..83).sum { |i| hourly.fetch('snowfall')[i] }
 
       expect(past).to be_positive

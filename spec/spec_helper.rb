@@ -197,23 +197,35 @@ def stub_weather_api
     query     = request.uri.query_values
     lats      = query.fetch('latitude').split(',').map(&:to_f)
     lons      = query.fetch('longitude').split(',').map(&:to_f)
-    locations = lats.zip(lons).each_with_index.map do |(lat, lon), index|
-      fake_location(lat: lat, lon: lon, base: lats.length > 1 && index.zero?)
+    bodies    = lats.zip(lons).each_with_index.map do |(lat, lon), index|
+      fake_location_json(lat: lat, lon: lon, base: lats.length > 1 && index.zero?)
     end
 
-    { status: 200, body: (locations.length == 1 ? locations.first : locations).to_json }
+    { status: 200, body: bodies.length == 1 ? bodies.first : "[#{bodies.join(',')}]" }
   end
 end
 
 def weather_api_body(lat: 39.6403, lon: -106.3742)
-  fake_location(lat: lat, lon: lon).to_json
+  fake_location_json(lat: lat, lon: lon)
+end
+
+# A full build asks for ~3,600 locations; 97 seed buckets keep variety while generating each body once.
+FAKE_BUCKETS = 97
+
+def fake_seed(lat, lon)
+  (((lat * 1000).round * 31) + (lon * 1000).round) % FAKE_BUCKETS
+end
+
+def fake_location_json(lat:, lon:, base: false)
+  @fake_location_json                               ||= {}
+  @fake_location_json[[fake_seed(lat, lon), base]] ||= fake_location(lat: lat, lon: lon, base: base).to_json
 end
 
 # Fixed "now" and coordinate-seeded profiles keep builds reproducible while covering every snow step.
 STORM_TOTALS = [0.0, 0.4, 1.5, 4.0, 9.0, 16.0].freeze
 
 def fake_location(lat:, lon:, base: false)
-  rng     = Random.new(((lat * 1000).round * 31) + (lon * 1000).round)
+  rng     = Random.new(fake_seed(lat, lon))
   profile = rng.rand(STORM_TOTALS.length)
   days    = (0...19).map { |i| Date.new(2023, 3, 11) + i }
   scale   = base ? 0.6 : 1.0
@@ -231,8 +243,8 @@ def fake_location(lat:, lon:, base: false)
   wind  = Array.new(days.length) { rng.rand(4.0..30.0).round(1) }
   hours = days.flat_map { |d| (0..23).map { |h| [d, h] } }
 
-  hourly_snow = hours.map { |d, h| h < 12 ? (daily_snow[days.index(d)] / 12.0).round(2) : 0.0 }
-  hourly_temp = hours.map { |d, h| (low[days.index(d)] + ((high[days.index(d)] - low[days.index(d)]) * Math.sin(Math::PI * h / 24.0))).round(1) }
+  hourly_snow = hours.each_with_index.map { |(_, h), i| h < 12 ? (daily_snow[i / 24] / 12.0).round(2) : 0.0 }
+  hourly_temp = hours.each_with_index.map { |(_, h), i| (low[i / 24] + ((high[i / 24] - low[i / 24]) * Math.sin(Math::PI * h / 24.0))).round(1) }
 
   {
     'timezone' => 'America/Denver',
@@ -260,9 +272,9 @@ def fake_location(lat:, lon:, base: false)
       'snowfall' => hourly_snow,
       'weather_code' => hourly_snow.map { |v| v.positive? ? 73 : 2 },
       'cloud_cover' => hourly_snow.map { |v| v.positive? ? 100 : 30 },
-      'wind_speed_10m' => hours.map { |d, _| wind[days.index(d)] },
+      'wind_speed_10m' => hours.each_index.map { |i| wind[i / 24] },
       'wind_direction_10m' => Array.new(hours.length, 250),
-      'wind_gusts_10m' => hours.map { |d, _| (wind[days.index(d)] * 1.6).round(1) },
+      'wind_gusts_10m' => hours.each_index.map { |i| (wind[i / 24] * 1.6).round(1) },
       'freezing_level_height' => hourly_temp.map { |t| (8000 + ((t - 28) * 250)).round },
       'snow_depth' => Array.new(hours.length, base ? 2.5 : 4.0),
       'visibility' => Array.new(hours.length, 20_000),

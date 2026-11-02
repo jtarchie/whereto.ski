@@ -5,7 +5,56 @@ require 'json'
 
 module FollowTheSnow
   Forecast::OpenMeteo = Struct.new(:resort, keyword_init: true) do
-    API_URL      = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
+    API_URL       = ENV.fetch('OPEN_METEO_API_URL', 'https://api.open-meteo.com')
+    # Built once: these run for every hour of every resort.
+    WEATHER_CODES = {
+      0 => 'Clear sky',
+      1 => 'Mainly clear',
+      2 => 'Partly cloudy',
+      3 => 'Overcast',
+      45 => 'Fog',
+      48 => 'Depositing rime fog',
+      51 => 'Drizzle: Light intensity',
+      53 => 'Drizzle: Moderate intensity',
+      55 => 'Drizzle: Dense intensity',
+      56 => 'Freezing Drizzle: Light intensity',
+      57 => 'Freezing Drizzle: Dense intensity',
+      61 => 'Rain: Slight intensity',
+      63 => 'Rain: Moderate intensity',
+      65 => 'Rain: Heavy intensity',
+      66 => 'Freezing Rain: Light intensity',
+      67 => 'Freezing Rain: Heavy intensity',
+      71 => 'Snow fall: Slight intensity',
+      73 => 'Snow fall: Moderate intensity',
+      75 => 'Snow fall: Heavy intensity',
+      77 => 'Snow grains',
+      80 => 'Rain showers: Slight intensity',
+      81 => 'Rain showers: Moderate intensity',
+      82 => 'Rain showers: Violent intensity',
+      85 => 'Snow showers: Slight intensity',
+      86 => 'Snow showers: Heavy intensity',
+      95 => 'Thunderstorm: Slight or moderate',
+      96 => 'Thunderstorm with slight hail',
+      99 => 'Thunderstorm with heavy hail'
+    }.freeze
+
+    HOURLY_COLUMNS = %w[temperature_2m
+                        apparent_temperature
+                        relative_humidity_2m
+                        precipitation_probability
+                        precipitation
+                        snowfall
+                        weather_code
+                        cloud_cover
+                        wind_speed_10m
+                        wind_direction_10m
+                        wind_gusts_10m
+                        freezing_level_height
+                        visibility
+                        is_day].freeze
+
+    WIND_DIRECTIONS = %i[N NNE NE ENE E ESE SE SSE S SSW SW WSW W WNW NW NNW].freeze
+
     MAX_ATTEMPTS = 5
 
     class ApiError < StandardError
@@ -233,27 +282,31 @@ module FollowTheSnow
 
     def parse_hourly_forecasts(data)
       hourly     = data.fetch('hourly')
+      col        = HOURLY_COLUMNS.to_h { |key| [key, hourly.fetch(key)] }
+      times      = hourly.fetch('time')
       snow_depth = hourly.fetch('snow_depth', [])
+      # Open-Meteo hourly series are consecutive hours, so only the first timestamp needs parsing.
+      start      = times.first && local_time(times.first, data)
 
-      hourly.fetch('time').each_with_index.map do |timestamp, index|
+      times.each_index.map do |i|
         HourlyForecast.new(
-          time: local_time(timestamp, data),
-          snow_depth: snow_depth[index],
-          temperature: hourly.fetch('temperature_2m')[index]&.round(1),
-          apparent_temperature: hourly.fetch('apparent_temperature')[index]&.round(1),
-          humidity: hourly.fetch('relative_humidity_2m')[index].to_i,
-          precipitation_probability: hourly.fetch('precipitation_probability')[index].to_i,
-          precipitation: hourly.fetch('precipitation')[index]&.round(2),
-          snowfall: hourly.fetch('snowfall')[index]&.round(2),
-          weather_code: hourly.fetch('weather_code')[index],
-          weather_description: weather_codes(hourly.fetch('weather_code')[index]),
-          cloud_cover: hourly.fetch('cloud_cover')[index].to_i,
-          wind_speed: hourly.fetch('wind_speed_10m')[index]&.round(1),
-          wind_direction: wind_direction(hourly.fetch('wind_direction_10m')[index]),
-          wind_gust: hourly.fetch('wind_gusts_10m')[index]&.round(1),
-          freezing_level: hourly.fetch('freezing_level_height')[index]&.round(0),
-          visibility: hourly.fetch('visibility')[index]&.round(0),
-          is_day: hourly.fetch('is_day')[index] == 1
+          time: start + (i * 3600),
+          snow_depth: snow_depth[i],
+          temperature: col['temperature_2m'][i]&.round(1),
+          apparent_temperature: col['apparent_temperature'][i]&.round(1),
+          humidity: col['relative_humidity_2m'][i].to_i,
+          precipitation_probability: col['precipitation_probability'][i].to_i,
+          precipitation: col['precipitation'][i]&.round(2),
+          snowfall: col['snowfall'][i]&.round(2),
+          weather_code: col['weather_code'][i],
+          weather_description: weather_codes(col['weather_code'][i]),
+          cloud_cover: col['cloud_cover'][i].to_i,
+          wind_speed: col['wind_speed_10m'][i]&.round(1),
+          wind_direction: wind_direction(col['wind_direction_10m'][i]),
+          wind_gust: col['wind_gusts_10m'][i]&.round(1),
+          freezing_level: col['freezing_level_height'][i]&.round(0),
+          visibility: col['visibility'][i]&.round(0),
+          is_day: col['is_day'][i] == 1
         )
       end
     end
@@ -278,65 +331,13 @@ module FollowTheSnow
     end
 
     def weather_codes(code)
-      {
-        0 => 'Clear sky',
-        1 => 'Mainly clear',
-        2 => 'Partly cloudy',
-        3 => 'Overcast',
-        45 => 'Fog',
-        48 => 'Depositing rime fog',
-        51 => 'Drizzle: Light intensity',
-        53 => 'Drizzle: Moderate intensity',
-        55 => 'Drizzle: Dense intensity',
-        56 => 'Freezing Drizzle: Light intensity',
-        57 => 'Freezing Drizzle: Dense intensity',
-        61 => 'Rain: Slight intensity',
-        63 => 'Rain: Moderate intensity',
-        65 => 'Rain: Heavy intensity',
-        66 => 'Freezing Rain: Light intensity',
-        67 => 'Freezing Rain: Heavy intensity',
-        71 => 'Snow fall: Slight intensity',
-        73 => 'Snow fall: Moderate intensity',
-        75 => 'Snow fall: Heavy intensity',
-        77 => 'Snow grains',
-        80 => 'Rain showers: Slight intensity',
-        81 => 'Rain showers: Moderate intensity',
-        82 => 'Rain showers: Violent intensity',
-        85 => 'Snow showers: Slight intensity',
-        86 => 'Snow showers: Heavy intensity',
-        95 => 'Thunderstorm: Slight or moderate',
-        96 => 'Thunderstorm with slight hail',
-        99 => 'Thunderstorm with heavy hail'
-      }[code] || ''
+      WEATHER_CODES[code] || ''
     end
 
     def wind_direction(degree)
       return :N if degree.nil?
 
-      directions = {
-        N: [348.75..360, 0..11.25],
-        NNE: [11.25..33.75],
-        NE: [33.75..56.25],
-        ENE: [56.25..78.75],
-        E: [78.75..101.25],
-        ESE: [101.25..123.75],
-        SE: [123.75..146.25],
-        SSE: [146.25..168.75],
-        S: [168.75..191.25],
-        SSW: [191.25..213.75],
-        SW: [213.75..236.25],
-        WSW: [236.25..258.75],
-        W: [258.75..281.25],
-        WNW: [281.25..303.75],
-        NW: [303.75..326.25],
-        NNW: [326.25..348.75]
-      }
-
-      directions.find do |_direction, degrees|
-        degrees.any? do |range|
-          range.include?(degree)
-        end
-      end&.first || :N
+      WIND_DIRECTIONS[(degree % 360 / 22.5).round % 16]
     end
   end
 end
