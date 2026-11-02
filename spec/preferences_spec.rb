@@ -9,30 +9,7 @@ RSpec.describe('Unit and timezone preferences', :js, type: :feature) do
 
   before(:all) do
     stub_weather_api
-    SharedBuild.perform!
-    @build_dir      = SharedBuild.build_dir
-    build_directory = @build_dir
-    Capybara.app    = Rack::Builder.new do
-      use Rack::Static,
-          urls: ['/'],
-          root: build_directory,
-          index: 'index.html',
-          cascade: true
-
-      run lambda { |env|
-        path      = env['PATH_INFO']
-        file_path = File.join(build_directory, path)
-
-        if File.file?(file_path)
-          [200, { 'Content-Type' => Rack::Mime.mime_type(File.extname(path)) }, [File.read(file_path)]]
-        elsif File.file?(File.join(build_directory, "#{path}.html"))
-          content = File.read(File.join(build_directory, "#{path}.html"))
-          [200, { 'Content-Type' => 'text/html' }, [content]]
-        else
-          [404, { 'Content-Type' => 'text/html' }, ['Not Found']]
-        end
-      }
-    end
+    @build_dir = serve_shared_build!
   end
 
   before do
