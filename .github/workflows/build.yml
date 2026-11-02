@@ -19,7 +19,7 @@ jobs:
     env:
       RUBY_YJIT_ENABLE: "1"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           lfs: true
       - uses: actions/setup-node@v6
