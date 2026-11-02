@@ -1,5 +1,4 @@
-<% days = snow_days(resorts.first).map { |d| d[:date] }
-  columns = [[:next_24h, "24h", "Next 24h", "24h"], [:past_72h, "past72h", "Past 72h", "72h"], [:next_7d, "7d", "Next 7 days", "7d"], [:next_16d, "16d", "16 days", "16d"]] %>
+<% days = snow_days(resorts.first).map { |d| d[:date] } %>
 
 <div data-ranked-section>
   <% if heading %>
@@ -29,7 +28,7 @@
                 <button
                   type="button"
                   data-sort="<%= date.iso8601 %>"
-                  aria-label="Sort by snow on <%= date.strftime('%a %b %-d') %>"
+                  aria-label="Sort by snow on <%= short_date(date) %>"
                 >
                   <%= date.strftime("%a")[0] %>
                   <br>
@@ -40,15 +39,15 @@
           </div>
         </th>
 
-        <% columns.each do |_, key, label, short| %>
+        <% ranked_columns.each do |col| %>
           <th
             scope="col"
             class="num"
-            data-s="<%= key %>"
-            aria-sort="<%= key == "7d" ? "descending" : "none" %>"
+            data-s="<%= col[:key] %>"
+            aria-sort="<%= col[:key] == "7d" ? "descending" : "none" %>"
           >
-            <button type="button" data-sort="<%= key %>">
-              <span class="lg:hidden" aria-hidden="true"><%= short %></span><span class="max-lg:sr-only"><%= label %></span>
+            <button type="button" data-sort="<%= col[:key] %>">
+              <span class="lg:hidden" aria-hidden="true"><%= col[:short] %></span><span class="max-lg:sr-only"><%= col[:label] %></span>
             </button>
           </th>
         <% end %>
@@ -93,12 +92,12 @@
             </div>
           </td>
 
-          <% columns.each do |field, key, _, _| %>
-            <% inches = summary[field]
+          <% ranked_columns.each do |col| %>
+            <% inches = summary[col[:field]]
             level = snow_level(inches) %>
 
             <td
-              data-s="<%= key %>"
+              data-s="<%= col[:key] %>"
               class="<%= snow_cell_class(inches, zero: nil) %>"
             >
               <% if level.zero? %>
@@ -110,7 +109,7 @@
           <% end %>
 
           <td class="next">
-            <%= upcoming ? day_name(upcoming[:date], days.index(upcoming[:date]) || 1) : "–" %>
+            <%= upcoming ? upcoming_day_name(upcoming[:date], days) : "–" %>
           </td>
         </tr>
       <% end %>

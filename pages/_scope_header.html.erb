@@ -27,7 +27,7 @@
 <% if dry %>
   <p class="mb-4 border-l-4 py-1 pl-3">
     No snow forecast <%= scope == "World" ? "worldwide" : "in #{h scope}" %>
-    through <%= snow_days(list.first).last[:date].strftime("%a %b %-d") %>.
+    through <%= short_date(snow_days(list.first).last[:date]) %>.
 
     <% if alternative %>
       Try <a href="<%= alternative[1] %>"><%= h alternative[0] %></a> or

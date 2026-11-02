@@ -27,6 +27,13 @@ module FollowTheSnow
         dry: ['Dry', false]
       }.freeze
 
+      RANKED_COLUMNS          = [
+        { field: :next_24h, key: '24h', label: 'Next 24h', short: '24h' },
+        { field: :past_72h, key: 'past72h', label: 'Past 72h', short: '72h' },
+        { field: :next_7d, key: '7d', label: 'Next 7 days', short: '7d' },
+        { field: :next_16d, key: '16d', label: '16 days', short: '16d' }
+      ].freeze
+
       attr_reader :resorts
 
       def initialize(resorts:, source_dir: File.expand_path('../../../pages', __dir__))
@@ -160,6 +167,51 @@ module FollowTheSnow
 
       def day_name(date, index)
         index.zero? ? 'Today' : date.strftime('%a %-d')
+      end
+
+      # Ranked-list "next snow" cell: position in the shared day strip, else treated as not-today.
+      def upcoming_day_name(date, days)
+        day_name(date, days.index(date) || 1)
+      end
+
+      def ranked_columns
+        RANKED_COLUMNS
+      end
+
+      def short_date(date)
+        date.strftime('%a %b %-d')
+      end
+
+      def strip_max(strip)
+        [strip.map { |d| d[:inches] }.max.to_f, POWDER_DAY].max
+      end
+
+      def outlook_label(status)
+        OUTLOOK_LABELS[status]
+      end
+
+      def resort_place(resort)
+        [resort.locality, resort.region_name, resort.country_name].compact.uniq
+      end
+
+      def website_host(website)
+        website && begin
+          URI(website).host
+        rescue StandardError
+          website
+        end
+      end
+
+      def forecast_summary(resort)
+        summary = snow_summary(resort)
+        callout = day_callout(resort)
+        text    = if summary[:next_16d].positive?
+                    "#{format_snow_total_plain(summary[:next_7d])} of snow in the next 7 days, " \
+                      "#{format_snow_total_plain(summary[:next_16d])} over 16 days."
+                  else
+                    'No snow in the 16-day forecast.'
+                  end
+        callout ? "#{text} #{callout[:label]} #{short_date(callout[:date])}." : text
       end
 
       # Freezing level stands in for snow level, taken from the hours it's actually precipitating.

@@ -1,7 +1,7 @@
 <% summary = snow_summary(resort)
   callout = day_callout(resort)
   strip = snow_days(resort)
-  strip_max = [strip.map { |d| d[:inches] }.max.to_f, self.class::POWDER_DAY].max
+  bar_max = strip_max(strip)
   outlook = snow_or_rain(resort)
   hourly = hourly_forecasts_for(resort, hours: 48)
   nearby = nearby_by_snow(resort)
@@ -9,15 +9,10 @@
   runs = terrain_runs(resort)
   lifts = terrain_lifts(resort)
   website = safe_url(resort.url)
-  website_host = website && (URI(website).host rescue website)
-  place = [resort.locality, resort.region_name, resort.country_name].compact.uniq
+  website_host = website_host(website)
+  place = resort_place(resort)
 
-  forecast_summary = if summary[:next_16d] > 0
-    "#{format_snow_total_plain(summary[:next_7d])} of snow in the next 7 days, #{format_snow_total_plain(summary[:next_16d])} over 16 days."
-  else
-    "No snow in the 16-day forecast."
-  end
-  forecast_summary += " #{callout[:label]} #{callout[:date].strftime('%a %b %-d')}." if callout %>
+  forecast_summary = forecast_summary(resort) %>
 
 <!--
   ---
@@ -82,7 +77,7 @@
       <% if callout %>
         <p class="mt-3 border-l-4 py-1 pl-3 border-mark-<%= snow_level(callout[:inches]) %>">
           <strong><%= callout[:label] %></strong>
-          <%= callout[:date] == strip.first[:date] ? "Today" : callout[:date].strftime("%a %b %-d") %>
+          <%= callout[:date] == strip.first[:date] ? "Today" : short_date(callout[:date]) %>
           · <%= snow_value(callout[:inches]) %>
         </p>
       <% end %>
@@ -119,7 +114,7 @@
               <% unless level.zero? %>
                 <span
                   class="block w-full rounded-t-sm bg-mark-<%= level %>"
-                  style="height: <%= [(day[:inches] / strip_max * 100).round, 3].max %>%"
+                  style="height: <%= [(day[:inches] / bar_max * 100).round, 3].max %>%"
                 ></span>
               <% end %>
             </span>
@@ -142,7 +137,7 @@
             <div class="flex items-center justify-between md:block">
               <span class="font-medium"><%= day_name(day[:date], index) %></span>
 
-              <% label, warn = self.class::OUTLOOK_LABELS[day[:status]] %>
+              <% label, warn = outlook_label(day[:status]) %>
 
               <% if label %>
                 <span

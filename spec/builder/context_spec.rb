@@ -181,6 +181,69 @@ RSpec.describe(FollowTheSnow::Builder::Context) do
     end
   end
 
+  describe '#forecast_summary' do
+    def summary(next7d, next16d) = { past_72h: 0, next_24h: 0, next_7d: next7d, next_16d: next16d }
+
+    it 'says there is no snow when the 16-day total is zero' do
+      allow(context).to receive_messages(snow_summary: summary(0, 0), day_callout: nil)
+
+      expect(context.forecast_summary(resort_with_snow)).to eq('No snow in the 16-day forecast.')
+    end
+
+    it 'reports totals and appends the callout day' do
+      allow(context).to receive_messages(snow_summary: summary(4.0, 9.0), day_callout: { label: 'Powder day', date: Date.new(2026, 1, 3) })
+
+      expect(context.forecast_summary(resort_with_snow))
+        .to eq("#{context.format_snow_total_plain(4.0)} of snow in the next 7 days, " \
+               "#{context.format_snow_total_plain(9.0)} over 16 days. Powder day Sat Jan 3.")
+    end
+  end
+
+  describe '#short_date' do
+    it 'formats weekday, month, unpadded day' do
+      expect(context.short_date(Date.new(2026, 1, 3))).to eq('Sat Jan 3')
+    end
+  end
+
+  describe '#resort_place' do
+    it 'drops nils and duplicates' do
+      resort = instance_double(FollowTheSnow::Resort, locality: nil, region_name: 'Monaco', country_name: 'Monaco')
+
+      expect(context.resort_place(resort)).to eq(['Monaco'])
+    end
+  end
+
+  describe '#website_host' do
+    it 'extracts the host, nil-safe' do
+      expect(context.website_host('https://www.example.com/a')).to eq('www.example.com')
+      expect(context.website_host(nil)).to be_nil
+    end
+  end
+
+  describe '#outlook_label' do
+    it 'maps status to label and warning flag' do
+      expect(context.outlook_label(:mixed)).to eq(['Rain at base', true])
+      expect(context.outlook_label(:snow)).to eq(['Snow to base', false])
+    end
+  end
+
+  describe '#strip_max' do
+    it 'floors the bar scale at a powder day' do
+      expect(context.strip_max([{ inches: 2.0 }])).to eq(6)
+      expect(context.strip_max([{ inches: 8.5 }])).to eq(8.5)
+    end
+  end
+
+  describe '#upcoming_day_name' do
+    it 'names the day by its position in the strip, defaulting to a non-today slot' do
+      days = [Date.new(2026, 1, 3), Date.new(2026, 1, 4)]
+
+      expect(context.upcoming_day_name(days[0], days)).to eq('Today')
+      expect(context.upcoming_day_name(days[1], days)).to eq('Sun 4')
+      expect(context.upcoming_day_name(Date.new(2026, 2, 9), days)).to eq('Mon 9')
+    end
+  end
+
   describe '#day_callout' do
     it 'calls out the biggest day once it reaches snow-day size' do
       expect(context.day_callout(resort_with_snow)).to include(label: 'Snow day', inches: 5.5, date: 'Mon')
