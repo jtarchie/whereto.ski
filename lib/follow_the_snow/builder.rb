@@ -10,7 +10,9 @@ require 'ruby-limiter'
 require 'stringex'
 require 'tilt'
 require 'tilt/erb'
+require 'json'
 require_relative 'builder/context'
+require_relative 'builder/search_index'
 
 module FollowTheSnow
   module Builder
@@ -136,61 +138,15 @@ module FollowTheSnow
       end
 
       def generate_search_index
-        require 'json'
-
-        # Build lookup tables for repeated strings
-        country_list   = countries
-        # Create numeric lookup for countries (most repeated)
-        country_lookup = country_list.each_with_index.to_h
-
-        # Build search data with optimizations:
-        # - Single-char type codes: c=country, s=state, r=resort
-        # - Country references use numeric index
-        # - Shorter key names: n=name, u=url, c=country, s=state
-        search_data = {
-          cl: country_list, # country lookup
-          d: [] # data entries
-        }
-
-        # Add countries (just name and URL, type implied by structure)
-        country_list.each do |country|
-          search_data[:d] << {
-            t: 'c',
-            n: country,
-            u: "/countries/#{country.to_url}"
-          }
-        end
-
-        # Add states (skip for small countries)
-        buildable_states.each do |state|
-          sample_resort = resorts_by_state(state).first
-          search_data[:d] << {
-            t: 's',
-            n: state,
-            c: country_lookup[sample_resort.country_name], # numeric index
-            u: "/states/#{state.to_url}"
-          }
-        end
-
-        # Add resorts (filter out those with empty slug names)
-        resorts.each do |resort|
-          next if resort.slug.empty?
-
-          snow = @context.snow_summary(resort)[:next_7d].round(1)
-          search_data[:d] << {
-            t: 'r',
-            n: resort.name,
-            c: country_lookup[resort.country_name], # numeric index
-            s: resort.region_name,
-            u: "/resorts/#{resort.slug}",
-            l: [resort.lat.round(3), resort.lon.round(3)],
-            w: (snow if snow.positive?)
-          }.compact
-        end
+        data = SearchIndex.new(
+          resorts: resorts, countries: countries, states: states,
+          buildable: ->(state) { buildable_states.include?(state) },
+          snow_7d: ->(resort) { @context.snow_summary(resort)[:next_7d] }
+        ).to_h
 
         search_file = File.join(@build_dir, 'assets', 'search-data.json')
-        File.write(search_file, JSON.generate(search_data))
-        @logger.info('generated search index', { file: search_file, entries: search_data[:d].length })
+        File.write(search_file, JSON.generate(data))
+        @logger.info('generated search index', { file: search_file, entries: data[:d].length })
       end
 
       # Cloudflare Pages serves /foo.html at /foo, which is the canonical form every page declares.

@@ -25,4 +25,10 @@ RSpec.describe FollowTheSnow::Builder::Units do
   it 'buckets snow into the token scale' do
     expect([0, 0.4, 1, 2, 6, 12].map { |i| units.snow_level(i) }).to eq([0, 1, 2, 3, 4, 5])
   end
+
+  it 'switches level exactly at each step' do
+    expect(described_class::SNOW_STEPS).to eq([1, 2, 6, 12])
+    edges = [0.01, 0.99, 1, 1.99, 2, 5.99, 6, 11.99, 12, 500, '3', nil]
+    expect(edges.map { |i| units.snow_level(i) }).to eq([1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 3, 0])
+  end
 end

@@ -7,6 +7,9 @@ module FollowTheSnow
   module Builder
     # data-k kinds (s in, t °F, w mph, h ft, d km) are reformatted by pages/input.js; text is the no-JS default.
     module Units
+      # Lower bounds (in) of levels 2..5; guarded against pages/input.js and map.js by spec/js_contract_spec.rb.
+      SNOW_STEPS = [1, 2, 6, 12].freeze
+
       def snow_value(inches)
         inches = inches.to_f
         value_tag(inches.round(2), 's', "#{compact(inches)}″")
@@ -53,14 +56,8 @@ module FollowTheSnow
       end
 
       def snow_level(inches)
-        case inches.to_f
-        when 0 then 0
-        when 0...1 then 1
-        when 1...2 then 2
-        when 2...6 then 3
-        when 6...12 then 4
-        else 5
-        end
+        inches = inches.to_f
+        inches <= 0 ? 0 : SNOW_STEPS.count { |step| inches >= step } + 1
       end
 
       private
