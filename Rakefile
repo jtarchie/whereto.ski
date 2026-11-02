@@ -58,8 +58,8 @@ desc 'Format the codebase'
 task :fmt do
   sh('deno fmt .')
   sh('rubocop -A')
-  sh('npx @herb-tools/linter pages/ --fix')
-  sh('npx @herb-tools/formatter pages/')
+  sh('npx --no-install @herb-tools/linter pages/ --fix')
+  sh('npx --no-install @herb-tools/formatter pages/')
 end
 
 desc 'Run the tests'

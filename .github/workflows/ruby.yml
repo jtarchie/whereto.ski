@@ -20,11 +20,11 @@ jobs:
     env:
       RUBY_YJIT_ENABLE: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: "4.0"
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
@@ -37,20 +37,19 @@ jobs:
         run: bundle exec rake assets
       - name: Run tests
         run: bundle exec rspec
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
   lint:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
+          cache: "npm"
       - run: npm ci
       - name: Lint ERB templates (Herb)
-        run: npx @herb-tools/linter pages/ --github --fail-level error
+        run: npx --no-install @herb-tools/linter pages/ --github --fail-level error
       - name: Check ERB formatting (Herb)
-        run: npx @herb-tools/formatter pages/ --check
+        run: npx --no-install @herb-tools/formatter pages/ --check

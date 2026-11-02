@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read # access to check out code and install dependencies
 
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   build:
     timeout-minutes: 60
@@ -22,27 +26,28 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
-      - run: npm install
+      - run: npm ci
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: "4.0"
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Install minify
-        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        uses: jaxxstorm/action-install-gh-release@c5ead9a448b4660cf1e7866ee22e4dc56538031a # v1.10.0
         with: # Grab the latest version
           repo: tdewolff/minify
           tag: v2.24.8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       - name: Build docs
         run: bundle exec rake build
         env:
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
           OPEN_METEO_API_URL: ${{ secrets.OPEN_METEO_API_URL }}
+      - name: Sanity check build output
+        run: test -s docs/index.html
       - name: Publish to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 945954ae6af55e6e4af004fb7772fdc5
