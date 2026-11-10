@@ -1,8 +1,8 @@
 {
   "devDependencies": {
-    "@herb-tools/formatter": "^0.11.1",
-    "@herb-tools/linter": "^0.11.1",
-    "@tailwindcss/cli": "^4.1.18",
+    "@herb-tools/formatter": "^0.11.2",
+    "@herb-tools/linter": "^0.11.2",
+    "@tailwindcss/cli": "^4.3.5",
     "esbuild": "^0.28.2",
     "maplibre-gl": "^6.16.0",
     "tailwindcss": "^4.0.14"
